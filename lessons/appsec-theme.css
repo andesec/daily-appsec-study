@@ -1,7 +1,7 @@
 /* ============================================
    AppSec Learning Theme - CSS
    Responsive, accessible, pedagogically sound
-   ============================================ */
+============================================ */
 
 :root {
   /* Light Mode Colors */
@@ -40,8 +40,8 @@
   --spacing-xl: 2rem;
 
   /* Code Display */
-  --code-padding-right: 2rem;
-  --line-number-width: 3rem;
+  --code-padding-right: 0.5rem;
+  --line-number-width: 2rem;
 }
 
 /* Dark Mode */
@@ -152,7 +152,7 @@ pre {
   background: var(--code-bg);
   border: 1px solid var(--code-border);
   border-radius: 0.5rem;
-  padding: var(--spacing-md);
+  padding: 0.5rem 0.75rem;
   margin: var(--spacing-md) 0;
   overflow-x: auto;
   position: relative;
@@ -181,7 +181,7 @@ pre code {
 .code-with-lines {
   display: grid;
   grid-template-columns: var(--line-number-width) 1fr;
-  gap: var(--spacing-md);
+  gap: 0.5rem;
 }
 
 .line-numbers {
@@ -692,7 +692,8 @@ label {
     margin-bottom: 0.55rem !important;
   }
 
-  .card {
+  .card,
+  .widget {
     padding: var(--spacing-md);
   }
 }
