@@ -2,8 +2,10 @@ name: Generate Homepage
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
+permissions:
+  contents: write   # <-- REQUIRED to allow git push
 
 jobs:
   build:
@@ -12,6 +14,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        persist-credentials: true   # <-- ensure the bot's token stays configured
 
     - name: Generate index.html
       run: |
@@ -21,10 +25,8 @@ jobs:
         echo "<h1>Available Lessons</h1>" >> index.html
         echo "<ul>" >> index.html
 
-        # Find all HTML files (exclude index.html itself)
-        for file in $(find . -name "*.html" ! -name "index.html" | sort); do
-          clean=${file#./}
-          echo "<li><a href=\"$clean\">$clean</a></li>" >> index.html
+        for file in $(find lessons -name "*.html" | sort); do
+          echo "<li><a href=\"$file\">$file</a></li>" >> index.html
         done
 
         echo "</ul></body></html>" >> index.html
