@@ -26,7 +26,9 @@ jobs:
         echo "<ul>" >> index.html
 
         for file in $(find lessons -name "*.html" | sort); do
-          echo "<li><a href=\"$file\">$file</a></li>" >> index.html
+          clean=${file#lessons/}              # remove folder path
+          name=${clean%.html}                 # remove extension
+          echo "<li><a href=\"$file\">$name</a></li>" >> index.html
         done
 
         echo "</ul></body></html>" >> index.html
