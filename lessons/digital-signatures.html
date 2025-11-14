@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AppSec Lesson: Digital Signatures</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="appsec-theme.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header / Intro -->
+        <header class="card">
+            <div class="card-header">
+                🔏 Digital Signatures Deep Dive
+            </div>
+            <div class="card-body">
+                <p>
+                    This lesson walks you from intuition → mechanics → real-world usage of digital signatures:
+                    <strong>hashing the message</strong>, <strong>signing with a private key</strong>, and
+                    <strong>verification with a public key</strong>.
+                </p>
+                <div class="callout callout-info">
+                    <strong>Learning outcomes:</strong>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li>Explain why we hash before signing and what properties the hash must have.</li>
+                        <li>Describe how private/public keys are used to create and verify signatures.</li>
+                        <li>Map signatures to real-world systems (JWTs, TLS, code signing).</li>
+                        <li>Reason about attack paths and defenses around signature verification.</li>
+                    </ul>
+                </div>
+                <p style="margin-top: 0.5rem; color: var(--text-muted);">
+                    Use the widgets below actively. Try to break things, then think like a defender.
+                </p>
+            </div>
+        </header>
+
+        <!-- 1. Conceptual Foundation -->
+        <section class="card">
+            <div class="card-header">
+                1. Big Picture: What a Digital Signature Actually Does
+            </div>
+            <div class="card-body">
+                <p>
+                    A digital signature is a cryptographic <strong>wax seal</strong> for data. It tells you:
+                </p>
+                <ul style="margin-left: 1.5rem;">
+                    <li><strong>Authenticity</strong> – “Who signed this?” (tied to a private key)</li>
+                    <li><strong>Integrity</strong> – “Has anything changed?” (tied to the hash)</li>
+                    <li><strong>Non-repudiation</strong> – “The signer can’t plausibly deny it later” (if keys are
+                        managed correctly)</li>
+                </ul>
+
+                <p style="margin-top: 1rem;">
+                    At a high level, the flow looks like this:
+                </p>
+
+                <pre><code class="ds-code">
+Sender side (signing)
+---------------------
+1. Choose message M
+2. Compute digest H = Hash(M)
+3. Compute signature S = Sign_priv(H)
+4. Send (M, S) to receiver
+
+Receiver side (verification)
+----------------------------
+5. Receive (M, S)
+6. Compute H' = Hash(M)
+7. Verify_pub(H', S) -> true / false
+
+If verification succeeds:
+- M is tied to the private key owner (authenticity)
+- Any bit flip in M or S will break the signature (integrity)
+        </code></pre>
+
+                <div class="callout callout-success" style="margin-top: 1rem;">
+                    <strong>Key idea:</strong> We do <em>not</em> sign the whole message directly. We sign a
+                    <strong>hash</strong> of it.
+                    This makes signatures fast and binds them to every bit of the message.
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Hashing Focus + Crypto Playground -->
+        <section class="card">
+            <div class="card-header">
+                2. Hashing the Message: Why It Matters
+            </div>
+            <div class="card-body">
+                <p>
+                    The hash function used in a signature scheme must be:
+                </p>
+                <ul style="margin-left: 1.5rem;">
+                    <li><strong>Preimage-resistant</strong> – given H, hard to find any M such that Hash(M) = H.</li>
+                    <li><strong>Second preimage-resistant</strong> – given M, hard to find M₂ ≠ M with same hash.</li>
+                    <li><strong>Collision-resistant</strong> – hard to find any two distinct messages M₁, M₂ with same
+                        hash.</li>
+                </ul>
+
+                <p>
+                    If collision resistance is broken (e.g., MD5, SHA-1), an attacker can craft two messages with the
+                    same hash:
+                    one “innocent” you sign, one “evil” they later swap in. That undermines the whole point of
+                    signatures.
+                </p>
+
+                <div class="callout callout-warning">
+                    <strong>Rule of thumb:</strong> For new systems, consider at least <code>SHA-256</code> (or
+                    stronger) with modern signature schemes (RSA-PSS, ECDSA, EdDSA).
+                </div>
+
+                <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">2.1 Crypto Playground – Hashing Practice</h3>
+                <p style="margin-bottom: 0.5rem;">
+                    Use this widget to see how different messages produce very different hashes. Try:
+                </p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 0.5rem;">
+                    <li>Change 1 character in the message → observe how the hash changes completely.</li>
+                    <li>Switch algorithms (SHA-256/384/512) and compare output length and structure.</li>
+                </ul>
+
+                <div id="widget-crypto-ds"></div>
+            </div>
+        </section>
+
+        <!-- 3. Flow Visualizer: Signature Lifecycle -->
+        <section class="card">
+            <div class="card-header">
+                3. Step-by-Step: Digital Signature Lifecycle
+            </div>
+            <div class="card-body">
+                <p>
+                    This flow visualizer walks through the <strong>whole lifecycle</strong> of a digital signature:
+                    from key generation all the way to verification and logging.
+                </p>
+                <p style="color: var(--text-muted);">
+                    Treat it as the high-level protocol for “hash → sign → send → verify → log”.
+                </p>
+
+                <div id="widget-ds-flow" style="margin-top: 1rem;"></div>
+
+                <div class="callout callout-info" style="margin-top: 1rem;">
+                    As you step through, ask:
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Where could an attacker realistically influence inputs?</li>
+                        <li>Where does your code need to fail secure (reject on any doubt)?</li>
+                        <li>Where do you log for incident response and non-repudiation?</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Hands-on Signature Lab (WebCrypto) -->
+        <section class="card">
+            <div class="card-header">
+                4. Hands-On Signature Lab (Browser WebCrypto)
+            </div>
+            <div class="card-body">
+                <p>
+                    Below is a small in-browser lab using the Web Crypto API. It uses RSA + SHA-256 to:
+                </p>
+                <ul style="margin-left: 1.5rem;">
+                    <li>Generate a fresh keypair.</li>
+                    <li>Sign a message.</li>
+                    <li>Verify the signature.</li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    <strong>Note:</strong> This is a <em>teaching demo</em>, not production design. Real systems need
+                    proper key storage (HSM/KMS), certificate chains, rotation, revocation, etc.
+                </div>
+
+                <div class="grid grid-2" style="margin-top: 1rem;">
+                    <div>
+                        <label for="siglab-message"><strong>Message</strong></label>
+                        <textarea id="siglab-message" rows="5" placeholder="Type any message to sign..."></textarea>
+
+                        <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            <button class="btn btn-primary" id="siglab-generate">1️⃣ Generate keypair</button>
+                            <button class="btn btn-secondary" id="siglab-sign">2️⃣ Sign</button>
+                            <button class="btn btn-success" id="siglab-verify">3️⃣ Verify</button>
+                        </div>
+
+                        <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-muted);">
+                            Experiments:
+                            <br>- Sign the message, then change <em>one character</em> and click Verify → should fail.
+                            <br>- Re-sign the same message multiple times → signatures may differ (padding) but remain
+                            valid.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4>Public Key (PEM)</h4>
+                        <pre><code id="siglab-pubkey">Click "Generate keypair"…</code></pre>
+
+                        <h4 style="margin-top: 0.75rem;">Signature (base64)</h4>
+                        <pre><code id="siglab-signature">Click "Sign"…</code></pre>
+
+                        <h4 style="margin-top: 0.75rem;">Verification Result</h4>
+                        <pre><code id="siglab-result">Waiting…</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Attack vs Defense -->
+        <section class="card">
+            <div class="card-header">
+                5. Attack vs Defense: Misusing Digital Signatures
+            </div>
+            <div class="card-body">
+                <p>
+                    In practice, most real incidents are not “crypto is broken” but “<strong>verification or key
+                        handling is wrong</strong>”.
+                </p>
+
+                <div id="widget-ds-attack-defense" style="margin-top: 1rem;"></div>
+            </div>
+        </section>
+
+        <!-- 6. JWT Focus: Signatures in Tokens -->
+        <section class="card">
+            <div class="card-header">
+                6. JWTs & APIs: Where Signatures Show Up Daily
+            </div>
+            <div class="card-body">
+                <p>
+                    JWTs (JSON Web Tokens) are a common place where digital signatures drive security decisions.
+                    The server:
+                </p>
+                <ol style="margin-left: 1.5rem;">
+                    <li>Builds a header (algorithm, type) and payload (claims like <code>sub</code>, <code>exp</code>,
+                        <code>iss</code>).
+                    </li>
+                    <li>Computes a signature over <code>base64url(header) + "." + base64url(payload)</code>.</li>
+                    <li>Sends <code>header.payload.signature</code> to the client.</li>
+                </ol>
+                <p>
+                    On every API call, servers <em>must</em> verify the signature and validate claims before trusting
+                    the token.
+                </p>
+
+                <div id="widget-ds-jwt" style="margin-top: 1rem;"></div>
+
+                <div class="callout callout-info" style="margin-top: 1rem;">
+                    Try:
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Paste a legit JWT from a dev environment.</li>
+                        <li>Inspect <code>alg</code> (algorithm) and claims like <code>iss</code>, <code>aud</code>,
+                            <code>exp</code>.
+                        </li>
+                        <li>Think about what your backend actually validates versus what it silently ignores.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Threat Modeling Canvas -->
+        <section class="card">
+            <div class="card-header">
+                7. Threat Modeling: STRIDE Around Signatures
+            </div>
+            <div class="card-body">
+                <p>
+                    Use this STRIDE canvas to brainstorm threats specifically around your signature pipeline
+                    (key management, signing service, verification layer, logs).
+                </p>
+
+                <div id="widget-ds-threats" style="margin-top: 1rem;"></div>
+
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Examples to seed your thinking:
+                </p>
+                <ul style="margin-left: 1.5rem; font-size: 0.9rem;">
+                    <li><strong>Spoofing:</strong> Attacker obtains or fakes a service key → signs arbitrary tokens.
+                    </li>
+                    <li><strong>Tampering:</strong> Man-in-the-middle swaps payloads but keeps signature from a weaker
+                        algorithm path.</li>
+                    <li><strong>Repudiation:</strong> Logs don’t capture which key or which admin triggered a signature
+                        → disputes later.</li>
+                    <li><strong>Information disclosure:</strong> Private keys accidentally logged or stored in
+                        world-readable disks.</li>
+                    <li><strong>DoS:</strong> Signature verification made intentionally expensive to exhaust CPU.</li>
+                    <li><strong>Elevation of privilege:</strong> Verification bug lets low-privilege token be treated as
+                        admin.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 8. Flowchart Builder: Your Signature Architecture -->
+        <section class="card">
+            <div class="card-header">
+                8. Design Exercise: Map Your Signature Architecture
+            </div>
+            <div class="card-body">
+                <p>
+                    Use the flowchart builder to sketch how digital signatures appear in <strong>your</strong> system:
+                    request in → auth layer → signature verification → authorization checks → logging.
+                </p>
+
+                <div id="widget-ds-flowchart" style="margin-top: 1rem;"></div>
+
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Suggested nodes:
+                    <br>- “Client sends signed JWT”
+                    <br>- “API Gateway verifies signature (kid, alg)”
+                    <br>- “Auth service validates claims (exp, iss, aud, scopes)”
+                    <br>- “Business service executes action”
+                    <br>- “Audit log recorded”
+                </p>
+            </div>
+        </section>
+
+        <!-- 9. Mini Knowledge Check -->
+        <section class="card">
+            <div class="card-header">
+                9. Quick Knowledge Check
+            </div>
+            <div class="card-body">
+                <div id="ds-quiz"></div>
+            </div>
+        </section>
+
+        <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+            AppSec Learning Theme · Digital Signatures Lesson
+        </footer>
+    </div>
+
+    <script src="appsec-theme.js"></script>
+    <script src="appsec-widgets.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add line numbers to main conceptual code block
+            document.querySelectorAll('pre code.ds-code').forEach(el => {
+                if (window.AppSec && AppSec.CodeDisplay) {
+                    AppSec.CodeDisplay.addLineNumbers(el);
+                }
+            });
+
+            // 2. Crypto Playground (hashing practice)
+            if (window.AppSecWidgets && AppSecWidgets.CryptoPlayground) {
+                AppSecWidgets.CryptoPlayground.create('widget-crypto-ds');
+            }
+
+            // 3. Flow visualizer (signature lifecycle)
+            if (AppSecWidgets.FlowVisualizer) {
+                const dsSteps = [
+                    {
+                        title: 'Key Generation',
+                        description: 'Create a keypair (private key for signing, public key for verification). Store the private key in a secure environment (HSM/KMS), distribute the public key or certificate.'
+                    },
+                    {
+                        title: 'Prepare the Message',
+                        description: 'The application builds the message M to be signed: it might be a JSON payload, certificate contents, or token claims.'
+                    },
+                    {
+                        title: 'Hash the Message',
+                        description: 'Compute a cryptographic digest H = Hash(M) using SHA-256 or stronger. The hash must be collision-resistant.'
+                    },
+                    {
+                        title: 'Sign with Private Key',
+                        description: 'Compute S = Sign_priv(H) using RSA/ECDSA/EdDSA. Only the signer’s private key can produce this valid signature.'
+                    },
+                    {
+                        title: 'Send Message + Signature',
+                        description: 'Transmit (M, S) to the verifier over the network or store it (e.g. signed update, JWT, certificate).'
+                    },
+                    {
+                        title: 'Verify on Receiver Side',
+                        description: 'Recompute H\' = Hash(M) and use the public key to verify that S corresponds to H\'. If verification fails, reject the message.'
+                    },
+                    {
+                        title: 'Log & Enforce Policy',
+                        description: 'Record verification results (success/failure, key id, subject). Apply authorization decisions based on trusted claims or identity.'
+                    }
+                ];
+                AppSecWidgets.FlowVisualizer.create('widget-ds-flow', dsSteps);
+            }
+
+            // 4. Signature Lab (WebCrypto)
+            const msgEl = document.getElementById('siglab-message');
+            const pubEl = document.getElementById('siglab-pubkey');
+            const sigEl = document.getElementById('siglab-signature');
+            const resEl = document.getElementById('siglab-result');
+            const btnGen = document.getElementById('siglab-generate');
+            const btnSign = document.getElementById('siglab-sign');
+            const btnVerify = document.getElementById('siglab-verify');
+
+            let sigKeyPair = null;
+            let sigLastSignature = null;
+            let sigLastMessage = null;
+
+            function bufToBase64(buf) {
+                const bytes = new Uint8Array(buf);
+                let bin = '';
+                for (let i = 0; i < bytes.length; i++) {
+                    bin += String.fromCharCode(bytes[i]);
+                }
+                return btoa(bin);
+            }
+
+            btnGen.addEventListener('click', async () => {
+                try {
+                    sigKeyPair = await crypto.subtle.generateKey(
+                        {
+                            name: 'RSASSA-PKCS1-v1_5',
+                            modulusLength: 2048,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: 'SHA-256'
+                        },
+                        true,
+                        ['sign', 'verify']
+                    );
+                    const spki = await crypto.subtle.exportKey('spki', sigKeyPair.publicKey);
+                    const b64 = bufToBase64(spki);
+                    const pem = [
+                        '-----BEGIN PUBLIC KEY-----',
+                        b64.match(/.{1,64}/g).join('\\n'),
+                        '-----END PUBLIC KEY-----'
+                    ].join('\\n');
+                    pubEl.textContent = pem;
+                    sigEl.textContent = 'No signature yet – click "Sign".';
+                    resEl.textContent = 'Waiting…';
+                    if (window.AppSec && AppSec.Notify) {
+                        AppSec.Notify.show('Keypair generated for signature lab', 'success');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    resEl.textContent = 'Error: WebCrypto not available or blocked.';
+                    if (AppSec && AppSec.Notify) {
+                        AppSec.Notify.show('WebCrypto not available in this environment', 'danger', 5000);
+                    }
+                }
+            });
+
+            btnSign.addEventListener('click', async () => {
+                if (!sigKeyPair) {
+                    if (AppSec && AppSec.Notify) AppSec.Notify.show('Generate a keypair first', 'warning');
+                    return;
+                }
+                const m = msgEl.value;
+                if (!m) {
+                    if (AppSec && AppSec.Notify) AppSec.Notify.show('Enter a message to sign', 'warning');
+                    return;
+                }
+                const enc = new TextEncoder();
+                const data = enc.encode(m);
+                const signature = await crypto.subtle.sign(
+                    { name: 'RSASSA-PKCS1-v1_5' },
+                    sigKeyPair.privateKey,
+                    data
+                );
+                sigLastSignature = signature;
+                sigLastMessage = m;
+                sigEl.textContent = bufToBase64(signature);
+                resEl.textContent = 'Signature generated. Click "Verify".';
+                if (AppSec && AppSec.Notify) {
+                    AppSec.Notify.show('Message signed (RSA + SHA-256)', 'info');
+                }
+            });
+
+            btnVerify.addEventListener('click', async () => {
+                if (!sigKeyPair || !sigLastSignature) {
+                    if (AppSec && AppSec.Notify) AppSec.Notify.show('Generate keys and sign a message first', 'warning');
+                    return;
+                }
+                const current = msgEl.value;
+                const enc = new TextEncoder();
+                const data = enc.encode(current);
+                const ok = await crypto.subtle.verify(
+                    { name: 'RSASSA-PKCS1-v1_5' },
+                    sigKeyPair.publicKey,
+                    sigLastSignature,
+                    data
+                );
+                if (ok) {
+                    resEl.textContent = '✅ Verification SUCCESS – message + signature match.';
+                    if (AppSec && AppSec.Notify) AppSec.Notify.show('Verification SUCCESS', 'success', 3500);
+                } else {
+                    resEl.textContent = '❌ Verification FAILED – message or signature has changed.';
+                    if (AppSec && AppSec.Notify) AppSec.Notify.show('Verification FAILED', 'danger', 3500);
+                }
+            });
+
+            // 5. Attack vs Defense widget
+            if (AppSecWidgets.AttackDefense) {
+                const attackHtml = `
+          <h4>Common ways digital signatures go wrong</h4>
+          <ul>
+            <li><strong>Algorithm confusion:</strong> Backend allows both HS256 and RS256 for JWTs and uses the wrong key, letting attacker swap algorithms.</li>
+            <li><strong>"alg: none" abuse:</strong> Verifier accepts tokens with <code>alg = "none"</code>, treating them as already verified.</li>
+            <li><strong>Key compromise:</strong> Private key stored in source control, logs, or misconfigured storage – attacker steals it and signs arbitrary data.</li>
+            <li><strong>Partial verification:</strong> Code only checks "signature is valid" but ignores claims like <code>iss</code>, <code>aud</code>, <code>exp</code>.</li>
+            <li><strong>Weak hash:</strong> Using MD5/SHA-1 with signatures, enabling collision-based attacks.</li>
+          </ul>
+          <pre><code>if (verifySignature(token)) {
+  // &lt;-- Vulnerable: no issuer/audience/scope checks
+  allowAccess();
+}</code></pre>
+        `;
+                const defenseHtml = `
+          <h4>Hardening your signature usage</h4>
+          <ul>
+            <li><strong>Lock down algorithms:</strong> Configure libraries to only accept strong algorithms you explicitly support.</li>
+            <li><strong>Separate keys per purpose:</strong> Different keypairs for signing tokens, code, and certificates.</li>
+            <li><strong>Central verification:</strong> One hardened verification component (or gateway) instead of ad-hoc checks in every service.</li>
+            <li><strong>Strong key management:</strong> Use HSMs/KMS, rotate keys, keep an inventory of where each public key is trusted.</li>
+            <li><strong>Full claim validation:</strong> Treat signatures as necessary but not sufficient – always validate claims and business rules.</li>
+          </ul>
+          <pre><code>const verified = verifySignature(token, expectedKey, expectedAlg);
+if (!verified) deny();
+
+const claims = parseClaims(token);
+if (!claims.iss || claims.iss !== EXPECTED_ISS) deny();
+if (!claims.aud || claims.aud !== EXPECTED_AUD) deny();
+if (!claims.exp || claims.exp * 1000 &lt; Date.now()) deny();</code></pre>
+        `;
+                AppSecWidgets.AttackDefense.create('widget-ds-attack-defense', 'Digital Signatures', attackHtml, defenseHtml);
+            }
+
+            // 6. JWT Analyzer
+            if (AppSecWidgets.JWTAnalyzer) {
+                AppSecWidgets.JWTAnalyzer.create('widget-ds-jwt');
+            }
+
+            // 7. Threat modeling canvas (STRIDE)
+            if (AppSecWidgets.ThreatModel) {
+                AppSecWidgets.ThreatModel.create("widget-ds-threats", {
+                    system: {
+                        name: "Payments API",
+                        type: "api",
+                        actors: "Customers, Admins, Merchant services",
+                        assets: "Payment tokens, card data, ledger",
+                        entryPoints: "POST /pay, Webhooks, OAuth login",
+                        boundaries: "Public ↔ API Gateway ↔ Internal Services"
+                    },
+                    stride: {
+                        spoofing: "Token replay, session fixation…",
+                        tampering: "Unsigned fields in checkout…",
+                        repudiation: "-",
+                        information: "PII leak via error responses…",
+                        dos: "Abuse of expensive payment validation…",
+                        elevation: "Privilege bypass via admin flag…"
+                    }
+                });
+            }
+
+            // 8. Flowchart Builder
+            if (AppSecWidgets.FlowchartBuilder) {
+                AppSecWidgets.FlowchartBuilder.create('widget-ds-flowchart');
+            }
+
+            // 9. Quiz check
+            const dsQuizData = {
+                questions: [
+                    {
+                        text: "What is usually signed in a digital signature scheme?",
+                        options: [
+                            { value: "raw", label: "The raw message bits" },
+                            { value: "hash", label: "A cryptographic hash of the message", correct: true },
+                            { value: "nothing", label: "Nothing, signatures are random" }
+                        ]
+                    },
+                    {
+                        text: "Which key should a verifier use?",
+                        options: [
+                            { value: "private", label: "The private key" },
+                            { value: "public", label: "The public key", correct: true },
+                            { value: "any", label: "Any key with the same length" }
+                        ]
+                    },
+                    {
+                        text: "Why is collision resistance important?",
+                        options: [
+                            { value: "speed", label: "It makes hashing faster" },
+                            { value: "storage", label: "It reduces storage requirements" },
+                            { value: "security", label: "It prevents attackers from crafting two messages with same hash", correct: true }
+                        ]
+                    },
+                    {
+                        text: "In a JWT-secured API, what must be checked?",
+                        options: [
+                            { value: "none", label: "Accept alg: none" },
+                            { value: "sig_only", label: "Only check the token is signed" },
+                            { value: "sig_and_claims", label: "Verify signature + critical claims", correct: true }
+                        ]
+                    }
+                ]
+            };
+            if (AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("ds-quiz", dsQuizData);
+            }
+
+            // Friendly welcome notification
+            if (AppSec && AppSec.Notify) {
+                setTimeout(() => {
+                    AppSec.Notify.show('🔏 Ready to master digital signatures? Start with the conceptual overview, then hit the labs.', 'info', 4500);
+                }, 700);
+            }
+        });
+    </script>
+</body>
+
+</html>
