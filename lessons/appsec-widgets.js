@@ -121,7 +121,7 @@ AppSecWidgets.ConfigDiff = {
 
 /**
  * ============================================
- * 3. OAuth Flow Visualizer (COMPLETELY FIXED)
+ * 3. Flow Visualizer (COMPLETELY FIXED)
  * ============================================
  */
 AppSecWidgets.FlowVisualizer = {
@@ -151,7 +151,7 @@ AppSecWidgets.FlowVisualizer = {
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🔄 OAuth Flow Visualizer</h3>
+          <h3 class="widget-title">🔄 Flow Visualizer</h3>
         </div>
         <div class="widget-body">
           <div class="flow-container">${stepsHtml}</div>
