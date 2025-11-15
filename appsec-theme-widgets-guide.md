@@ -87,6 +87,7 @@ When used from widgets, call via `window.AppSec.Notify.show(...)`.
 - `.container` - Max-width 1400px, responsive padding
 - `.grid`, `.grid-2`, `.grid-3` - Responsive grids
 - `.card` - Card container with shadow
+- `.card-header` and `.card-body` for organizing the card nicely in responsive fashion.
 - `.widget` - Widget container with header/body
 
 ### Typography

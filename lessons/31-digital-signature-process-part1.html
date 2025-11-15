@@ -1,111 +1,146 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>AppSec Lesson 31 – Digital Signature Process</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Assume these are available in your environment -->
-  <link rel="stylesheet" href="appsec-theme.css" />
-  <script src="appsec-theme.js" defer></script>
-  <script src="appsec-widgets.js" defer></script>
+    <meta charset="UTF-8" />
+    <title>AppSec Lesson 31 – Digital Signature Process</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Assume these are available in your environment -->
+    <link rel="stylesheet" href="appsec-theme.css" />
+    <script src="appsec-theme.js" defer></script>
+    <script src="appsec-widgets.js" defer></script>
 </head>
+
 <body>
-  <div class="container">
-    <header class="mb-1">
-      <h1>31. Digital Signature Process – Hash, Sign, Verify</h1>
-      <p class="text-secondary">
-        Focus: understand the exact steps of “hash message → sign with private key → verify with public key” and how this shows up in real SaaS systems.
-      </p>
-    </header>
+    <div class="container">
+        <header class="mb-1">
+            <h1>31. Digital Signature Process – Hash, Sign, Verify</h1>
+            <p class="text-secondary">
+                Focus: understand the exact steps of “hash message → sign with private key → verify with public key” and
+                how this shows up in real SaaS systems.
+            </p>
+        </header>
 
-    <!-- ========================= 1. FOUNDATION ========================= -->
-    <section id="section-1" class="card p-1 mb-1">
-      <h2>1. Foundation</h2>
+        <!-- ========================= 1. FOUNDATION ========================= -->
+        <section id="section-1" class="card p-1 mb-1">
+            <h2>1. Foundation</h2>
 
-      <div class="grid grid-2 mt-1">
-        <div>
-          <h3>1.1 Core Terms</h3>
-          <ul>
-            <li><strong>Digital signature</strong> – a cryptographic value attached to data that proves:
-              <ul>
-                <li><em>Integrity</em> – data wasn’t modified.</li>
-                <li><em>Authenticity</em> – who signed it (which key).</li>
-                <li><em>Non-repudiation</em> – signer can’t later claim they didn’t sign (subject to key management & policy).</li>
-              </ul>
-            </li>
-            <li><strong>Asymmetric key pair</strong> – <code>private key</code> (kept secret) + <code>public key</code> (shared).
-              <ul>
-                <li><strong>Private key</strong> – used to <em>generate</em> signatures.</li>
-                <li><strong>Public key</strong> – used to <em>verify</em> signatures.</li>
-              </ul>
-            </li>
-            <li><strong>Hash function</strong> – one-way function that maps arbitrary input to a fixed-size digest (e.g. SHA-256). Small input changes produce very different outputs. [oai_citation:0‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)</li>
-            <li><strong>Message digest</strong> – the hash of the message. This is what is actually signed in most schemes. [oai_citation:1‡Medium](https://andsilvadrcc.medium.com/digital-signature-with-hash-function-how-it-works-f4eed52267f5?utm_source=chatgpt.com)</li>
-            <li><strong>Signature algorithm</strong> – concrete scheme like:
-              <ul>
-                <li><strong>RSA signatures</strong> (e.g. RSASSA-PSS as per RFC 8017/PKCS #1). [oai_citation:2‡IETF Datatracker](https://datatracker.ietf.org/doc/html/rfc8017?utm_source=chatgpt.com)</li>
-                <li><strong>ECDSA</strong>, <strong>EdDSA (Ed25519)</strong>, etc., as standardized in NIST FIPS 186-5. [oai_citation:3‡NIST Computer Security Resource Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
-              </ul>
-            </li>
-            <li><strong>Digital Signature Standard (DSS)</strong> – NIST standard (FIPS 186-5) defining approved digital-signature algorithms and their security requirements. [oai_citation:4‡NIST Computer Security Resource Center](https://csrc.nist.gov/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
-          </ul>
-        </div>
+            <div class="grid grid-2 mt-1">
+                <div>
+                    <h3>1.1 Core Terms</h3>
+                    <ul>
+                        <li><strong>Digital signature</strong> – a cryptographic value attached to data that proves:
+                            <ul>
+                                <li><em>Integrity</em> – data wasn’t modified.</li>
+                                <li><em>Authenticity</em> – who signed it (which key).</li>
+                                <li><em>Non-repudiation</em> – signer can’t later claim they didn’t sign (subject to key
+                                    management & policy).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Asymmetric key pair</strong> – <code>private key</code> (kept secret) +
+                            <code>public key</code> (shared).
+                            <ul>
+                                <li><strong>Private key</strong> – used to <em>generate</em> signatures.</li>
+                                <li><strong>Public key</strong> – used to <em>verify</em> signatures.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Hash function</strong> – one-way function that maps arbitrary input to a fixed-size
+                            digest (e.g. SHA-256). Small input changes produce very different outputs.
+                            [oai_citation:0‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)
+                        </li>
+                        <li><strong>Message digest</strong> – the hash of the message. This is what is actually signed
+                            in most schemes.
+                            [oai_citation:1‡Medium](https://andsilvadrcc.medium.com/digital-signature-with-hash-function-how-it-works-f4eed52267f5?utm_source=chatgpt.com)
+                        </li>
+                        <li><strong>Signature algorithm</strong> – concrete scheme like:
+                            <ul>
+                                <li><strong>RSA signatures</strong> (e.g. RSASSA-PSS as per RFC 8017/PKCS #1).
+                                    [oai_citation:2‡IETF
+                                    Datatracker](https://datatracker.ietf.org/doc/html/rfc8017?utm_source=chatgpt.com)
+                                </li>
+                                <li><strong>ECDSA</strong>, <strong>EdDSA (Ed25519)</strong>, etc., as standardized in
+                                    NIST FIPS 186-5. [oai_citation:3‡NIST Computer Security Resource
+                                    Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Digital Signature Standard (DSS)</strong> – NIST standard (FIPS 186-5) defining
+                            approved digital-signature algorithms and their security requirements. [oai_citation:4‡NIST
+                            Computer Security Resource
+                            Center](https://csrc.nist.gov/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
+                    </ul>
+                </div>
 
-        <div>
-          <h3>1.2 The Basic Process</h3>
-          <ol>
-            <li><strong>Sign</strong> (sender):
-              <ol>
-                <li>Compute <code>h = Hash(message)</code>.</li>
-                <li>Compute <code>signature = Sign(privateKey, h)</code> (algorithm-specific).</li>
-                <li>Send <code>(message, signature)</code> to the recipient.</li>
-              </ol>
-            </li>
-            <li><strong>Verify</strong> (receiver):
-              <ol>
-                <li>Compute <code>h' = Hash(message)</code>.</li>
-                <li>Use signer’s <code>publicKey</code> to compute <code>valid = Verify(publicKey, h', signature)</code>.</li>
-                <li>If <code>valid = true</code>, the message is intact and signed by holder of the private key. [oai_citation:5‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)</li>
-              </ol>
-            </li>
-          </ol>
+                <div>
+                    <h3>1.2 The Basic Process</h3>
+                    <ol>
+                        <li><strong>Sign</strong> (sender):
+                            <ol>
+                                <li>Compute <code>h = Hash(message)</code>.</li>
+                                <li>Compute <code>signature = Sign(privateKey, h)</code> (algorithm-specific).</li>
+                                <li>Send <code>(message, signature)</code> to the recipient.</li>
+                            </ol>
+                        </li>
+                        <li><strong>Verify</strong> (receiver):
+                            <ol>
+                                <li>Compute <code>h' = Hash(message)</code>.</li>
+                                <li>Use signer’s <code>publicKey</code> to compute
+                                    <code>valid = Verify(publicKey, h', signature)</code>.
+                                </li>
+                                <li>If <code>valid = true</code>, the message is intact and signed by holder of the
+                                    private key.
+                                    [oai_citation:5‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)
+                                </li>
+                            </ol>
+                        </li>
+                    </ol>
 
-          <div class="callout callout-info-solid mt-1">
-            <strong>Key point:</strong> we sign the <em>hash</em>, not the whole message. That keeps signatures small and decouples “integrity proof” from the size of the data.
-          </div>
-        </div>
-      </div>
+                    <div class="callout callout-info-solid mt-1">
+                        <strong>Key point:</strong> we sign the <em>hash</em>, not the whole message. That keeps
+                        signatures small and decouples “integrity proof” from the size of the data.
+                    </div>
+                </div>
+            </div>
 
-      <div class="mt-1">
-        <h3>1.3 How This Shows Up in a Real SaaS System</h3>
-        <div class="grid grid-3">
-          <div class="callout callout-success">
-            <strong>JWT / Access tokens</strong><br />
-            Auth service signs JWTs with its private key. Microservices verify tokens using the public key from JWKS.
-          </div>
-          <div class="callout callout-info">
-            <strong>Webhooks</strong><br />
-            Provider signs webhook payload (or a hash of it). Consumer verifies signature before trusting the event.
-          </div>
-          <div class="callout callout-warning">
-            <strong>Document signing</strong><br />
-            E-signature platform hashes a PDF and signs the hash with a certificate private key, embedding signature + certificate into the document. [oai_citation:6‡Anvil](https://www.useanvil.com/blog/engineering/how-digital-e-signatures-work/?utm_source=chatgpt.com)
-          </div>
-        </div>
-      </div>
+            <div class="mt-1">
+                <h3>1.3 How This Shows Up in a Real SaaS System</h3>
+                <div class="grid grid-3">
+                    <div class="callout callout-success">
+                        <strong>JWT / Access tokens</strong><br />
+                        Auth service signs JWTs with its private key. Microservices verify tokens using the public key
+                        from JWKS.
+                    </div>
+                    <div class="callout callout-info">
+                        <strong>Webhooks</strong><br />
+                        Provider signs webhook payload (or a hash of it). Consumer verifies signature before trusting
+                        the event.
+                    </div>
+                    <div class="callout callout-warning">
+                        <strong>Document signing</strong><br />
+                        E-signature platform hashes a PDF and signs the hash with a certificate private key, embedding
+                        signature + certificate into the document.
+                        [oai_citation:6‡Anvil](https://www.useanvil.com/blog/engineering/how-digital-e-signatures-work/?utm_source=chatgpt.com)
+                    </div>
+                </div>
+            </div>
 
-      <div class="mt-1">
-        <h3>1.4 Prerequisites You’re Assumed to Know</h3>
-        <ul>
-          <li>Basic difference between <strong>symmetric</strong> (same key) and <strong>asymmetric</strong> (public/private) cryptography. [oai_citation:7‡TechTarget](https://www.techtarget.com/searchsecurity/answer/Which-private-keys-and-public-keys-can-create-a-digital-signature?utm_source=chatgpt.com)</li>
-          <li>What a <strong>hash function</strong> is and why collision-resistance matters.</li>
-          <li>Very high-level idea of <strong>PKI</strong> and certificates (X.509) to bind public keys to identities. [oai_citation:8‡Cryptography Stack Exchange](https://crypto.stackexchange.com/questions/9896/how-does-rsa-signature-verification-work?utm_source=chatgpt.com)</li>
-        </ul>
-      </div>
+            <div class="mt-1">
+                <h3>1.4 Prerequisites You’re Assumed to Know</h3>
+                <ul>
+                    <li>Basic difference between <strong>symmetric</strong> (same key) and <strong>asymmetric</strong>
+                        (public/private) cryptography.
+                        [oai_citation:7‡TechTarget](https://www.techtarget.com/searchsecurity/answer/Which-private-keys-and-public-keys-can-create-a-digital-signature?utm_source=chatgpt.com)
+                    </li>
+                    <li>What a <strong>hash function</strong> is and why collision-resistance matters.</li>
+                    <li>Very high-level idea of <strong>PKI</strong> and certificates (X.509) to bind public keys to
+                        identities. [oai_citation:8‡Cryptography Stack
+                        Exchange](https://crypto.stackexchange.com/questions/9896/how-does-rsa-signature-verification-work?utm_source=chatgpt.com)
+                    </li>
+                </ul>
+            </div>
 
-      <div class="mt-1">
-        <h3>1.5 ASCII Overview Diagram</h3>
-        <pre><code>
+            <div class="mt-1">
+                <h3>1.5 ASCII Overview Diagram</h3>
+                <pre><code>
 +---------------------+                        +----------------------+
 |       Sender        |                        |       Receiver       |
 +---------------------+                        +----------------------+
@@ -122,270 +157,871 @@ If valid == true:
   - Integrity OK (M not changed)
   - Signed by holder of SK
         </code></pre>
-      </div>
+            </div>
 
-      <div id="flow-dsig-basics" class="widget mt-1"></div>
-    </section>
+            <div id="flow-dsig-basics" class="widget mt-1"></div>
+        </section>
 
-    <!-- ========================= 2. INTUITIVE HOOK ========================= -->
-    <section id="section-2" class="card p-1 mb-1">
-      <h2>2. Intuitive Hook</h2>
+        <!-- ========================= 2. INTUITIVE HOOK ========================= -->
+        <section id="section-2" class="card p-1 mb-1">
+            <h2>2. Intuitive Hook</h2>
 
-      <div class="grid grid-2">
-        <div>
-          <h3>Wax Seal + Tamper-Evident Checklist</h3>
-          <p>
-            Imagine you send a box of documents to a partner company:
-          </p>
-          <ol>
-            <li>You write an <strong>item checklist</strong> (a summary of content).</li>
-            <li>You sign that checklist with a unique <strong>wax seal ring</strong> only you possess.</li>
-            <li>You put <em>both</em> the documents and the signed checklist in the box.</li>
-          </ol>
-          <p>
-            When the box arrives:
-          </p>
-          <ol>
-            <li>The receiver <strong>re-counts items</strong> and recomputes their own checklist.</li>
-            <li>They check your <strong>wax seal ring impression</strong> on the original checklist using your public “seal pattern”.</li>
-            <li>If:
-              <ul>
-                <li>The checklist content still matches the documents, and</li>
-                <li>The wax seal matches your unique ring,</li>
-              </ul>
-              then they know:
-              <strong>“Contents are intact and really from you.”</strong>
-            </li>
-          </ol>
-        </div>
+            <div class="grid grid-2">
+                <div>
+                    <h3>Wax Seal + Tamper-Evident Checklist</h3>
+                    <p>
+                        Imagine you send a box of documents to a partner company:
+                    </p>
+                    <ol>
+                        <li>You write an <strong>item checklist</strong> (a summary of content).</li>
+                        <li>You sign that checklist with a unique <strong>wax seal ring</strong> only you possess.</li>
+                        <li>You put <em>both</em> the documents and the signed checklist in the box.</li>
+                    </ol>
+                    <p>
+                        When the box arrives:
+                    </p>
+                    <ol>
+                        <li>The receiver <strong>re-counts items</strong> and recomputes their own checklist.</li>
+                        <li>They check your <strong>wax seal ring impression</strong> on the original checklist using
+                            your public “seal pattern”.</li>
+                        <li>If:
+                            <ul>
+                                <li>The checklist content still matches the documents, and</li>
+                                <li>The wax seal matches your unique ring,</li>
+                            </ul>
+                            then they know:
+                            <strong>“Contents are intact and really from you.”</strong>
+                        </li>
+                    </ol>
+                </div>
 
-        <div>
-          <h3>Mapping Analogy → Crypto Reality</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Analogy</th>
-                <th>Digital Signature Concept</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Documents inside the box</td>
-                <td>Message / data</td>
-              </tr>
-              <tr>
-                <td>Checklist of items</td>
-                <td>Message digest (hash of data)</td>
-              </tr>
-              <tr>
-                <td>Wax seal ring impression</td>
-                <td>Signature generated with private key</td>
-              </tr>
-              <tr>
-                <td>Public “seal pattern” everyone knows</td>
-                <td>Public key or certificate</td>
-              </tr>
-              <tr>
-                <td>Re-counting items</td>
-                <td>Recomputing hash over received message</td>
-              </tr>
-              <tr>
-                <td>Checking if seal matches ring</td>
-                <td>Verifying signature with public key</td>
-              </tr>
-            </tbody>
-          </table>
+                <div>
+                    <h3>Mapping Analogy → Crypto Reality</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Analogy</th>
+                                <th>Digital Signature Concept</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Documents inside the box</td>
+                                <td>Message / data</td>
+                            </tr>
+                            <tr>
+                                <td>Checklist of items</td>
+                                <td>Message digest (hash of data)</td>
+                            </tr>
+                            <tr>
+                                <td>Wax seal ring impression</td>
+                                <td>Signature generated with private key</td>
+                            </tr>
+                            <tr>
+                                <td>Public “seal pattern” everyone knows</td>
+                                <td>Public key or certificate</td>
+                            </tr>
+                            <tr>
+                                <td>Re-counting items</td>
+                                <td>Recomputing hash over received message</td>
+                            </tr>
+                            <tr>
+                                <td>Checking if seal matches ring</td>
+                                <td>Verifying signature with public key</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-          <div class="callout callout-info mt-1">
-            When you think <strong>“hash + sign”</strong>, remember:
-            <em>“Checklist + wax seal”</em>.
-          </div>
-        </div>
-      </div>
-    </section>
+                    <div class="callout callout-info mt-1">
+                        When you think <strong>“hash + sign”</strong>, remember:
+                        <em>“Checklist + wax seal”</em>.
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <!-- ========================= 3. MENTAL MODEL – WHY → HOW → WHAT-IF ========================= -->
-    <section id="section-3" class="card p-1 mb-1">
-      <h2>3. Mental Model — “Why → How → What-If”</h2>
+        <!-- ========================= 3. MENTAL MODEL – WHY → HOW → WHAT-IF ========================= -->
+        <section id="section-3" class="card p-1 mb-1">
+            <h2>3. Mental Model — “Why → How → What-If”</h2>
 
-      <div class="grid grid-3 mt-1">
-        <div>
-          <h3>3.1 Healthy Baseline</h3>
-          <p>
-            In a secure multi-tenant SaaS:
-          </p>
-          <ul>
-            <li>An <strong>Auth Service</strong> issues signed JWT access tokens and refresh tokens.</li>
-            <li>All <strong>API gateways, microservices, and background jobs</strong> verify tokens before trusting identity or permissions.</li>
-            <li><strong>Webhook receivers</strong> verify signatures on inbound events from external providers.</li>
-            <li><strong>Admin actions</strong> (e.g. exporting billing data) are signed and audit-logged; verification can be reproduced later.</li>
-          </ul>
-          <p>
-            Digital signatures here protect integrity and provide strong authentication and non-repudiation in line with standards like NIST FIPS 186-5. [oai_citation:9‡NIST Computer Security Resource Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)
-          </p>
-        </div>
+            <div class="grid grid-3 mt-1">
+                <div>
+                    <h3>3.1 Healthy Baseline</h3>
+                    <p>
+                        In a secure multi-tenant SaaS:
+                    </p>
+                    <ul>
+                        <li>An <strong>Auth Service</strong> issues signed JWT access tokens and refresh tokens.</li>
+                        <li>All <strong>API gateways, microservices, and background jobs</strong> verify tokens before
+                            trusting identity or permissions.</li>
+                        <li><strong>Webhook receivers</strong> verify signatures on inbound events from external
+                            providers.</li>
+                        <li><strong>Admin actions</strong> (e.g. exporting billing data) are signed and audit-logged;
+                            verification can be reproduced later.</li>
+                    </ul>
+                    <p>
+                        Digital signatures here protect integrity and provide strong authentication and non-repudiation
+                        in line with standards like NIST FIPS 186-5. [oai_citation:9‡NIST Computer Security Resource
+                        Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)
+                    </p>
+                </div>
 
-        <div>
-          <h3>3.2 Why It Matters (CIA + Abuse Prevention)</h3>
-          <ul>
-            <li><strong>Confidentiality</strong> – signatures don’t encrypt content, but they <em>support</em> confidentiality by enabling secure key distribution and authenticated channels.</li>
-            <li><strong>Integrity</strong> – any change to the message changes its hash, so verification fails. [oai_citation:10‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)</li>
-            <li><strong>Authenticity</strong> – only the holder of the private key can produce a signature that verifies under the public key. [oai_citation:11‡Cryptography Stack Exchange](https://crypto.stackexchange.com/questions/9896/how-does-rsa-signature-verification-work?utm_source=chatgpt.com)</li>
-            <li><strong>Non-repudiation</strong> – with good key management and policy, a valid signature becomes legal/operational evidence that the signer approved an action. [oai_citation:12‡NIST](https://www.nist.gov/publications/digital-signature-standard-dss-3?utm_source=chatgpt.com)</li>
-            <li><strong>Abuse prevention</strong> – stops attackers from forging tokens, webhooks, or config updates that the system would otherwise accept.</li>
-          </ul>
-        </div>
+                <div>
+                    <h3>3.2 Why It Matters (CIA + Abuse Prevention)</h3>
+                    <ul>
+                        <li><strong>Confidentiality</strong> – signatures don’t encrypt content, but they
+                            <em>support</em> confidentiality by enabling secure key distribution and authenticated
+                            channels.
+                        </li>
+                        <li><strong>Integrity</strong> – any change to the message changes its hash, so verification
+                            fails.
+                            [oai_citation:10‡CISA](https://www.cisa.gov/news-events/news/understanding-digital-signatures?utm_source=chatgpt.com)
+                        </li>
+                        <li><strong>Authenticity</strong> – only the holder of the private key can produce a signature
+                            that verifies under the public key. [oai_citation:11‡Cryptography Stack
+                            Exchange](https://crypto.stackexchange.com/questions/9896/how-does-rsa-signature-verification-work?utm_source=chatgpt.com)
+                        </li>
+                        <li><strong>Non-repudiation</strong> – with good key management and policy, a valid signature
+                            becomes legal/operational evidence that the signer approved an action.
+                            [oai_citation:12‡NIST](https://www.nist.gov/publications/digital-signature-standard-dss-3?utm_source=chatgpt.com)
+                        </li>
+                        <li><strong>Abuse prevention</strong> – stops attackers from forging tokens, webhooks, or config
+                            updates that the system would otherwise accept.</li>
+                    </ul>
+                </div>
 
-        <div>
-          <h3>3.3 How It Fits in a Multi-Service Architecture</h3>
-          <p>Consider a multi-tenant SaaS with:</p>
-          <ul>
-            <li><strong>Auth Service</strong> (central signer).</li>
-            <li><strong>API Gateway</strong> + <strong>Microservices</strong> (verifiers).</li>
-            <li><strong>Background workers</strong> and <strong>webhook consumers</strong>.</li>
-          </ul>
-          <p>
-            The Auth Service keeps its private key in an HSM or KMS. It signs tokens and high-risk messages. Everyone else only holds the corresponding public keys (e.g. via JWKS endpoint), and <em>must verify</em> signatures on every trust boundary crossing.
-          </p>
-        </div>
-      </div>
+                <div>
+                    <h3>3.3 How It Fits in a Multi-Service Architecture</h3>
+                    <p>Consider a multi-tenant SaaS with:</p>
+                    <ul>
+                        <li><strong>Auth Service</strong> (central signer).</li>
+                        <li><strong>API Gateway</strong> + <strong>Microservices</strong> (verifiers).</li>
+                        <li><strong>Background workers</strong> and <strong>webhook consumers</strong>.</li>
+                    </ul>
+                    <p>
+                        The Auth Service keeps its private key in an HSM or KMS. It signs tokens and high-risk messages.
+                        Everyone else only holds the corresponding public keys (e.g. via JWKS endpoint), and <em>must
+                            verify</em> signatures on every trust boundary crossing.
+                    </p>
+                </div>
+            </div>
 
-      <div class="mt-1">
-        <h3>3.4 What-If It Fails or Is Ignored?</h3>
-        <div class="grid grid-2">
-          <div class="callout callout-danger">
-            <strong>Failure Modes</strong>
-            <ul>
-              <li>Services <strong>don’t verify signatures</strong> on JWTs or webhooks (“it’s internal traffic, it’s fine”).</li>
-              <li>Using <strong>broken hashes</strong> (MD5/SHA-1) enabling practical collision attacks. [oai_citation:13‡IBM](https://www.ibm.com/docs/en/zos/3.1.0?topic=cryptography-pkcs-1-formats&utm_source=chatgpt.com)</li>
-              <li>Reusing RSA keys with <strong>bad padding</strong> or non-standard schemes, contrary to PKCS #1 / FIPS guidance. [oai_citation:14‡IETF Datatracker](https://datatracker.ietf.org/doc/html/rfc8017?utm_source=chatgpt.com)</li>
-              <li>Private keys stored in source repo / config files or leaked via logs.</li>
-              <li>Using the <strong>same keypair</strong> for both TLS server identity and application-level signatures, complicating rotation and blast radius.</li>
-            </ul>
-          </div>
-          <div class="callout callout-warning">
-            <strong>Realistic Blast Radius</strong>
-            <ul>
-              <li><strong>Forged JWTs</strong> grant admin access to all tenants.</li>
-              <li><strong>Fake webhooks</strong> create/modify invoices, change payout bank accounts, or trigger destructive workflows.</li>
-              <li><strong>Signed but altered config</strong> (if verification is broken) lets attackers deploy malicious feature flags or policies.</li>
-              <li><strong>Legal/forensic ambiguity</strong> – can’t prove who issued which critical admin action or release.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+            <div class="mt-1">
+                <h3>3.4 What-If It Fails or Is Ignored?</h3>
+                <div class="grid grid-2">
+                    <div class="callout callout-danger">
+                        <strong>Failure Modes</strong>
+                        <ul>
+                            <li>Services <strong>don’t verify signatures</strong> on JWTs or webhooks (“it’s internal
+                                traffic, it’s fine”).</li>
+                            <li>Using <strong>broken hashes</strong> (MD5/SHA-1) enabling practical collision attacks.
+                                [oai_citation:13‡IBM](https://www.ibm.com/docs/en/zos/3.1.0?topic=cryptography-pkcs-1-formats&utm_source=chatgpt.com)
+                            </li>
+                            <li>Reusing RSA keys with <strong>bad padding</strong> or non-standard schemes, contrary to
+                                PKCS #1 / FIPS guidance. [oai_citation:14‡IETF
+                                Datatracker](https://datatracker.ietf.org/doc/html/rfc8017?utm_source=chatgpt.com)</li>
+                            <li>Private keys stored in source repo / config files or leaked via logs.</li>
+                            <li>Using the <strong>same keypair</strong> for both TLS server identity and
+                                application-level signatures, complicating rotation and blast radius.</li>
+                        </ul>
+                    </div>
+                    <div class="callout callout-warning">
+                        <strong>Realistic Blast Radius</strong>
+                        <ul>
+                            <li><strong>Forged JWTs</strong> grant admin access to all tenants.</li>
+                            <li><strong>Fake webhooks</strong> create/modify invoices, change payout bank accounts, or
+                                trigger destructive workflows.</li>
+                            <li><strong>Signed but altered config</strong> (if verification is broken) lets attackers
+                                deploy malicious feature flags or policies.</li>
+                            <li><strong>Legal/forensic ambiguity</strong> – can’t prove who issued which critical admin
+                                action or release.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
-      <div class="mt-1">
-        <h3>3.5 Attack → Detect → Defend Lifecycle</h3>
-        <div class="grid grid-3">
-          <div class="callout callout-danger">
-            <strong>Attack</strong>
-            <ul>
-              <li>Attacker steals an Auth Service private key from misconfigured storage.</li>
-              <li>They mint arbitrary signed JWTs with <code>"role": "superadmin"</code> and valid expiration.</li>
-              <li>They call internal admin APIs and pivot across tenants.</li>
-            </ul>
-          </div>
-          <div class="callout callout-info">
-            <strong>Detect</strong>
-            <ul>
-              <li>Anomaly detection on <strong>admin operations</strong> (sudden spike, unusual IP/ASN).</li>
-              <li>API logs show tokens with <strong>valid signature</strong> but unexpected
-                  <code>sub</code>/<code>aud</code>/<code>iss</code> combinations.</li>
-              <li>KMS/HSM audit logs show <strong>unusual signing volume</strong> or requests from a new service identity.</li>
-            </ul>
-          </div>
-          <div class="callout callout-success">
-            <strong>Defend</strong>
-            <ul>
-              <li>Store private keys only in <strong>HSM/KMS</strong> with tight IAM and rotation policies.</li>
-              <li>Enforce <strong>mandatory signature verification</strong> on all trust boundaries (gateways, services, workers).</li>
-              <li>Use modern, standard schemes (e.g. <strong>RSASSA-PSS, ECDSA, EdDSA</strong>) as per RFC 8017/FIPS 186-5. [oai_citation:15‡NIST Computer Security Resource Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
-              <li>Key rotation runbooks and automated revocation of compromised keys.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+            <div class="mt-1">
+                <h3>3.5 Attack → Detect → Defend Lifecycle</h3>
+                <div class="grid grid-3">
+                    <div class="callout callout-danger">
+                        <strong>Attack</strong>
+                        <ul>
+                            <li>Attacker steals an Auth Service private key from misconfigured storage.</li>
+                            <li>They mint arbitrary signed JWTs with <code>"role": "superadmin"</code> and valid
+                                expiration.</li>
+                            <li>They call internal admin APIs and pivot across tenants.</li>
+                        </ul>
+                    </div>
+                    <div class="callout callout-info">
+                        <strong>Detect</strong>
+                        <ul>
+                            <li>Anomaly detection on <strong>admin operations</strong> (sudden spike, unusual IP/ASN).
+                            </li>
+                            <li>API logs show tokens with <strong>valid signature</strong> but unexpected
+                                <code>sub</code>/<code>aud</code>/<code>iss</code> combinations.
+                            </li>
+                            <li>KMS/HSM audit logs show <strong>unusual signing volume</strong> or requests from a new
+                                service identity.</li>
+                        </ul>
+                    </div>
+                    <div class="callout callout-success">
+                        <strong>Defend</strong>
+                        <ul>
+                            <li>Store private keys only in <strong>HSM/KMS</strong> with tight IAM and rotation
+                                policies.</li>
+                            <li>Enforce <strong>mandatory signature verification</strong> on all trust boundaries
+                                (gateways, services, workers).</li>
+                            <li>Use modern, standard schemes (e.g. <strong>RSASSA-PSS, ECDSA, EdDSA</strong>) as per RFC
+                                8017/FIPS 186-5. [oai_citation:15‡NIST Computer Security Resource
+                                Center](https://csrc.nist.rip/pubs/fips/186-5/final?utm_source=chatgpt.com)</li>
+                            <li>Key rotation runbooks and automated revocation of compromised keys.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
-      <div id="quiz-dsig-basics" class="widget mt-1"></div>
-    </section>
-  </div>
+            <div id="quiz-dsig-basics" class="widget mt-1"></div>
+        </section>
+    </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // Ensure theme toggle exists
-      if (window.AppSec && window.AppSec.ThemeManager) {
-        window.AppSec.ThemeManager.init();
-      }
-
-      // Flow visualizer for the basic digital signature process
-      if (window.AppSecWidgets && window.AppSecWidgets.FlowVisualizer) {
-        AppSecWidgets.FlowVisualizer.create('flow-dsig-basics', [
-          {
-            title: 'Step 1 – Prepare Message',
-            description: 'Sender has the original message M that needs authenticity and integrity guarantees.'
-          },
-          {
-            title: 'Step 2 – Hash Message',
-            description: 'Sender computes h = Hash(M) using a secure hash (e.g., SHA-256). The hash is fixed-size regardless of message length.'
-          },
-          {
-            title: 'Step 3 – Sign Hash with Private Key',
-            description: 'Sender computes Sig = Sign(SK, h) using a digital signature algorithm (RSA/ECDSA/EdDSA). Only the private key SK can create Sig.'
-          },
-          {
-            title: 'Step 4 – Transmit Message + Signature',
-            description: 'Sender sends (M, Sig) over the network (e.g., as a JWT, webhook payload + header, or signed document).'
-          },
-          {
-            title: 'Step 5 – Receiver Recomputes Hash',
-            description: 'Receiver computes h\' = Hash(M) locally to see what the hash *should* be for the received message.'
-          },
-          {
-            title: 'Step 6 – Verify with Public Key',
-            description: 'Receiver runs Verify(PK, h\', Sig). If it succeeds, the message is intact and was signed by whoever controls the matching private key.'
-          }
-        ]);
-      }
-
-      // Quiz for quick sanity check on basics
-      if (window.AppSecWidgets && window.AppSecWidgets.Quiz) {
-        AppSecWidgets.Quiz.create('quiz-dsig-basics', {
-          title: 'Quick Check: Digital Signature Fundamentals',
-          intro: 'Test your understanding of the hash → sign → verify flow before diving deeper.',
-          mode: 'step',
-          questions: [
-            {
-              text: 'What is actually signed in most modern digital signature schemes?',
-              options: [
-                { value: 'a', label: 'The entire raw message bytes', correct: false },
-                { value: 'b', label: 'A symmetric encryption key', correct: false },
-                { value: 'c', label: 'A hash (digest) of the message', correct: true },
-                { value: 'd', label: 'The public key of the receiver', correct: false }
-              ]
-            },
-            {
-              text: 'Which key is used to VERIFY a digital signature?',
-              options: [
-                { value: 'a', label: 'The signer’s private key', correct: false },
-                { value: 'b', label: 'Any random key with the same length', correct: false },
-                { value: 'c', label: 'The signer’s public key', correct: true },
-                { value: 'd', label: 'The receiver’s private key', correct: false }
-              ]
-            },
-            {
-              text: 'Which property is MOST directly provided by digital signatures?',
-              options: [
-                { value: 'a', label: 'Confidentiality of the message', correct: false },
-                { value: 'b', label: 'Integrity + strong authentication of the signer', correct: true },
-                { value: 'c', label: 'High network throughput', correct: false },
-                { value: 'd', label: 'Database consistency', correct: false }
-              ]
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ensure theme toggle exists
+            if (window.AppSec && window.AppSec.ThemeManager) {
+                window.AppSec.ThemeManager.init();
             }
-          ]
+
+            // Flow visualizer for the basic digital signature process
+            if (window.AppSecWidgets && window.AppSecWidgets.FlowVisualizer) {
+                AppSecWidgets.FlowVisualizer.create('flow-dsig-basics', [
+                    {
+                        title: 'Step 1 – Prepare Message',
+                        description: 'Sender has the original message M that needs authenticity and integrity guarantees.'
+                    },
+                    {
+                        title: 'Step 2 – Hash Message',
+                        description: 'Sender computes h = Hash(M) using a secure hash (e.g., SHA-256). The hash is fixed-size regardless of message length.'
+                    },
+                    {
+                        title: 'Step 3 – Sign Hash with Private Key',
+                        description: 'Sender computes Sig = Sign(SK, h) using a digital signature algorithm (RSA/ECDSA/EdDSA). Only the private key SK can create Sig.'
+                    },
+                    {
+                        title: 'Step 4 – Transmit Message + Signature',
+                        description: 'Sender sends (M, Sig) over the network (e.g., as a JWT, webhook payload + header, or signed document).'
+                    },
+                    {
+                        title: 'Step 5 – Receiver Recomputes Hash',
+                        description: 'Receiver computes h\' = Hash(M) locally to see what the hash *should* be for the received message.'
+                    },
+                    {
+                        title: 'Step 6 – Verify with Public Key',
+                        description: 'Receiver runs Verify(PK, h\', Sig). If it succeeds, the message is intact and was signed by whoever controls the matching private key.'
+                    }
+                ]);
+            }
+
+            // Quiz for quick sanity check on basics
+            if (window.AppSecWidgets && window.AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create('quiz-dsig-basics', {
+                    title: 'Quick Check: Digital Signature Fundamentals',
+                    intro: 'Test your understanding of the hash → sign → verify flow before diving deeper.',
+                    mode: 'step',
+                    questions: [
+                        {
+                            text: 'What is actually signed in most modern digital signature schemes?',
+                            options: [
+                                { value: 'a', label: 'The entire raw message bytes', correct: false },
+                                { value: 'b', label: 'A symmetric encryption key', correct: false },
+                                { value: 'c', label: 'A hash (digest) of the message', correct: true },
+                                { value: 'd', label: 'The public key of the receiver', correct: false }
+                            ]
+                        },
+                        {
+                            text: 'Which key is used to VERIFY a digital signature?',
+                            options: [
+                                { value: 'a', label: 'The signer’s private key', correct: false },
+                                { value: 'b', label: 'Any random key with the same length', correct: false },
+                                { value: 'c', label: 'The signer’s public key', correct: true },
+                                { value: 'd', label: 'The receiver’s private key', correct: false }
+                            ]
+                        },
+                        {
+                            text: 'Which property is MOST directly provided by digital signatures?',
+                            options: [
+                                { value: 'a', label: 'Confidentiality of the message', correct: false },
+                                { value: 'b', label: 'Integrity + strong authentication of the signer', correct: true },
+                                { value: 'c', label: 'High network throughput', correct: false },
+                                { value: 'd', label: 'Database consistency', correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
         });
-      }
-    });
-  </script>
+    </script>
+
+    <!-- ========================= 4. DEEP EXPLANATION (STEP-BY-STEP) ========================= -->
+    <section id="section-4" class="card mb-1">
+        <div class="card-header">
+            <h2>4. Deep Explanation (Step-by-Step)</h2>
+        </div>
+        <div class="card-body p-1">
+            <div class="grid grid-2 mt-1">
+                <div>
+                    <h3>4.1 End-to-End Digital Signature Flow</h3>
+                    <p>This is the “hash → sign → send → verify” flow in slow motion:</p>
+                    <ol>
+                        <li>
+                            <strong>Define the message</strong><br />
+                            Let <code>M</code> be the exact byte sequence to protect.<br />
+                            Examples:
+                            <ul>
+                                <li>A JSON body of an API request.</li>
+                                <li>The headers + body of a webhook, canonicalized as per spec.</li>
+                                <li>A PDF document’s canonical binary representation.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Choose approved algorithms</strong><br />
+                            Pick a modern digital signature algorithm such as:
+                            <ul>
+                                <li><strong>RSA (RSASSA-PSS)</strong> – RSA with probabilistic padding, preferred over
+                                    older v1.5 schemes.</li>
+                                <li><strong>ECDSA</strong> – based on elliptic curves.</li>
+                                <li><strong>EdDSA / Ed25519</strong> – modern, fast, widely recommended.</li>
+                            </ul>
+                            Also choose a secure hash (e.g. SHA-256, SHA-384) and avoid deprecated hashes like MD5 or
+                            SHA-1.
+                        </li>
+                        <li>
+                            <strong>Hash the message</strong><br />
+                            Compute <code>h = Hash(M)</code> (e.g. SHA-256). This gives a fixed-size digest that
+                            uniquely (with high probability) identifies the content of <code>M</code>.
+                        </li>
+                        <li>
+                            <strong>Sign the hash with the private key</strong><br />
+                            Compute <code>Sig = Sign(SK, h)</code>:
+                            <ul>
+                                <li><code>SK</code> is the signer’s <strong>private key</strong>.</li>
+                                <li>The algorithm (RSA/ECDSA/EdDSA) defines the mathematical details.</li>
+                                <li>Most libraries actually perform “hash inside” as part of <code>Sign()</code>, but
+                                    conceptually it’s still “hash then sign.”</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Package data + signature</strong><br />
+                            The system sends <code>(M, Sig)</code> and often metadata like:
+                            <ul>
+                                <li><code>alg</code> – which algorithm was used (e.g. <code>RS256</code>,
+                                    <code>ES256</code>).
+                                </li>
+                                <li><code>kid</code> – key identifier to locate the correct public key.</li>
+                                <li>Certificate chain for PKI-based signatures.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Verify on the receiver side</strong><br />
+                            The receiver:
+                            <ol>
+                                <li>Locates the correct <code>publicKey</code> / certificate (using <code>kid</code> or
+                                    metadata).</li>
+                                <li>Recomputes <code>h' = Hash(M)</code> using the same hash function.</li>
+                                <li>Runs <code>Verify(publicKey, h', Sig)</code>.</li>
+                                <li>If verification succeeds, the receiver knows:
+                                    <ul>
+                                        <li><strong>Integrity</strong> – <code>M</code> wasn’t changed (otherwise
+                                            <code>h' ≠ h</code>).
+                                        </li>
+                                        <li><strong>Authenticity</strong> – the signer controlled the corresponding
+                                            private key.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                        </li>
+                    </ol>
+                </div>
+
+                <div>
+                    <h3>4.2 ASCII View of Hash → Sign → Verify</h3>
+                    <pre><code>
+[ SENDER ]                                 [ RECEIVER ]
+   |                                             |
+   |   (1) Message M                             |
+   |--------------------------------------------&gt;|
+   |                                             |
+   |   (2) h  = Hash(M)                          |   (5) h' = Hash(M)
+   |   (3) Sig = Sign(SK, h)                     |
+   |                                             |   (6) Verify(PK, h', Sig)
+   |   (4) send (M, Sig, alg, kid)              |
+   |--------------------------------------------&gt;|
+                                                 |
+                          if Verify == OK:
+                          - M not modified
+                          - Signed by SK holder
+        </code></pre>
+
+                    <div class="callout callout-info mt-1">
+                        <strong>Remember:</strong> we never send the private key or the hash function secret – only the
+                        <em>output</em> of the signing algorithm and the public metadata.
+                    </div>
+
+                    <h3 class="mt-1">4.3 Types of Digital Signatures (Conceptual)</h3>
+                    <ul>
+                        <li>
+                            <strong>By algorithm family</strong>:
+                            <ul>
+                                <li><strong>RSA signatures</strong> (RSASSA-PKCS1 v1.5, RSASSA-PSS).</li>
+                                <li><strong>Elliptic Curve signatures</strong> (ECDSA).</li>
+                                <li><strong>EdDSA signatures</strong> (e.g., Ed25519) – fast, fixed-size keys and
+                                    signatures.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>By container / format</strong> – how you wrap the signature + metadata:
+                            <ul>
+                                <li><strong>JWS / JWT</strong> – JSON Web Signature, JSON-based representation of signed
+                                    content; JWT builds on this.</li>
+                                <li><strong>CMS / PKCS#7</strong> – ASN.1-based structure used in S/MIME, code signing.
+                                </li>
+                                <li><strong>PDF signatures</strong> – embed CMS objects within PDF for document signing.
+                                </li>
+                                <li><strong>Detached signatures</strong> – signature separate from the data (e.g.,
+                                    detached JWS for verifiable credentials).</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Signatures vs MACs</strong>
+                            <ul>
+                                <li><strong>Digital signature</strong> – uses <em>asymmetric</em> crypto (private/public
+                                    keys), supports non-repudiation.</li>
+                                <li><strong>MAC (Message Authentication Code)</strong> – uses <em>symmetric</em> keys
+                                    (e.g., HMAC-SHA256); both sides share one secret, so anyone with the key can “sign.”
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-1">
+                <h3>4.4 Deep Dive: JWS / JWT Signing Flow</h3>
+                <p>
+                    JSON Web Signature (JWS) defines a standard way to sign arbitrary content using JSON-based
+                    structures.
+                    JWT commonly uses JWS to sign the token.
+                </p>
+
+                <div class="grid grid-2">
+                    <div>
+                        <ol>
+                            <li><strong>Construct the header and payload</strong>
+                                <pre><code id="code-dsig-jws">
+header  = { "alg": "RS256", "kid": "key-2025-01" }
+payload = {
+  "sub": "user_123",
+  "tenant_id": "tenant_a",
+  "role": "admin",
+  "iat": 1731600000,
+  "exp": 1731603600,
+  "iss": "https://auth.example.com",
+  "aud": "https://api.example.com"
+}
+              </code></pre>
+                            </li>
+                            <li><strong>Base64url-encode header &amp; payload</strong><br />
+                                <code>encodedHeader  = base64url(JSON.stringify(header))</code><br />
+                                <code>encodedPayload = base64url(JSON.stringify(payload))</code>
+                            </li>
+                            <li><strong>Compute signing input</strong><br />
+                                <code>signingInput = encodedHeader + "." + encodedPayload</code>
+                            </li>
+                            <li><strong>Sign with private key</strong><br />
+                                <code>signature = Sign_RS256(privateKey, signingInput)</code><br />
+                                (RS256 = RSASSA-PKCS1-v1.5 with SHA-256 over the <code>signingInput</code>).
+                            </li>
+                            <li><strong>Build final JWT</strong><br />
+                                <code>jwt = signingInput + "." + base64url(signature)</code>
+                            </li>
+                            <li><strong>Verify on the server</strong>
+                                <ol>
+                                    <li>Split token into three parts.</li>
+                                    <li>Parse and validate header:
+                                        <ul>
+                                            <li><code>alg</code> must be one of your <strong>explicitly allowed</strong>
+                                                algorithms (e.g., RS256 only).</li>
+                                            <li><code>kid</code> used to load the correct public key from JWKS / key
+                                                store.</li>
+                                        </ul>
+                                    </li>
+                                    <li>Rebuild <code>signingInput</code> and verify signature with the selected public
+                                        key.</li>
+                                    <li>Only if the signature is valid, parse the payload and apply claim checks
+                                        (<code>exp</code>, <code>nbf</code>, <code>iss</code>, <code>aud</code>, etc.).
+                                    </li>
+                                </ol>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div>
+                        <h4>4.5 Tricky Edge Cases & Subtleties</h4>
+                        <ul>
+                            <li>
+                                <strong>Canonicalization</strong><br />
+                                For structured data (JSON, HTTP headers, XML), the <strong>exact bytes</strong> fed into
+                                the hash/sign function matter.
+                                Any change in whitespace, key order, or normalization can break verification unless a
+                                canonicalization scheme is defined and followed by all parties.
+                            </li>
+                            <li>
+                                <strong>Algorithm confusion</strong><br />
+                                Classic JWT flaws:
+                                <ul>
+                                    <li>Accepting <code>{"alg": "none"}</code> and skipping verification completely.
+                                    </li>
+                                    <li>Allowing <code>"HS256"</code> and <code>"RS256"</code> interchangeably so an
+                                        attacker can trick the server into treating a public key as an HMAC secret.</li>
+                                </ul>
+                                <strong>Fix:</strong> hard-code allowed algorithms on the server; <em>never</em> trust
+                                the token header alone to choose verification mode.
+                            </li>
+                            <li>
+                                <strong>Hash collisions & deprecated algorithms</strong><br />
+                                MD5 and SHA-1 have known collision attacks; if used inside signature schemes, an
+                                attacker may craft two different messages with the same digest and thus the same valid
+                                signature. Use SHA-256 or stronger.
+                            </li>
+                            <li>
+                                <strong>Verify-but-don’t-enforce claims</strong><br />
+                                Many real systems verify the signature but:
+                                <ul>
+                                    <li>Ignore <code>exp</code>, <code>nbf</code>, <code>aud</code>, <code>iss</code>
+                                        checks.</li>
+                                    <li>Trust <code>role</code> or <code>tenant_id</code> blindly inside the token.</li>
+                                </ul>
+                                This turns a strong crypto guarantee into a <em>logic bug</em> where any valid token can
+                                be replayed or used across tenants.
+                            </li>
+                            <li>
+                                <strong>Key usage & rotation</strong><br />
+                                Certificates often encode allowed key usages (e.g., “digitalSignature”,
+                                “keyEncipherment”). Ignoring key usage bits or not rotating keys after compromise
+                                undermines the whole signature story.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="timeline-dsig-deep" class="widget mt-1"></div>
+        </div>
+    </section>
+
+    <!-- ========================= 5. REAL-WORLD CONTEXT & INTERACTIONS ========================= -->
+    <section id="section-5" class="card mb-1">
+        <div class="card-header">
+            <h2>5. Real-World Context & Interactions</h2>
+        </div>
+        <div class="card-body p-1">
+            <div class="mt-1">
+                <h3>5.1 Scenario: Multi-Tenant SaaS with Signed JWTs & Webhooks</h3>
+                <p>
+                    Consider <strong>AcmeBilling</strong>, a multi-tenant SaaS that manages invoices and payments.
+                    The architecture includes:
+                </p>
+                <ul>
+                    <li><strong>Auth Service</strong> – issues signed JWT access tokens and OIDC ID tokens.</li>
+                    <li><strong>API Gateway</strong> – front door for all API requests.</li>
+                    <li><strong>Billing Service</strong> – tenant-aware microservice enforcing authorization.</li>
+                    <li><strong>Webhook Receiver</strong> – ingests payment events from a Payment Provider.</li>
+                    <li><strong>Background Jobs</strong> – generate signed CSV exports for auditors.</li>
+                </ul>
+            </div>
+
+            <div class="grid grid-2 mt-1">
+                <div>
+                    <h3>5.2 Happy Path – Auth + Data Integrity</h3>
+                    <pre><code>
++------------+     +------------+     +--------------+     +------------------+
+|  Browser   |     |  Auth Svc  |     |  API Gateway |     |  Billing Service |
++------------+     +------------+     +--------------+     +------------------+
+      |                  |                    |                     |
+(1)   | -- creds ------&gt; |                    |                     |
+      |                  | (2) Issue JWT, sign with SK_auth         |
+      |                  |----------------------------------------&gt; |
+      |                  |   (3) return JWT                         |
+(4)   | -- JWT --------&gt; |                    |                     |
+request|                 |                    | (5) Verify Sig w/  |
+      |                  |                    |     PK_auth (JWKS) |
+      |                  |                    | (6) AuthN/AuthZ OK |
+      |                  |                    |----- call ---------&gt;|
+      |                  |                    |    (tenant checks)  |
+        </code></pre>
+                    <p>
+                        <strong>Key points:</strong>
+                    </p>
+                    <ul>
+                        <li>Only the Auth Service holds <code>SK_auth</code> (private key); it never leaves a secure
+                            KMS/HSM.</li>
+                        <li>All other components use <code>PK_auth</code> (public key) from a JWKS endpoint.</li>
+                        <li>Each service <strong>must</strong> verify the JWT signature and enforce claims
+                            (<code>iss</code>, <code>aud</code>, <code>exp</code>, <code>tenant_id</code>).</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3>5.3 Happy Path – Signed Webhooks</h3>
+                    <pre><code>
+[ Payment Provider ]                       [ AcmeBilling Webhook Receiver ]
+
+  1) Build JSON event payload P
+  2) Canonicalize P (stable JSON form)
+  3) H = SHA-256(P)
+  4) Sig = Sign(SK_payments, H)
+  5) Send:
+       POST /webhooks/payments
+       X-Signature: base64(Sig)
+       Body: P
+                                           6) Compute H' = SHA-256(P)
+                                           7) Look up PK_payments via "kid"
+                                           8) Verify(PK_payments, H', Sig)
+                                           9) If OK, queue event for processing
+        </code></pre>
+                    <p>
+                        <strong>Result:</strong> AcmeBilling only processes genuine events from the Payment Provider,
+                        preventing forged “payment succeeded” or “payout changed” messages.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-1">
+                <h3>5.4 Attacker Path – JWT Signature Misuse</h3>
+                <p>
+                    Now imagine the API Gateway is misconfigured to:
+                </p>
+                <ul>
+                    <li>Trust any algorithm specified in the JWT header.</li>
+                    <li>Allow <code>"alg": "none"</code> or <code>"HS256"</code> even though tokens were meant to be
+                        <code>RS256</code>-signed.
+                    </li>
+                </ul>
+
+                <div class="grid grid-2">
+                    <div>
+                        <h4>Attacker Flow (JWT)</h4>
+                        <ol>
+                            <li>Attacker intercepts a valid JWT (e.g., via XSS, stolen from localStorage, etc.).</li>
+                            <li>They modify the header and payload:
+                                <ul>
+                                    <li>Change <code>"role": "user"</code> to <code>"role": "superadmin"</code>.</li>
+                                    <li>Change <code>"alg": "RS256"</code> to <code>"alg": "none"</code> or
+                                        <code>"HS256"</code>.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                If the server:
+                                <ul>
+                                    <li>Skips verification for <code>"alg": "none"</code>, <em>or</em></li>
+                                    <li>Uses the public key as an HMAC secret for <code>"HS256"</code>,</li>
+                                </ul>
+                                then the modified token is accepted as valid.
+                            </li>
+                            <li>Attacker calls high-privilege admin APIs and pivots across tenants.</li>
+                        </ol>
+                    </div>
+
+                    <div>
+                        <h4>Attack → Detect → Defend (JWT Misuse)</h4>
+                        <div class="grid grid-3">
+                            <div class="callout callout-danger">
+                                <strong>Attack</strong>
+                                <ul>
+                                    <li>Craft JWT with <code>alg: none</code> or algorithm switch.</li>
+                                    <li>Abuse weak verification logic to gain admin powers.</li>
+                                </ul>
+                            </div>
+                            <div class="callout callout-info">
+                                <strong>Detect</strong>
+                                <ul>
+                                    <li>Security logs show tokens with impossible roles for normal users.</li>
+                                    <li>Anomaly detection on admin operations per tenant (sudden spikes, new IPs).</li>
+                                    <li>Static analysis / code review flags calls where verification is optional or the
+                                        algorithm list is not locked down.</li>
+                                </ul>
+                            </div>
+                            <div class="callout callout-success">
+                                <strong>Defend</strong>
+                                <ul>
+                                    <li>Server-side config: <strong>hard-code allowed algorithms</strong> (e.g. RS256
+                                        only).</li>
+                                    <li>Use well-reviewed JWT libraries and follow OWASP & vendor best practices.</li>
+                                    <li>Enforce strict claim validation (<code>iss</code>, <code>aud</code>,
+                                        <code>exp</code>, <code>nbf</code>) and tenant bindings.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-1">
+                <h3>5.5 Attacker Path – Unsigned / Unverified Webhooks</h3>
+                <p>
+                    Another common failure: accepting webhooks without signature verification, or verifying incorrectly
+                    (wrong public key, wrong canonicalization).
+                </p>
+
+                <div class="grid grid-2">
+                    <div>
+                        <ol>
+                            <li>Webhook receiver <strong>does not verify</strong> <code>X-Signature</code> at all.</li>
+                            <li>Attacker discovers webhook URL (via docs, leaked logs, GitHub, etc.).</li>
+                            <li>They send crafted POST requests:
+                                <ul>
+                                    <li>Fake “payment_success” events to unlock premium features for free.</li>
+                                    <li>Fake “payout_changed” events to redirect funds to their bank.</li>
+                                </ul>
+                            </li>
+                            <li>Since there is no signature check, AcmeBilling treats them as genuine.</li>
+                        </ol>
+                    </div>
+
+                    <div>
+                        <h4>Attack → Detect → Defend (Webhooks)</h4>
+                        <ul>
+                            <li><strong>Attack:</strong> Unauthenticated attacker spams forged webhook events from
+                                arbitrary IPs.</li>
+                            <li><strong>Detect:</strong>
+                                <ul>
+                                    <li>Logs show webhook calls from unknown IP ranges or at suspicious times.</li>
+                                    <li>Monitoring dashboards show mismatch between gateway traffic and
+                                        webhook-triggered changes.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Defend:</strong>
+                                <ul>
+                                    <li>Require HMAC or asymmetric signatures on webhook payloads;
+                                        <strong>reject</strong> requests with missing/invalid signatures.
+                                    </li>
+                                    <li>Implement replay protection (nonces, timestamps).</li>
+                                    <li>Allowlist provider IP ranges only as a second layer, not a replacement for
+                                        signatures.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-1">
+                <h3>5.6 Short “Reviewer View” for AppSec / Design Reviews</h3>
+                <p>When you review a design doc or code change, mentally walk this checklist:</p>
+                <ul>
+                    <li>Where are <strong>digital signatures</strong> used?
+                        <ul>
+                            <li>Tokens? Webhooks? Config updates? Signed documents?</li>
+                        </ul>
+                    </li>
+                    <li>Is the <strong>signer</strong> clearly separated from the <strong>verifiers</strong>?</li>
+                    <li>Are <strong>private keys</strong> stored only in KMS/HSM with strict IAM and rotation?</li>
+                    <li>Is verification <strong>mandatory</strong> at every trust boundary?</li>
+                    <li>Are algorithms and parameters aligned with modern guidance and not chosen by user-controlled
+                        data?</li>
+                    <li>Are there monitoring and alerts for:
+                        <ul>
+                            <li>Key misuse (KMS/HSM logs).</li>
+                            <li>Anomalous token claims or webhook patterns.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="https-dsig-jwt" class="widget mt-1"></div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Enhance JWS code block with line numbers + highlight
+            if (window.AppSec && window.AppSec.CodeDisplay) {
+                var code = document.getElementById('code-dsig-jws');
+                if (code) {
+                    AppSec.CodeDisplay.addLineNumbers(code);
+                    AppSec.CodeDisplay.highlightLines(code, [1, 9, 15]); // header, payload, algorithm line
+                }
+            }
+
+            // Vulnerability timeline for digital signature misuse
+            if (window.AppSecWidgets && window.AppSecWidgets.VulnerabilityTimeline) {
+                AppSecWidgets.VulnerabilityTimeline.create('timeline-dsig-deep', {
+                    title: '📅 Digital Signature Misuse – Vulnerability Lifecycle',
+                    vulnerabilities: [
+                        {
+                            id: '1',
+                            date: '2025-01-10',
+                            severity: 'medium',
+                            title: 'JWT alg header not restricted',
+                            description: 'Gateway trusts any JWT alg value; alg=none and HS256/RS256 confusion possible.',
+                            link: 'https://portswigger.net/web-security/jwt'
+                        },
+                        {
+                            id: '2',
+                            date: '2025-02-01',
+                            severity: 'high',
+                            title: 'Forged admin JWT exploited in production',
+                            description: 'Attacker crafts token with alg=none and escalates to superadmin.',
+                            link: 'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/10-Testing_JSON_Web_Tokens'
+                        },
+                        {
+                            id: '3',
+                            date: '2025-02-03',
+                            severity: 'high',
+                            title: 'Emergency fix and key rotation',
+                            description: 'Code updated to pin algorithms and enforce claim validation, auth keys rotated.'
+                        },
+                        {
+                            id: '4',
+                            date: '2025-02-10',
+                            severity: 'medium',
+                            title: 'Monitoring & hardening',
+                            description: 'KMS/HSM logs integrated, anomaly detection on admin operations, regression tests for signature verification.'
+                        }
+                    ]
+                });
+            }
+
+            // HTTPSimulator for playing with a signed vs tampered JWT request
+            if (window.AppSecWidgets && window.AppSecWidgets.HTTPSimulator) {
+                AppSecWidgets.HTTPSimulator.create('https-dsig-jwt', {
+                    title: '🌐 Play with Signed vs Tampered JWT',
+                    placeholder:
+                        `POST /api/v1/admin/users HTTP/1.1
+                        Host: api.acmebilling.example
+                        Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0yMDI1LTAxIn0.eyJzdWIiOiJ1c2VyXzEyMyIsInRlbmFudF9pZCI6InRlbmFudF9hIiwicm9sZSI6InVzZXIiLCJleHAiOjE3MzE2MDM2MDB9.SIGNATURE
+                        Content-Type: application/json
+
+                        {"action": "list_all_users", "tenant_id": "tenant_a"}
+
+                        // Try:
+                        // 1) Changing "role" to "superadmin" without updating the signature.
+                        // 2) Changing "alg" in the JWT header to "none" and imagine a misconfigured server.
+                        // 3) Thinking through what correct verification logic should do in each case.`
+                });
+            }
+
+            // Optional: small nudge toast
+            if (window.AppSec && window.AppSec.Notify) {
+                AppSec.Notify.show(
+                    'Tip: Walk through the JWT & webhook flows step-by-step and try to spot where you would enforce verification.',
+                    'info',
+                    6000
+                );
+            }
+        });
+    </script>
 </body>
+
 </html>
