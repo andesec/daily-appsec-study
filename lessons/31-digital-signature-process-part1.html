@@ -1022,6 +1022,564 @@ request|                 |                    | (5) Verify Sig w/  |
             }
         });
     </script>
+    
+    <!-- ========================= 6. COMMON WEAKNESSES, PITFALLS & ATTACK PATHS ========================= -->
+<section id="section-6" class="card mb-1">
+  <div class="card-header">
+    <h2>6. Common Weaknesses, Pitfalls & Attack Paths</h2>
+  </div>
+  <div class="card-body p-1">
+
+    <div class="grid grid-2">
+      <div>
+        <h3>6.1 Attack Path #1 – JWT <code>alg</code> Confusion &amp; <code>none</code> Bypass</h3>
+        <p class="text-secondary">Pen-test style steps for abusing weak JWT verification.</p>
+        <ol>
+          <li>Find an endpoint that accepts a Bearer JWT (e.g. <code>/admin/*</code> or <code>/api/v1/*</code>).</li>
+          <li>Capture a legitimate token in Burp/ZAP:
+            <pre><code>
+eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0yMDI1LTAxIn0.
+eyJzdWIiOiJ1c2VyXzEyMyIsInJvbGUiOiJ1c2VyIn0.
+&lt;signature&gt;
+            </code></pre>
+          </li>
+          <li>Modify the header + payload:
+            <pre><code>
+{"alg": "none", "kid": "anything"}
+{"sub": "user_123", "role": "superadmin"}
+            </code></pre>
+          </li>
+          <li>Rebuild the token (no signature part):
+            <pre><code>
+&lt;base64url(header)&gt;.&lt;base64url(payload)&gt;.
+            </code></pre>
+          </li>
+          <li>Send requests with this forged token. If the server:
+            <ul>
+              <li>Accepts <code>alg: none</code>, or</li>
+              <li>Uses <code>alg</code> from the header without pinning,</li>
+            </ul>
+            you may get admin access.
+          </li>
+        </ol>
+        <div class="callout callout-warning">
+          <strong>Looks safe but isn’t:</strong> “We use a JWT library, so we’re safe.”&nbsp;If the library is configured to accept multiple algorithms or <code>verify=False</code>, the cryptography is effectively disabled.
+        </div>
+      </div>
+
+      <div>
+        <h3>6.2 Attack Path #2 – Private Key Leakage → Global Forgery</h3>
+        <p>Once an attacker gets the private key, all signatures become forgeable.</p>
+        <ol>
+          <li>Search for leaked keys:
+            <ul>
+              <li>Git history (<code>git log -p</code> for <code>.pem</code> files).</li>
+              <li>Public repos, CI logs, container images, backups.</li>
+            </ul>
+          </li>
+          <li>Extract the private key (e.g. an RSA key in a <code>.pem</code> file).</li>
+          <li>Use it to sign arbitrary tokens or webhooks:
+            <pre><code>
+jwt.encode({"sub": "attacker", "role": "superadmin"}, sk_leaked, algorithm="RS256")
+            </code></pre>
+          </li>
+          <li>Because all services trust the public key, forged messages are accepted everywhere.</li>
+        </ol>
+        <div class="callout callout-danger">
+          <strong>Blast radius:</strong> In a multi-tenant SaaS, leaked auth signing keys often mean compromise of <em>every tenant</em> until rotation + revocation are done.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-1">
+      <div>
+        <h3>6.3 Attack Path #3 – Verifying the Wrong Data (Canonicalization Bugs)</h3>
+        <p>Signature is valid, but what’s actually processed is different from what was signed.</p>
+        <pre><code>
+SIGNED:  { "amount": 100, "currency": "USD" }
+
+SERVER A (verifier) normalizes JSON:
+  { "currency": "USD", "amount": 100 }
+
+SERVER B (business logic) parses a raw body
+that attacker slightly changed (e.g., added fields).
+        </code></pre>
+        <ol>
+          <li>Find APIs that sign only part of the data or have separate “display” vs “processing” layers.</li>
+          <li>Look for fields added by proxies / downstream services after verification.</li>
+          <li>Try:
+            <ul>
+              <li>Duplicated fields (<code>"amount": 100, "amount": 1000000</code>) in formats where parsers differ.</li>
+              <li>Different encodings (e.g., <code>\u003c</code> vs <code>&lt;</code>).</li>
+            </ul>
+          </li>
+          <li>If the verification is over a canonical form but the business logic uses a different parse, you can smuggle values past the signature.</li>
+        </ol>
+        <div class="callout callout-warning">
+          <strong>Looks safe but isn’t:</strong> “We sign the JSON.”&nbsp;You need to define <em>exactly which byte representation</em> is signed and ensure all consumers use the same representation.
+        </div>
+      </div>
+
+      <div>
+        <h3>6.4 Attack Path #4 – Replay of Valid Signed Messages</h3>
+        <p>Signatures prove authenticity, not freshness.</p>
+        <ol>
+          <li>Observe a legitimate signed webhook or command:
+            <pre><code>
+X-Signature: &lt;valid-sig&gt;
+Timestamp:  2025-11-15T06:00:00Z
+Body: {"action": "payout", "amount": 1000}
+            </code></pre>
+          </li>
+          <li>Replay the exact same request multiple times.</li>
+          <li>If the receiver does <strong>not</strong> check:
+            <ul>
+              <li>Timestamp freshness, and</li>
+              <li>Nonce or unique event ID,</li>
+            </ul>
+            then the same signed instruction can be executed over and over.
+          </li>
+        </ol>
+        <div class="callout callout-info">
+          <strong>Mitigation:</strong> require a timestamp + nonce in the signed data; reject messages outside a time window or whose nonce was seen before.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-1">
+      <div>
+        <h3>6.5 Attack Path #5 – “Verified Signature, Broken Authorization”</h3>
+        <p>The crypto is correct; the authorization logic is not.</p>
+        <pre><code>
+# Pseudocode
+claims = verify_and_decode(jwt)
+if claims["role"] == "admin":
+    allow()
+        </code></pre>
+        <ol>
+          <li>Find endpoints that rely solely on <code>role</code> / <code>is_admin</code> claim.</li>
+          <li>Get any valid token (low-priv user).</li>
+          <li>See if you can register a self-controlled OAuth client that gets tokens with arbitrary <code>role</code> values or use a compromised IdP.</li>
+          <li>If the verifier trusts any issuer / audience combination, you can supply a correctly signed token from your tenant to access someone else’s tenant.</li>
+        </ol>
+        <div class="callout callout-warning">
+          <strong>Looks safe but isn’t:</strong> “We validate the signature and expiry; done.” You also need to pin <code>iss</code>, <code>aud</code>, and bind the token to the current tenant / resource.
+        </div>
+      </div>
+
+      <div>
+        <h3>6.6 ASCII View – “Looks Signed, Still Vulnerable”</h3>
+        <pre><code>
++------------------------+
+|  Signed JWT/Webhook    |
++-----------+------------+
+            |
+            v
+   [ Signature OK? ] -- No --&gt; Reject (safe)
+            |
+           Yes
+            |
+            v
+   [ Claims / Timestamp / Tenant / Nonce OK? ]
+            |
+     +------+------+
+     |             |
+    Yes           No
+     |             |
+     v             v
+  Process      Still process
+  request      (Logic bug!)  &lt;-- 🧨
+        </code></pre>
+      </div>
+    </div>
+
+    <div class="mt-1">
+      <h3>6.7 Attack → Detect → Defend Snapshot</h3>
+      <div class="grid grid-3">
+        <div class="callout callout-danger">
+          <strong>Attack</strong>
+          <ul>
+            <li>Exploit <code>alg</code> confusion to forge JWTs.</li>
+            <li>Replay previously signed commands / webhooks.</li>
+            <li>Abuse leaked private keys to mint tokens.</li>
+          </ul>
+        </div>
+        <div class="callout callout-info">
+          <strong>Detect</strong>
+          <ul>
+            <li>Monitor key-store/KMS usage spikes.</li>
+            <li>Alert on strange claim combos (e.g. regular users with <code>role=superadmin</code>).</li>
+            <li>Correlate webhook volume with upstream provider logs.</li>
+          </ul>
+        </div>
+        <div class="callout callout-success">
+          <strong>Defend</strong>
+          <ul>
+            <li>Pin algorithms server-side; never allow <code>none</code>.</li>
+            <li>Rotate and compartmentalize signing keys; keep in KMS/HSM.</li>
+            <li>Include timestamp + nonce in signed data; enforce uniqueness.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="attack-sandbox-dsig" class="widget mt-1"></div>
+  </div>
+</section>
+
+<!-- ========================= 7. PRACTICAL SIMULATION (HANDS-ON) ========================= -->
+<section id="section-7" class="card mb-1">
+  <div class="card-header">
+    <h2>7. Practical Simulation (Hands-On)</h2>
+  </div>
+  <div class="card-body p-1">
+    <div class="grid grid-2">
+      <div>
+        <h3>7.1 Python – Secure vs Insecure JWT Verification</h3>
+        <p>Assume you have <code>pyjwt</code> installed and RSA keys (<code>private.pem</code>, <code>public.pem</code>).</p>
+        <pre><code class="language-python">
+import jwt
+from pathlib import Path
+
+private_key = Path("private.pem").read_text()
+public_key  = Path("public.pem").read_text()
+
+payload = {"sub": "user_123", "role": "user"}
+
+# ✅ Secure: pin algorithm, verify signature + claims
+token = jwt.encode(payload, private_key, algorithm="RS256")
+decoded = jwt.decode(
+    token,
+    public_key,
+    algorithms=["RS256"],
+    options={"require": ["exp"]},  # plus set exp/nbf when generating
+    audience="https://api.example.com",
+    issuer="https://auth.example.com"
+)
+print("Secure decode:", decoded)
+
+# ❌ Insecure: disable verification completely
+decoded_insecure = jwt.decode(
+    token,
+    options={"verify_signature": False, "verify_exp": False}
+)
+print("Insecure decode:", decoded_insecure)
+        </code></pre>
+        <p>
+          Run with <code>python jwt_demo.py</code>. Then deliberately tamper with the token or change <code>"role"</code> and see:
+        </p>
+        <ul>
+          <li>Secure decode → raises <code>jwt.exceptions.InvalidSignatureError</code> or claim errors.</li>
+          <li>Insecure decode → happily returns attacker-controlled claims.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>7.2 OpenSSL – Sign and Verify a File Digest</h3>
+        <p>Minimal CLI simulation of “hash → sign → verify”.</p>
+        <pre><code class="language-bash">
+# 1) Generate RSA private key + public key
+openssl genpkey -algorithm RSA -out sk_demo.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in sk_demo.pem -pubout -out pk_demo.pem
+
+# 2) Create a message file
+echo "pay 1000 USD to vendor X" &gt; message.txt
+
+# 3) Compute digest + sign (OpenSSL abstracts some of this)
+openssl dgst -sha256 -sign sk_demo.pem -out message.sig message.txt
+
+# 4) Verify signature
+openssl dgst -sha256 -verify pk_demo.pem -signature message.sig message.txt
+        </code></pre>
+        <p>
+          Try editing <code>message.txt</code> and rerun step 4. Verification will fail once the content no longer matches the signed digest.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-1">
+      <div>
+        <h3>7.3 ConfigDiff – Spotting Bad Verification Logic</h3>
+        <p>Compare insecure vs secure pseudo-code for JWT verification.</p>
+        <div id="configdiff-dsig-verify" class="widget mt-1"></div>
+      </div>
+
+      <div>
+        <h3>7.4 APITester – Playing with Tokens on an Admin Endpoint</h3>
+        <p>
+          Conceptual lab: simulate an admin endpoint that validates tokens and rate limits requests.
+          Use the widget to try good and bad tokens and see how responses change.
+        </p>
+        <div id="apitester-dsig" class="widget mt-1"></div>
+      </div>
+    </div>
+
+    <div class="mt-1">
+      <h3>7.5 What to Observe</h3>
+      <ul>
+        <li><strong>Logs:</strong> distinguish between “signature invalid” vs “claims invalid” vs “auth OK but authorization denied”.</li>
+        <li><strong>Behavior:</strong>
+          <ul>
+            <li>Tampered tokens must be rejected <em>before</em> any business logic runs.</li>
+            <li>Replay of a signed request with old timestamp/nonce should be rejected even if the signature is still mathematically valid.</li>
+          </ul>
+        </li>
+        <li><strong>Instrumentation:</strong> ensure you log key identifiers (<code>kid</code>), issuers, audiences, and decision points (why something was denied).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= 8. GOOD DESIGN PRINCIPLES, DEFENSE & MITIGATION ========================= -->
+<section id="section-8" class="card mb-1">
+  <div class="card-header">
+    <h2>8. Good Design Principles, Defense & Mitigation</h2>
+  </div>
+  <div class="card-body p-1">
+    <div class="grid grid-3">
+      <div>
+        <h3>8.1 Key Management & Architecture</h3>
+        <ul>
+          <li><strong>Single source of signing:</strong> only a small number of services are allowed to sign tokens/messages; all others only verify.</li>
+          <li><strong>Use KMS/HSM:</strong> private keys never live in source code, env vars, or disk; signing happens through a key-management API.</li>
+          <li><strong>Scoped keys:</strong> separate keys per:
+            <ul>
+              <li>Environment (dev / staging / prod)</li>
+              <li>Function (auth tokens vs document signing vs config signing)</li>
+            </ul>
+          </li>
+          <li><strong>Rotation:</strong> support multi-key (via <code>kid</code>) and phased rotation; old keys remain in JWKS for verification until all tokens expire.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>8.2 Verification as Non-Negotiable Middleware</h3>
+        <ul>
+          <li>Implement verification in <strong>shared middleware</strong> at gateways and service entry points, not ad-hoc in each handler.</li>
+          <li>Pin <strong>allowed algorithms</strong> in config; never rely on the incoming token to decide the algorithm.</li>
+          <li>Treat verification failure as <strong>hard deny</strong>:
+            <ul>
+              <li>No partial processing.</li>
+              <li>No “log and continue” in production.</li>
+            </ul>
+          </li>
+          <li>Enforce claim validation:
+            <ul>
+              <li><code>iss</code>, <code>aud</code>, <code>exp</code>, <code>nbf</code>, <code>iat</code></li>
+              <li>Tenant binding (e.g. <code>tenant_id</code> in token must match request’s tenant context).</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>8.3 Data-Level Protection Patterns</h3>
+        <ul>
+          <li>Include <strong>context</strong> in the signed data:
+            <ul>
+              <li>For webhooks: timestamp, event ID, customer ID, list of actions.</li>
+              <li>For admin commands: user ID, approval context, scope of change.</li>
+            </ul>
+          </li>
+          <li>Use <strong>detached signatures</strong> or signed digests when data is large; store signature near the data with clear linkage.</li>
+          <li>Combine with <strong>MACs</strong> when appropriate:
+            <ul>
+              <li>Externally visible data → digital signatures.</li>
+              <li>Internal service-to-service only → often OK with HMACs, as long as key distribution is controlled.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-1 grid grid-2">
+      <div>
+        <h3>8.4 Multi-Tenant Guardrails</h3>
+        <ul>
+          <li><strong>Token design:</strong> include <code>tenant_id</code> and ensure it’s part of the signed payload.</li>
+          <li><strong>Service design:</strong> every authorization decision uses both:
+            <ul>
+              <li>Identity (<code>sub</code>, <code>role</code>), and</li>
+              <li>Tenant (<code>tenant_id</code>), derived from the same signed token.</li>
+            </ul>
+          </li>
+          <li><strong>Isolation:</strong> avoid accepting tokens from other tenants’ IdPs unless explicitly federated and pinned.</li>
+          <li><strong>Auditing:</strong> log tenant, subject, key ID, algorithm, and high-risk actions for forensics.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>8.5 Risk Trade-Offs in Larger Systems</h3>
+        <ul>
+          <li><strong>Legacy vs modern algorithms:</strong>
+            <ul>
+              <li>Short term: support old algorithms in legacy services behind compensating controls.</li>
+              <li>Long term: migration plan to FIPS-recommended curves and padding schemes.</li>
+            </ul>
+          </li>
+          <li><strong>Throughput vs signature cost:</strong>
+            <ul>
+              <li>Offload signing to dedicated services or hardware if throughput is high.</li>
+              <li>Cache verification results for short-lived tokens where safe.</li>
+            </ul>
+          </li>
+          <li><strong>Operational constraints:</strong> balance key rotation frequency with deployment cadence so you don’t break running jobs.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-1">
+      <h3>8.6 Quick Review Checklists</h3>
+      <div class="grid grid-3">
+        <div class="callout callout-success">
+          <strong>Design Checklist</strong>
+          <ul>
+            <li>✅ Single signing service per trust boundary.</li>
+            <li>✅ Private keys only in KMS/HSM.</li>
+            <li>✅ Signed data includes tenant + context.</li>
+            <li>✅ Algorithms pinned; <code>none</code> disabled.</li>
+          </ul>
+        </div>
+        <div class="callout callout-info">
+          <strong>Implementation Checklist</strong>
+          <ul>
+            <li>✅ Verification in middleware, not per-handler.</li>
+            <li>✅ All critical endpoints require a valid signature.</li>
+            <li>✅ Claims (<code>iss</code>, <code>aud</code>, <code>exp</code>, <code>nbf</code>) enforced.</li>
+            <li>✅ Replay protection for webhooks/commands.</li>
+          </ul>
+        </div>
+        <div class="callout callout-warning">
+          <strong>Operations Checklist</strong>
+          <ul>
+            <li>⚠️ Key rotation plan documented and rehearsed.</li>
+            <li>⚠️ Monitoring on signing key usage and failures.</li>
+            <li>⚠️ Runbooks for key compromise (revoke, rotate, invalidate tokens).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // AttackSandbox for experimenting with signature-related attacks
+    if (window.AppSecWidgets && window.AppSecWidgets.AttackSandbox) {
+      AppSecWidgets.AttackSandbox.create('attack-sandbox-dsig', {
+        title: '🎯 Digital Signature Attack Sandbox',
+        scenarios: [
+          {
+            id: 'alg-none',
+            name: 'JWT alg=none bypass',
+            description: 'Try crafting a JWT header/payload where alg is set to "none" and reason about what a misconfigured server would do.',
+            samplePayload:
+`HEADER:
+{"alg": "none", "kid": "test"}
+
+PAYLOAD:
+{"sub": "user_123", "role": "superadmin"}`,
+            hints: [
+              'Would a secure server ever accept alg=none for production tokens?',
+              'Where in your stack should the allowed algorithms be pinned?'
+            ]
+          },
+          {
+            id: 'replay',
+            name: 'Signed webhook replay',
+            description: 'Replay a valid signed webhook multiple times and think about what should prevent it.',
+            samplePayload:
+`POST /webhooks/payments HTTP/1.1
+X-Signature: &lt;valid-sig&gt;
+X-Timestamp: 2025-11-15T06:00:00Z
+
+{"event_id": "evt_123", "action": "payout"}`,
+            hints: [
+              'If the signature is valid every time, what else must be checked?',
+              'How would you store and expire event_ids / nonces?'
+            ]
+          }
+        ]
+      });
+    }
+
+    // ConfigDiff for secure vs insecure JWT verification
+    if (window.AppSecWidgets && window.AppSecWidgets.ConfigDiff) {
+      const insecure =
+`// ❌ Insecure verification (Node/Express style pseudocode)
+function verifyToken(req, res, next) {
+  const token = getToken(req);
+  if (!token) return next();
+
+  // Trust whatever 'alg' the client sends
+  const decoded = jwt.decode(token, { complete: true });
+  const header = decoded.header;
+
+  // No algorithm pinning, signature optional
+  jwt.verify(token, PUBLIC_KEY_OR_SECRET, { algorithms: [header.alg] }, (err, payload) =&gt; {
+    if (err) {
+      console.log('JWT error, but continuing:', err);
+      req.user = null;
+      return next(); // &lt;-- continues without auth
+    }
+    req.user = payload;
+    next();
+  });
+}`;
+
+      const secure =
+`// ✅ Secure verification
+function verifyToken(req, res, next) {
+  const token = getToken(req);
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  const allowedAlgs = ['RS256']; // pinned
+  jwt.verify(
+    token,
+    PUBLIC_KEY,
+    {
+      algorithms: allowedAlgs,
+      issuer: 'https://auth.example.com',
+      audience: 'https://api.example.com'
+    },
+    (err, payload) =&gt; {
+      if (err) {
+        console.warn('JWT verification failed:', err.message);
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      // Tenant binding
+      if (!payload.tenant_id) {
+        return res.status(403).json({ error: 'Tenant missing' });
+      }
+      req.user = payload;
+      next();
+    }
+  );
+}`;
+
+      AppSecWidgets.ConfigDiff.create('configdiff-dsig-verify', insecure, secure);
+    }
+
+    // APITester for admin endpoint
+    if (window.AppSecWidgets && window.AppSecWidgets.APITester) {
+      AppSecWidgets.APITester.create('apitester-dsig', {
+        title: '🔌 Admin API – Token Verification Lab',
+        endpoints: [
+          {
+            name: 'List all users',
+            method: 'GET',
+            path: '/api/v1/admin/users',
+            requiresAuth: true,
+            description: 'Requires a JWT with role=admin and a valid signature.',
+            notes: 'Try a legit token, a tampered token, and one with alg=none.'
+          }
+        ],
+        placeholderToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0yMDI1LTAxIn0.eyJzdWIiOiJ1c2VyXzEyMyIsInJvbGUiOiJhZG1pbiJ9.SIGNATURE'
+      });
+    }
+  });
+</script>
 </body>
 
 </html>
