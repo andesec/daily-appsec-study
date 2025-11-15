@@ -21,11 +21,27 @@ jobs:
       run: |
         echo "<!DOCTYPE html>" > index.html
         echo "<html><head><meta charset='UTF-8'><title>Index</title>" >> index.html
-        echo "<style>body{font-family:sans-serif;padding:20px;} a{display:block;margin:8px 0;}</style></head><body>" >> index.html
-        echo "<h1>Available Lessons</h1>" >> index.html
-        echo "<ul>" >> index.html
+        echo "<style>
+                body { font-family: sans-serif; padding: 20px; }
+                ul { list-style: none; padding: 0; }
+                li { margin: 12px 0; }
+                a {
+                  display: block;
+                  padding: 14px 18px;
+                  background: #f4f4f4;
+                  border-radius: 8px;
+                  text-decoration: none;
+                  color: #333;
+                  font-size: 18px;
+                }
+                a:hover {
+                  background: #e0e0e0;
+                }
+              </style></head><body>" >> index.html
+                echo "<h1>Available Lessons</h1>" >> index.html
+                echo "<ul>" >> index.html
 
-        for file in $(find lessons -name "*.html" | sort); do
+        for file in $(ls lessons/*.html 2>/dev/null | sort); do
           clean=${file#lessons/}              # remove folder path
           name=${clean%.html}                 # remove extension
           echo "<li><a href=\"$file\">$name</a></li>" >> index.html

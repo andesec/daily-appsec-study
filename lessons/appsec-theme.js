@@ -234,14 +234,14 @@ const NavFloating = {
     this.prevBtn = this.make("⬆ Previous", () => this.scrollToPrev());
     this.topBtn = this.make("⇧ Top", () => window.scrollTo({ top: 0, behavior: "smooth" }));
     this.nextBtn = this.make("Next ⬇", () => this.scrollToNext());
-    this.bottomBtn = this.make("⇩ Bottom", () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+    this.bottomBtn = this.make("Bottom ⇩", () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
 
     // Collapse / Expand all
     this.collapseAllBtn = this.make("– Collapse All", () => this.collapseAll());
     this.expandAllBtn = this.make("+ Expand All", () => this.expandAll());
 
-    this.nav.appendChild(this.prevBtn);
     this.nav.appendChild(this.topBtn);
+    this.nav.appendChild(this.prevBtn);
     this.nav.appendChild(this.nextBtn);
     this.nav.appendChild(this.bottomBtn);
 
@@ -340,30 +340,30 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function applyTableScroll() {
-    const tables = document.querySelectorAll("table");
+  const tables = document.querySelectorAll("table");
 
-    tables.forEach(table => {
-        // Check up to 3 ancestors
-        const parent1 = table.parentElement;
-        const parent2 = parent1?.parentElement || null;
-        const parent3 = parent2?.parentElement || null;
+  tables.forEach(table => {
+    // Check up to 3 ancestors
+    const parent1 = table.parentElement;
+    const parent2 = parent1?.parentElement || null;
+    const parent3 = parent2?.parentElement || null;
 
-        const ancestors = [parent1, parent2, parent3];
+    const ancestors = [parent1, parent2, parent3];
 
-        // If ANY ancestor has .widget, skip
-        const insideWidget = ancestors.some(a => a && a.classList.contains("widget"));
-        if (insideWidget) return;
+    // If ANY ancestor has .widget, skip
+    const insideWidget = ancestors.some(a => a && a.classList.contains("widget"));
+    if (insideWidget) return;
 
-        // Already wrapped? Skip
-        if (parent1 && parent1.classList.contains("table-scroll")) return;
+    // Already wrapped? Skip
+    if (parent1 && parent1.classList.contains("table-scroll")) return;
 
-        // Wrap table in .table-scroll
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("table-scroll");
+    // Wrap table in .table-scroll
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("table-scroll");
 
-        parent1.insertBefore(wrapper, table);
-        wrapper.appendChild(table);
-    });
+    parent1.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", applyTableScroll);
