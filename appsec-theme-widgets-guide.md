@@ -1,444 +1,622 @@
+# AppSec Theme & Widgets – Integration Guide
 
-# AppSec Theme & Widgets – Quick Starter Guide
-
-This guide explains how to use the AppSec theme + widgets and which CSS classes you’ll use most often.
-
----
-
-## 1. Files & Basic Setup
-
-Include these in your HTML:
-
-```html
-<head>
-  <meta charset="utf-8">
-  <title>AppSec Lesson</title>
-
-  <link rel="stylesheet" href="appsec-theme.css">
-
-  <script defer src="appsec-theme.js"></script>
-  <script defer src="appsec-widgets.js"></script>
-</head>
-<body>
-  <main class="container">
-    <!-- Your content + widget containers go here -->
-  </main>
-</body>
-```
-
-`appsec-theme.js` automatically initializes the theme and adds a floating light/dark toggle.
+This guide documents the JavaScript API and expected data structures for the AppSec theme utilities and interactive widgets.
 
 ---
 
-## 2. Theme Utilities (JS)
+## 1. Theme & Utility API (`window.AppSec`)
 
-### 2.1 Theme switching
-
-Available under the global `AppSec` namespace:
+The theme script exposes a global `window.AppSec` object:
 
 ```js
-// Force a theme
-AppSec.ThemeManager.setTheme('light');  // or 'dark'
-
-// Toggle programmatically
-AppSec.ThemeManager.toggleTheme();
+window.AppSec = {
+  ThemeManager,
+  CodeDisplay,
+  Notify
+};
 ```
 
-A `.theme-toggle` button is automatically created and handled by `ThemeManager.init()` on page load.
+### 1.1 ThemeManager
+
+**Purpose:** Handle light/dark theme and provide a floating toggle button.
+
+- **`ThemeManager.init()`**
+  - Reads `localStorage['appsec-theme']` (defaults to `"light"`).
+  - Sets `document.documentElement.dataset.theme` / `data-theme`.
+  - Creates a floating button with class `theme-toggle` and appends it to `<body>`.
+  - Called automatically on `DOMContentLoaded`, but you can call it manually in single‑page flows.
+
+- **`ThemeManager.setTheme(theme)`**
+  - `theme`: `"light"` or `"dark"`.
+  - Sets `data-theme` attribute and persists to `localStorage`.
+
+- **`ThemeManager.toggleTheme()`**
+  - Toggles between `"light"` and `"dark"`, then calls `updateToggleButton()`.
+
+- **`ThemeManager.updateToggleButton()`**
+  - Updates `.theme-toggle` button label:
+    - Light → shows “🌙 Dark Mode”
+    - Dark → shows “☀️ Light Mode”
+
+**Key classes (provided by CSS):**
+
+- `theme-toggle` – floating theme switch button.
 
 ---
 
-### 2.2 Code blocks with line numbers
+### 1.2 CodeDisplay
 
-```html
-<pre><code class="language-http">
-GET /api/users HTTP/1.1
-Host: example.com
-</code></pre>
-```
+**Purpose:** Enhance `<pre><code>` blocks with line numbers and highlighting.
+
+- **`CodeDisplay.addLineNumbers(codeElement)`**
+  - Wraps `codeElement` content into:
+    - `.code-with-lines`
+    - `.line-numbers`
+    - `.code-content`
+  - Call this after the code block is in the DOM.
+
+- **`CodeDisplay.highlightLines(codeElement, lineNumbers)`**
+  - `lineNumbers`: array of 1‑based line numbers to highlight.
+  - Adds inline highlight (background `var(--color-warning)` and bold) to the selected rows in `.line-numbers`.
+
+**Key classes:**
+
+- `code-with-lines`, `line-numbers`, `code-content`.
+
+---
+
+### 1.3 Notify
+
+**Purpose:** Small toast-style notifications.
+
+- **`Notify.show(message, type = 'info', duration = 3000)`**
+  - `message`: string to display.
+  - `type`: one of `"success" | "danger" | "warning" | "info"`.
+  - `duration`: milliseconds before auto‑dismiss.
+  - Renders a fixed positioned `<div>` with class `alert-{type}-solid` and a slide‑in/out animation.
+
+**Key classes (expected in CSS):**
+
+- `alert-success-solid`, `alert-danger-solid`, `alert-warning-solid`, `alert-info-solid`.
+
+When used from widgets, call via `window.AppSec.Notify.show(...)`.
+
+### 1.5 CSS Classes
+
+### Layout
+- `.container` - Max-width 1400px, responsive padding
+- `.grid`, `.grid-2`, `.grid-3` - Responsive grids
+- `.card` - Card container with shadow
+- `.widget` - Widget container with header/body
+
+### Typography
+- `h1` to `h6` - Styled headings
+- `code` - Inline code (colorized)
+- `pre code` - Code blocks (no colorization)
+
+### Buttons
+- `.btn` - Base button
+- `.btn-primary`, `.btn-danger`, `.btn-success`, `.btn-secondary` - Colored variants
+
+### Alerts (Border Only)
+- `.alert-danger`, `.alert-warning`, `.alert-success`, `.alert-info` - Border-left colored alerts
+
+### Alerts (Solid)
+- `.alert-danger-solid`, `.alert-warning-solid`, `.alert-success-solid`, `.alert-info-solid` - Full-color backgrounds
+
+### Callouts (Tinted Backgrounds)
+- `.callout-danger`, `.callout-warning`, `.callout-success`, `.callout-info` - Colorized backgrounds with border
+
+### Tables
+- `table` - Styled tables
+- `.table-container` - Horizontal scroll wrapper
+
+### Utilities
+- `.text-center`, `.text-right`
+- `.mt-1`, `.mb-1`, `.p-1` - Spacing utilities
+
+---
+
+## 2. Widget API (`window.AppSecWidgets`)
+
+All widgets live on the global `AppSecWidgets` object and expose a `create(containerId, …)` method.
+
+General pattern:
 
 ```js
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('pre code').forEach(codeEl => {
-    AppSec.CodeDisplay.addLineNumbers(codeEl);
-  });
-});
+AppSecWidgets.WidgetName.create('container-id', dataOrConfig);
 ```
 
-Relevant classes:
-
-- `code-with-lines`
-- `line-numbers`
-- `code-content`
+Each widget expects the container element to exist in the DOM.
 
 ---
 
-### 2.3 Notifications
+### 2.1 `HTTPSimulator`
+
+**Purpose:** Free‑form HTTP request/response playground with simple security hints.
+
+**Signature:**
 
 ```js
-// message, type = 'success' | 'danger' | 'warning' | 'info', duration ms
-AppSec.Notify.show('Saved successfully ✅', 'success', 3000);
+AppSecWidgets.HTTPSimulator.create(containerId, config = {})
 ```
 
-This uses the solid alert styles (`.alert-success-solid`, `.alert-danger-solid`, `.alert-warning-solid`, `.alert-info-solid`).
+**Config:**
+
+- `placeholder` (string) – initial HTTP request text shown in textarea.
+- `title` (string) – widget title (default: `"🌐 HTTP Request/Response Simulator"`).
+
+Uses `window.AppSec.Notify.show()` for hints (SQLi/path traversal/etc.).
+
+Key classes: `widget`, `widget-header`, `widget-title`, `widget-body`, plus `btn`, `btn-primary`.
 
 ---
 
-## 3. Core Layout & Components (CSS)
+### 2.2 `ConfigDiff`
 
-Below are the main classes you’ll actually use when writing lessons.
+**Purpose:** Compare insecure vs. secure config/code snippets.
 
-### 3.1 Layout & alignment
+**Signature:**
 
-- `container` – page width wrapper.
-- `grid` – responsive grid container.
-- `grid-2`, `grid-3` – 2-column / 3-column layouts.
-- `text-center`, `text-right` – text alignment helpers.
-- `mt-1`, `mb-1`, `p-1` – small margin-top / margin-bottom / padding utilities.
-
-### 3.2 Cards
-
-Use for self-contained blocks (concepts, examples, exercises):
-
-```html
-<div class="card">
-  <div class="card-header">Key Concept</div>
-  <div class="card-body">
-    Short explanation…
-  </div>
-</div>
+```js
+AppSecWidgets.ConfigDiff.create(containerId, insecureCode, secureCode)
 ```
 
-Classes:
+**Params:**
 
-- `card`
-- `card-header`
-- `card-body` (uses default card content styling)
+- `insecureCode` (string) – vulnerable configuration or code.
+- `secureCode`   (string) – fixed/secure version.
+
+Renders two panels toggled via:
+
+- `btn btn-danger` (❌ Insecure)
+- `btn btn-success` (✅ Secure)
+
+Key classes: `widget`, `widget-header`, `widget-body`.
+
+---
+
+### 2.3 `FlowVisualizer`
+
+**Purpose:** Step‑by‑step flow diagram (e.g., auth flow, request life‑cycle).
+
+**Signature:**
+
+```js
+AppSecWidgets.FlowVisualizer.create(containerId, steps)
+```
+
+**Data:**
+
+```js
+steps = [
+  { title: 'Step title', description: 'What happens here…' },
+  …
+];
+```
+
+Widget stores state internally and provides Previous/Next controls.
+
+Key classes: `flow-step`, `flow-node`, `flow-content`, `flow-container`, `flow-controls`, plus `widget-*` and `btn`.
+
+---
+
+### 2.4 `LogAnalyzer`
+
+**Purpose:** Simple security log table with severity styling and refresh.
+
+**Signature:**
+
+```js
+AppSecWidgets.LogAnalyzer.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '🔍 Security Log Analyzer',
+  columns?: ['Time', 'Event', 'User', 'IP', 'Status'],
+  logs?: [{
+    time?: string,
+    event?: string,
+    user?: string,
+    ip?: string,
+    status?: string,   // 'success' | 'blocked' | 'warning' | custom
+    severity?: string, // affects row class: log-{severity}
+  }],
+  placeholder?: string
+}
+```
+
+Widget methods:
+
+- `LogAnalyzer.refresh(containerId)` – re-renders with same config.
+
+Key classes: `log-table`, `log-row`, `log-info`, `log-warning`, `log-danger`, `badge`, `badge-success`, `badge-danger`, `badge-warning`.
+
+---
+
+### 2.5 `ProgressTracker`
+
+**Purpose:** Visualize skills / topic progress and sub‑items.
+
+**Signature:**
+
+```js
+AppSecWidgets.ProgressTracker.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '📊 Security Skills Progress',
+  categories?: [{
+    name: string,
+    icon?: string,      // emoji/icon
+    progress?: number,  // 0–100
+    items?: [{
+      name: string,
+      completed?: boolean
+    }]
+  }],
+  placeholder?: string
+}
+```
+
+Key classes: `progress-category`, `progress-header`, `progress-percent`, `progress-bar`, `progress-fill`, `progress-items`, `progress-status`.
+
+---
+
+### 2.6 `AttackSandbox`
+
+**Purpose:** Multi‑scenario attack payload sandbox with dynamic response.
+
+**Signature:**
+
+```js
+AppSecWidgets.AttackSandbox.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '🎯 Attack Vector Sandbox',
+  scenarios: [{
+    name?: string,
+    description?: string,
+    payload?: string,                      // default payload text
+    response?: string,                     // default response text
+    checkPayload?: (payload) => string,    // optional custom evaluator
+    notifyType?: 'success'|'info'|'warning'|'danger',
+    notifyMessage?: string
+  }],
+  placeholder?: string
+}
+```
+
+Widget state keeps `currentScenario` and `output`. Uses `window.AppSec.Notify` if `notifyType` is set.
+
+Key classes: `attack-scenarios`, `attack-details`, `grid`, `grid-2`, `btn btn-primary`, `btn btn-secondary`, `btn btn-danger`.
+
+---
+
+### 2.7 `CertificateInspector`
+
+**Purpose:** Render TLS certificate metadata and expiry status.
+
+**Signature:**
+
+```js
+AppSecWidgets.CertificateInspector.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '🔐 TLS Certificate Inspector',
+  certificate?: {
+    commonName?: string,
+    issuer?: string,
+    validFrom?: string | Date,
+    validTo?: string | Date,
+    serialNumber?: string,
+    signatureAlgorithm?: string
+  },
+  placeholder?: string
+}
+```
+
+Computes `Days Until Expiry` and adds validity badge.
+
+Key classes: `cert-details`, `cert-field`, `cert-status`, `cert-valid`, `cert-expired`, plus text color helpers like `text-success`, `text-warning`, `text-danger`.
+
+---
+
+### 2.8 `CodeReviewChecker`
+
+**Purpose:** Show security findings for a code snippet.
+
+**Signature:**
+
+```js
+AppSecWidgets.CodeReviewChecker.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '🔎 Security Code Review',
+  code: string,
+  vulnerabilities: [{
+    severity?: string,       // e.g. 'low'|'medium'|'high'|'critical'
+    title?: string,
+    description?: string,
+    line?: number,
+    recommendation?: string
+  }],
+  placeholder?: string
+}
+```
+
+Highlights issues in a list and shows overall count.
+
+Key classes: `code-review-section`, `vuln-item`, `vuln-header`, `vuln-badge`, `vuln-badge-{severity}`, `vuln-line`, `vuln-fix`, `vuln-count`.
+
+---
+
+### 2.9 `VulnerabilityTimeline`
+
+**Purpose:** Vertical timeline of vulnerability lifecycle.
+
+**Signature:**
+
+```js
+AppSecWidgets.VulnerabilityTimeline.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '📅 Vulnerability Timeline',
+  vulnerabilities: [{
+    id?: string,
+    date?: string,
+    title?: string,
+    description?: string,
+    severity?: string,     // used in `severity-{severity.toLowerCase()}`
+    link?: string          // external reference (e.g. advisory URL)
+  }],
+  placeholder?: string
+}
+```
+
+Key classes: `timeline`, `timeline-item`, `timeline-marker`, `timeline-date`, `timeline-header`, `timeline-link`, `severity-badge`, `severity-{level}`.
+
+---
+
+### 2.10 `Quiz`
+
+**Purpose:** Multiple‑choice quiz in classic or step mode.
+
+**Signature:**
+
+```js
+AppSecWidgets.Quiz.create(containerId, data)
+```
+
+**Data:**
+
+```js
+{
+  title?: string,
+  intro?: string,
+  mode?: 'classic' | 'step', // default 'step'
+  questions: [{
+    text: string,
+    options: [{
+      value: string,
+      label: string,
+      correct?: boolean
+    }]
+  }]
+}
+```
+
+**Classic mode:**
+
+- All questions at once in an ordered list.
+- Single “Check answers” button.
+- Uses `callout callout-info-solid` to show score.
+
+**Step mode (default):**
+
+- Intro + “Start Quiz” button.
+- One question at a time with clickable option buttons.
+- Score and progress updated per question.
+
+Key classes: `widget-quiz`, `quiz-list`, `quiz-question`, `quiz-option`, `quiz-option-btn`, `quiz-question-container`, `quiz-intro`, `quiz-result`.
+
+---
+
+### 2.11 `ValidationTrainer`
+
+**Purpose:** Practice input validation and regex‑based rules.
+
+**Signature:**
+
+```js
+AppSecWidgets.ValidationTrainer.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '✅ Input Validation Trainer',
+  patterns?: {
+    [ruleName: string]: {
+      regex: RegExp,
+      examples: string[],
+      description?: string
+    }
+  }
+}
+```
+
+If `patterns` is omitted, it falls back to built‑in rules (`email`, `url`, `phone`, etc.).
+
+UI allows selecting a rule, viewing regex, trying inputs, and seeing pass/fail.
+
+Key classes: `validation-result`, `tag-pill`, plus standard `btn`, `grid`, etc.
+
+---
+
+### 2.12 `ThreatModel`
+
+**Purpose:** STRIDE‑style threat modeling canvas with export.
+
+**Signature:**
+
+```js
+AppSecWidgets.ThreatModel.create(containerId, prefill = null)
+```
+
+**Prefill structure (optional):**
+
+```js
+{
+  system?: {
+    name?: string,
+    type?: string,
+    actors?: string,
+    assets?: string,
+    entryPoints?: string,
+    boundaries?: string
+  },
+  stride?: {
+    spoofing?: string,
+    tampering?: string,
+    repudiation?: string,
+    information?: string,
+    dos?: string,
+    elevation?: string
+  }
+}
+```
+
+The widget also exposes:
+
+- **`ThreatModel.exportModel(containerId)`**
+  - Reads current form values and downloads `threat-model.json`:
+    ```js
+    {
+      system: { …, exportedAt: ISOString },
+      stride: { spoofing, tampering, repudiation, information, dos, elevation }
+    }
+    ```
+
+- **`ThreatModel.exportMarkdown(containerId)`**
+  - Downloads a Markdown summary text file.
+
+Uses `window.AppSec.Notify.show()` on successful export.
+
+Key classes: `threat-architecture`, `threat-meta`, `threat-grid`, `threat-category`, `threat-prompts`, `threat-textarea`.
+
+---
+
+### 2.13 `APITester`
+
+**Purpose:** Simulated API auth + rate‑limit tester.
+
+**Signature:**
+
+```js
+AppSecWidgets.APITester.create(containerId, data = {})
+```
+
+**Data:**
+
+```js
+{
+  title?: '🔌 API Security Tester',
+  endpoints?: [{
+    value: string,            // key used in responses object
+    label: string,            // shown in dropdown
+    requiresAuth?: boolean,
+    requiresAdmin?: boolean
+  }],
+  rateLimit?: number,         // allowed requests before 429
+  responses?: {
+    [endpointValue: string]: {
+      // For public endpoints you can use a flat object:
+      status?: number,
+      message?: string,
+
+      // For protected/admin endpoints:
+      noAuth?:   { status: number, error: string },
+      invalid?:  { status: number, error: string },
+      forbidden?:{ status: number, error: string },
+      success?:  { status: number, message: string, user?: string, users?: any }
+    }
+  }
+}
+```
+
+Widget methods:
+
+- `APITester.testAuth(containerId)` – evaluates current endpoint + token and logs JSON responses.
+- `APITester.testRateLimit(containerId)` – simulates multiple requests against `rateLimit`. Uses `window.AppSec.Notify` when rate limit is exceeded.
+
+Key classes: `btn`, `btn-primary`, `btn-secondary`, `form-section`, `grid`, `grid-2`, plus `response-log`.
+
+---
+
+## 3. Shared Layout & Style Classes
+
+The widgets and theme assume the following reusable classes exist in the CSS. Code generators can safely use them:
+
+### 3.1 Widget shell
+
+- `widget`, `widget-header`, `widget-title`, `widget-body` – standard card container.
+- `mt-0-5`, `mt-1`, `mb-1`, `mt-2` – top/bottom margin helpers.
+- `grid`, `grid-2`, `grid-3` – responsive grid layouts.
+- `text-muted`, `text-secondary`, `text-success`, `text-warning`, `text-danger` – text color helpers.
+- `tag-pill`, `badge`, `badge-success`, `badge-danger`, `badge-warning` – small status labels.
+
+### 3.2 Buttons
+
+- `btn` – base button styling.
+- `btn-primary`, `btn-secondary`, `btn-danger`, `btn-success` – variants.
+- Many widgets combine with spacing helpers, e.g. `btn btn-primary mt-1`.
 
 ### 3.3 Callouts & Alerts
 
-**Callouts – persistent info boxes inside content:**
+- `callout`, `callout-info-solid`, `callout-warning`, `callout-danger` – information boxes.
+- `alert-success-solid`, `alert-danger-solid`, `alert-warning-solid`, `alert-info-solid` – toasts used by `Notify`.
 
-```html
-<div class="callout callout-info">
-  <strong>💡 Tip:</strong> Cache keys must include all user-controlled variants.
-</div>
+### 3.4 Domain-specific helpers
 
-<div class="callout callout-warning">
-  <strong>⚠️ Warning:</strong> This configuration is vulnerable.
-</div>
-```
+- Certificate inspector: `cert-details`, `cert-field`, `cert-status`, `cert-valid`, `cert-expired`.
+- Code review: `code-review-section`, `vuln-item`, `vuln-header`, `vuln-badge`, `vuln-badge-{severity}`, `vuln-line`, `vuln-fix`, `vuln-count`.
+- Timeline: `timeline`, `timeline-item`, `timeline-marker`, `timeline-header`, `timeline-date`, `timeline-link`, `severity-badge`, `severity-{level}`.
+- Quiz: `widget-quiz`, `quiz-list`, `quiz-question`, `quiz-option`, `quiz-option-btn`, `quiz-intro`, `quiz-result`.
+- Threat model: `threat-architecture`, `threat-meta`, `threat-grid`, `threat-category`, `threat-prompts`.
+- Logs: `log-table`, `log-row`, `log-info`, `log-warning`, `log-danger`.
+- Attack sandbox: `attack-scenarios`, `attack-details`.
 
-Classes:
-
-- `callout`
-- `callout-info`, `callout-warning`, `callout-danger`, `callout-success`
-
-**Alerts – inline status messages (often inside widgets):**
-
-```html
-<div class="alert alert-danger">
-  Invalid JWT – signature verification failed.
-</div>
-```
-
-Solid variants (used by `Notify` and some widgets):
-
-- `alert-success-solid`
-- `alert-danger-solid`
-- `alert-warning-solid`
-- `alert-info-solid`
-
-Base classes:
-
-- `alert`
-- `alert-success`, `alert-danger`, `alert-warning`, `alert-info`
-
-### 3.4 Buttons
-
-```html
-<button class="btn btn-primary">Run Test</button>
-<button class="btn btn-secondary">Reset</button>
-<button class="btn btn-danger">Delete</button>
-<button class="btn btn-success">Mark as Fixed</button>
-```
-
-Classes:
-
-- `btn`
-- `btn-primary`, `btn-secondary`, `btn-success`, `btn-danger`
-
-### 3.5 Tables & Code
-
-- `table-container` – wraps wide tables with horizontal scroll.
-- `code-with-lines`, `line-numbers`, `code-content` – used by `CodeDisplay`.
 
 ---
 
-## 4. Widget Basics
+**Usage summary for generators**
 
-All widgets live under the global `AppSecWidgets` object.
+1. Include the theme and widgets JS in the page so `window.AppSec` and `window.AppSecWidgets` are available.
+2. Mark container elements with stable IDs (e.g. `<div id="quiz-http-basics"></div>`).
+3. Call the corresponding `create(id, data)` function with the data structures outlined above.
+4. Use the documented classes for consistent layout, buttons, alerts, and domain‑specific styling.
 
-**Pattern:**
-
-1. Add a container element with an ID.
-2. Call the appropriate `create` method after the DOM is ready.
-
-```html
-<div id="quiz-csrf"></div>
-```
-
-```js
-document.addEventListener('DOMContentLoaded', () => {
-  const data = {
-    mode: 'classic', // 'classic' or 'step'
-    title: 'CSRF Basics',
-    intro: 'Test your understanding of CSRF.',
-    questions: [
-      {
-        text: 'What does CSRF stand for?',
-        options: [
-          { value: 'a', label: 'Cross-Site Request Forgery', correct: true },
-          { value: 'b', label: 'Client-Side Request Filter', correct: false }
-        ]
-      }
-    ]
-  };
-
-  AppSecWidgets.Quiz.create('quiz-csrf', data);
-});
-```
-
-Common container styling is handled by:
-
-- `widget`
-- `widget-header`
-- `widget-title`
-- `widget-body`
-
-The Quiz widget also applies:
-
-- `widget-quiz` (on the container in classic mode)
-- `quiz-list`, `quiz-question`, `quiz-option`
-- `quiz-intro`, `quiz-meta`, `quiz-progress`, `quiz-score`
-- `quiz-question-container`, `quiz-question-card`, `quiz-question-text`
-- `quiz-options`, `quiz-option-btn`
-
----
-
-## 5. Widget Catalogue & Signatures
-
-Below is a quick index of available widgets and how to instantiate them.
-
-### 5.1 HTTP / API & Traffic
-
-- **HTTP Request/Response Simulator**
-
-  ```js
-  AppSecWidgets.HTTPSimulator.create('http-sim');
-  ```
-
-  Lets learners edit a raw HTTP request and see a simulated response (status, headers, simple vulnerability hints).
-
-- **API Security Tester**
-
-  ```js
-  AppSecWidgets.APITester.create('api-tester');
-  ```
-
-  UI for selecting endpoint type, auth token, rate limit, roles, and seeing how different choices affect access.
-
----
-
-### 5.2 Config & Attack/Defense Views
-
-- **ConfigDiff – Secure vs Insecure config**
-
-  ```js
-  AppSecWidgets.ConfigDiff.create(
-    'config-diff',
-    insecureConfigString,
-    secureConfigString
-  );
-  ```
-
-  Shows a toggle between insecure and hardened configuration blocks.
-
-- **AttackDefense – Red vs Blue perspective**
-
-  ```js
-  AppSecWidgets.AttackDefense.create(
-    'attack-defense',
-    'SQL Injection',
-    `<p>Show how the attack works here…</p>`,
-    `<ul><li>Use parameterized queries…</li></ul>`
-  );
-  ```
-
-  Two-tab view: vulnerable vs mitigated explanation.
-
----
-
-### 5.3 Crypto, Tokens & Auth
-
-- **CryptoPlayground – Hashing playground**
-
-  ```js
-  AppSecWidgets.CryptoPlayground.create('crypto-playground');
-  ```
-
-  Lets learners choose a hash algorithm and generate hashes for input text.
-
-- **JWTAnalyzer – JWT decoder & analyzer**
-
-  ```js
-  AppSecWidgets.JWTAnalyzer.create('jwt-analyzer');
-  ```
-
-  Decodes a JWT and shows header/payload plus basic security findings.
-
-- **PasswordMeter – Password strength analyzer**
-
-  ```js
-  AppSecWidgets.PasswordMeter.create('password-meter');
-  ```
-
-  Live strength bar + hints about what makes the password weak/strong.
-
----
-
-### 5.4 Flows & Visuals
-
-- **FlowVisualizer – Step-by-step flow**
-
-  ```js
-  const flowSteps = [
-    { title: 'User → SPA', description: 'User submits login form.' },
-    { title: 'SPA → Auth Server', description: 'Sends /authorize request.' },
-    // …
-  ];
-
-  AppSecWidgets.FlowVisualizer.create('auth-flow', flowSteps);
-  ```
-
-  Renders one step at a time with “Next / Previous” controls and visual state (active vs completed).
-
-- **FlowchartBuilder – Interactive diagram builder**
-
-  ```js
-  AppSecWidgets.FlowchartBuilder.create('flowchart');
-  ```
-
-  Lets learners add boxes/decisions into a canvas to sketch security flows.
-
----
-
-### 5.5 Logs, Validation & Vulnerable App
-
-- **LogAnalyzer – Suspicious log finder**
-
-  ```js
-  AppSecWidgets.LogAnalyzer.create('log-analyzer');
-  ```
-
-  Preloaded small log dataset where learners identify suspicious entries.
-
-- **ValidationTrainer – Input validation exercises**
-
-  ```js
-  AppSecWidgets.ValidationTrainer.create('validation-trainer');
-  ```
-
-  Choose validation rule (email, URL, etc.), see regex and play with valid/invalid inputs.
-
-- **VulnApp – Mini vulnerable app simulator**
-
-  ```js
-  AppSecWidgets.VulnApp.create('vuln-app');
-  ```
-
-  Teaches SQLi / IDOR concepts with simple interactive inputs.
-
----
-
-### 5.6 XSS & Quizzes
-
-- **XSSPlayground – XSS context tester**
-
-  ```js
-  AppSecWidgets.XSSPlayground.create('xss-playground');
-  ```
-
-  Lets learners try different payloads in different contexts (HTML, attribute, JS) without actually executing unsafe code.
-
-- **Quiz – Knowledge check (step or classic)**
-
-  ```js
-  const quizData = {
-    mode: 'step', // or 'classic'
-    title: 'Web Cache Poisoning Quiz',
-    intro: 'Short quiz to test what you learned.',
-    questions: [
-      {
-        text: 'Which header often matters for cache poisoning?',
-        options: [
-          { value: 'a', label: 'X-Forwarded-Host', correct: true },
-          { value: 'b', label: 'Content-Length', correct: false }
-        ]
-      }
-    ]
-  };
-
-  AppSecWidgets.Quiz.create('cache-quiz', quizData);
-  ```
-
-  - `mode: 'classic'` renders all questions with a single “Check Answers” button.
-  - `mode: 'step'` shows one question at a time with progress + score.
-
----
-
-### 5.7 Threat Modeling Prompts (Data Only)
-
-`AppSecWidgets.ThreatModel` provides STRIDE prompt banks for you to use in your own UIs:
-
-```js
-const spoofingQs = AppSecWidgets.ThreatModel.prompts.spoofing;
-const tamperingQs = AppSecWidgets.ThreatModel.prompts.tampering;
-```
-
-Categories:
-
-- `spoofing`, `tampering`, `repudiation`, `information`, `dos`, `elevation`
-
-You can render these inside cards, callouts, or custom checklists.
-
----
-
-## 6. Most Relevant CSS Classes (Quick Reference)
-
-**Layout & spacing**
-
-- `container`
-- `grid`, `grid-2`, `grid-3`
-- `mt-1`, `mb-1`, `p-1`
-- `text-center`, `text-right`
-
-**Components**
-
-- `card`, `card-header`, `card-body`
-- `callout`, `callout-info`, `callout-warning`, `callout-danger`, `callout-success`
-- `alert`, `alert-success`, `alert-danger`, `alert-warning`, `alert-info`
-- `alert-success-solid`, `alert-danger-solid`, `alert-warning-solid`, `alert-info-solid`
-- `btn`, `btn-primary`, `btn-secondary`, `btn-success`, `btn-danger`
-- `table-container`
-- `theme-toggle`
-
-**Code & quiz**
-
-- `code-with-lines`, `line-numbers`, `code-content`
-- `widget`, `widget-header`, `widget-title`, `widget-body`
-- `widget-quiz`
-- `quiz-list`, `quiz-question`, `quiz-option`
-- `quiz-intro`, `quiz-meta`, `quiz-progress`, `quiz-score`
-- `quiz-question-container`, `quiz-question-card`, `quiz-question-text`
-- `quiz-options`, `quiz-option-btn`

@@ -1,7 +1,7 @@
 /**
  * ============================================
- * AppSec Learning Widgets Library v2.0
- * Fixed issues + New powerful widgets
+ * AppSec Learning Widgets Library v2.1
+ * Refactored: All content now dynamic via parameters
  * ============================================
  */
 
@@ -11,27 +11,33 @@ const AppSecWidgets = {
 
 /**
  * ============================================
- * 1. HTTP Request/Response Simulator (FIXED)
+ * 1. HTTP Request/Response Simulator (REFACTORED)
  * ============================================
  */
 AppSecWidgets.HTTPSimulator = {
-  create(containerId) {
+  create(containerId, config = {}) {
+    const defaultConfig = {
+      placeholder: `GET /api/users?id=1 HTTP/1.1
+Host: example.com
+Authorization: Bearer token123
+User-Agent: AppSec-Student
+
+`,
+      title: '🌐 HTTP Request/Response Simulator'
+    };
+    const settings = { ...defaultConfig, ...config };
+
     const container = document.getElementById(containerId);
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🌐 HTTP Request/Response Simulator</h3>
+          <h3 class="widget-title">${settings.title}</h3>
         </div>
         <div class="widget-body">
           <div class="grid grid-2">
             <div>
               <label><strong>Request Builder</strong></label>
-              <textarea id="${containerId}-request" rows="12" placeholder="GET /api/users?id=1 HTTP/1.1
-Host: example.com
-Authorization: Bearer token123
-User-Agent: AppSec-Student
-
-"></textarea>
+              <textarea id="${containerId}-request" rows="12" placeholder="${settings.placeholder}"></textarea>
               <button class="btn btn-primary mt-1" onclick="AppSecWidgets.HTTPSimulator.sendRequest('${containerId}')">Send Request</button>
             </div>
             <div>
@@ -221,318 +227,81 @@ AppSecWidgets.FlowVisualizer = {
 
 /**
  * ============================================
- * 4. Attack/Defense Toggle
- * ============================================
- */
-AppSecWidgets.AttackDefense = {
-  create(containerId, vulnerability, attackContent, defenseContent) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">⚔️ ${vulnerability}: Attack vs Defense</h3>
-          <div>
-            <button class="btn btn-danger" id="${containerId}-attack-btn">🔴 Attack Mode</button>
-            <button class="btn btn-success" id="${containerId}-defense-btn">🛡️ Defense Mode</button>
-          </div>
-        </div>
-        <div class="widget-body">
-          <div id="${containerId}-attack" style="display: block;">
-            <div class="callout callout-danger"><strong>⚠️ Red Team Perspective</strong></div>
-            ${attackContent}
-          </div>
-          <div id="${containerId}-defense" style="display: none;">
-            <div class="callout callout-success"><strong>✅ Blue Team Perspective</strong></div>
-            ${defenseContent}
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.getElementById(`${containerId}-attack-btn`).onclick = () => this.showMode(containerId, 'attack');
-    document.getElementById(`${containerId}-defense-btn`).onclick = () => this.showMode(containerId, 'defense');
-  },
-
-  showMode(containerId, mode) {
-    document.getElementById(`${containerId}-attack`).style.display = mode === 'attack' ? 'block' : 'none';
-    document.getElementById(`${containerId}-defense`).style.display = mode === 'defense' ? 'block' : 'none';
-  }
-};
-
-/**
- * ============================================
- * 5. Vulnerable App Simulator
- * ============================================
- */
-AppSecWidgets.VulnApp = {
-  users: [
-    { id: 1, username: 'alice', password: 'pass123', role: 'admin', secret: 'FLAG{admin_secret_key}' },
-    { id: 2, username: 'bob', password: 'pass456', role: 'user', secret: 'Just a regular user' }
-  ],
-
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">🎯 Vulnerable App Simulator</h3>
-        </div>
-        <div class="widget-body">
-          <div class="grid grid-2">
-            <div>
-              <label>SQL Query (try SQLi!)</label>
-              <input type="text" id="${containerId}-sql" placeholder="Enter user ID (try: 1' OR '1'='1)">
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.VulnApp.executeQuery('${containerId}')">Execute Query</button>
-            </div>
-            <div>
-              <label>IDOR Test (access control)</label>
-              <input type="number" id="${containerId}-idor" placeholder="Enter user ID (try 1 or 2)">
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.VulnApp.testIDOR('${containerId}')">Get User Data</button>
-            </div>
-          </div>
-          <div class="mt-1">
-            <label><strong>Output:</strong></label>
-            <pre id="${containerId}-output" style="min-height: 150px; background: var(--code-bg); padding: 1rem; border-radius: 0.5rem;">Results will appear here...</pre>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  executeQuery(containerId) {
-    const input = document.getElementById(`${containerId}-sql`).value;
-    const output = document.getElementById(`${containerId}-output`);
-
-    if (input.includes("'") && (input.toLowerCase().includes('or') || input.includes('--'))) {
-      output.textContent = 'SQL Injection Successful! 🎉\n\n' +
-        'All users returned:\n' +
-        JSON.stringify(this.users, null, 2) +
-        '\n\n⚠️ Vulnerability: SQL injection due to unsanitized input';
-      window.AppSec.Notify.show('🚨 SQLi exploit successful!', 'danger');
-    } else if (/^\d+$/.test(input)) {
-      const user = this.users.find(u => u.id === parseInt(input));
-      output.textContent = user ? `User found:\n${JSON.stringify(user, null, 2)}` : 'No user found';
-    } else {
-      output.textContent = 'Invalid input';
-    }
-  },
-
-  testIDOR(containerId) {
-    const input = document.getElementById(`${containerId}-idor`).value;
-    const output = document.getElementById(`${containerId}-output`);
-    const userId = parseInt(input);
-    const user = this.users.find(u => u.id === userId);
-
-    if (user) {
-      output.textContent = `IDOR Exploit! Accessing user ${userId}'s data:\n\n` +
-        JSON.stringify(user, null, 2) +
-        '\n\n⚠️ Vulnerability: No authorization check';
-
-      if (user.role === 'admin') {
-        window.AppSec.Notify.show('🎯 Admin account compromised!', 'danger');
-      }
-    } else {
-      output.textContent = 'User not found';
-    }
-  }
-};
-
-/**
- * ============================================
- * 6. Crypto Playground
- * ============================================
- */
-AppSecWidgets.CryptoPlayground = {
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">🔐 Crypto Playground</h3>
-        </div>
-        <div class="widget-body">
-          <div class="grid grid-2">
-            <div>
-              <label>Input Text</label>
-              <textarea id="${containerId}-input" rows="4" placeholder="Enter text to hash..."></textarea>
-              
-              <label class="mt-1">Algorithm</label>
-              <select id="${containerId}-algo">
-                <option value="SHA-256">SHA-256</option>
-                <option value="SHA-384">SHA-384</option>
-                <option value="SHA-512">SHA-512</option>
-              </select>
-              
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.CryptoPlayground.hash('${containerId}')">Generate Hash</button>
-              <button class="btn btn-secondary mt-1" onclick="AppSecWidgets.CryptoPlayground.generatePKCE('${containerId}')">Generate PKCE Pair</button>
-            </div>
-            <div>
-              <label>Output</label>
-              <textarea id="${containerId}-output" rows="10" readonly placeholder="Hash output..."></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  async hash(containerId) {
-    const input = document.getElementById(`${containerId}-input`).value;
-    const algo = document.getElementById(`${containerId}-algo`).value;
-    const output = document.getElementById(`${containerId}-output`);
-
-    if (!input) {
-      window.AppSec.Notify.show('Please enter text to hash', 'warning');
-      return;
-    }
-
-    const encoder = new TextEncoder();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest(algo, data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    output.value = `Algorithm: ${algo}\nHash: ${hashHex}\nLength: ${hashHex.length * 4} bits`;
-    window.AppSec.Notify.show('Hash generated successfully', 'success');
-  },
-
-  async generatePKCE(containerId) {
-    const output = document.getElementById(`${containerId}-output`);
-
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    const codeVerifier = btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-    const encoder = new TextEncoder();
-    const data = encoder.encode(codeVerifier);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const codeChallenge = btoa(String.fromCharCode(...hashArray))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-    output.value = `PKCE Pair Generated:\n\n` +
-      `code_verifier:\n${codeVerifier}\n\n` +
-      `code_challenge (SHA-256):\n${codeChallenge}\n\n` +
-      `code_challenge_method: S256`;
-
-    window.AppSec.Notify.show('PKCE pair generated', 'success');
-  }
-};
-
-/**
- * ============================================
- * 7. Log Analyzer (FIXED - Modal popup)
+ * 4. Log Analyzer (REFACTORED - Dynamic Data)
  * ============================================
  */
 AppSecWidgets.LogAnalyzer = {
-  create(containerId) {
-    const logs = [
-      { id: 1, time: '10:23:41', ip: '192.168.1.100', endpoint: '/api/users', status: 200, flag: false, details: 'Normal request - No issues detected' },
-      { id: 2, time: '10:23:42', ip: '192.168.1.100', endpoint: '/api/admin', status: 403, flag: true, details: 'Unauthorized access attempt to admin endpoint without proper credentials' },
-      { id: 3, time: '10:23:45', ip: '192.168.1.100', endpoint: '/api/fetch?url=http://169.254.169.254', status: 200, flag: true, details: 'SSRF attempt detected! Trying to access AWS metadata service at 169.254.169.254' },
-      { id: 4, time: '10:24:01', ip: '10.0.0.50', endpoint: '/login', status: 401, flag: false, details: 'Failed login attempt' },
-      { id: 5, time: '10:24:02', ip: '10.0.0.50', endpoint: '/login', status: 401, flag: false, details: 'Failed login attempt' },
-      { id: 6, time: '10:24:03', ip: '10.0.0.50', endpoint: '/login', status: 401, flag: true, details: 'Brute force attack detected! Multiple failed login attempts from same IP within 3 seconds' },
-      { id: 7, time: '10:24:10', ip: '172.16.0.1', endpoint: '/api/users', status: 200, flag: false, details: 'Normal request - No issues detected' }
-    ];
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '🔍 Security Log Analyzer',
+      columns: ['Time', 'Event', 'User', 'IP', 'Status'],
+      logs: [],
+      placeholder: 'No logs to display. Pass log data via the data parameter.'
+    };
+    const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
-    const logsHtml = logs.map(log => `
-      <tr style="cursor: pointer; ${log.flag ? 'background: rgba(220, 53, 69, 0.1);' : ''}" 
-          onclick="AppSecWidgets.LogAnalyzer.showModal(${log.id}, '${containerId}')">
-        <td>${log.time}</td>
-        <td>${log.ip}</td>
-        <td><code>${log.endpoint}</code></td>
-        <td><span style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: ${log.status < 300 ? 'var(--color-success)' : log.status < 400 ? 'var(--color-warning)' : 'var(--color-danger)'}; color: white;">${log.status}</span></td>
-        <td>${log.flag ? '🚩' : '✅'}</td>
-      </tr>
-    `).join('');
+    
+    const tableRows = config.logs.length > 0 
+      ? config.logs.map(log => `
+          <tr class="log-row log-${log.severity || 'info'}">
+            <td>${log.time || ''}</td>
+            <td>${log.event || ''}</td>
+            <td>${log.user || ''}</td>
+            <td>${log.ip || ''}</td>
+            <td><span class="badge badge-${log.status === 'success' ? 'success' : log.status === 'blocked' ? 'danger' : 'warning'}">${log.status || ''}</span></td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</td></tr>`;
 
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">📋 Security Log Analyzer</h3>
+          <h3 class="widget-title">${config.title}</h3>
+          <button class="btn btn-secondary" onclick="AppSecWidgets.LogAnalyzer.refresh('${containerId}')">🔄 Refresh</button>
         </div>
         <div class="widget-body">
-          <p>Click on any log entry to see detailed analysis.</p>
-          <div style="overflow-x: auto;">
-            <table style="min-width: 700px;">
+          <div class="table-responsive">
+            <table class="log-table">
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>IP Address</th>
-                  <th>Endpoint</th>
-                  <th>Status</th>
-                  <th>Flag</th>
+                  ${config.columns.map(col => `<th>${col}</th>`).join('')}
                 </tr>
               </thead>
-              <tbody>${logsHtml}</tbody>
+              <tbody id="${containerId}-logs">
+                ${tableRows}
+              </tbody>
             </table>
           </div>
         </div>
       </div>
-
-      <div id="${containerId}-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-          <span class="modal-close" onclick="AppSecWidgets.LogAnalyzer.closeModal('${containerId}')">&times;</span>
-          <h3>🔍 Log Analysis</h3>
-          <div id="${containerId}-modal-body"></div>
-        </div>
-      </div>
     `;
 
-    AppSecWidgets._state[containerId] = { logs };
-    this.addModalStyles();
+    AppSecWidgets._state[containerId] = { config };
+    this.addStyles();
   },
 
-  showModal(logId, containerId) {
+  refresh(containerId) {
     const state = AppSecWidgets._state[containerId];
-    const log = state.logs.find(l => l.id === logId);
-
-    const modal = document.getElementById(`${containerId}-modal`);
-    const modalBody = document.getElementById(`${containerId}-modal-body`);
-
-    modalBody.innerHTML = `
-      <div class="alert ${log.flag ? 'alert-danger' : 'alert-success'}">
-        <p><strong>Time:</strong> ${log.time}</p>
-        <p><strong>IP Address:</strong> ${log.ip}</p>
-        <p><strong>Endpoint:</strong> <code>${log.endpoint}</code></p>
-        <p><strong>Status Code:</strong> ${log.status}</p>
-        <p><strong>Security Flag:</strong> ${log.flag ? '🚩 Suspicious' : '✅ Clean'}</p>
-        <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
-        <p><strong>Analysis:</strong></p>
-        <p>${log.details}</p>
-      </div>
-    `;
-
-    modal.style.display = 'flex';
+    if (!state) return;
+    
+    // Recreate with same config
+    this.create(containerId, state.config);
+    window.AppSec?.Notify?.show('🔄 Logs refreshed', 'info');
   },
 
-  closeModal(containerId) {
-    document.getElementById(`${containerId}-modal`).style.display = 'none';
-  },
-
-  addModalStyles() {
-    if (!document.getElementById('modal-styles')) {
+  addStyles() {
+    if (!document.getElementById('log-analyzer-styles')) {
       const style = document.createElement('style');
-      style.id = 'modal-styles';
+      style.id = 'log-analyzer-styles';
       style.textContent = `
-        .modal {
-          display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-          width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
-          align-items: center; justify-content: center;
-        }
-        .modal-content {
-          background-color: var(--bg-primary); padding: 2rem; border-radius: 0.75rem;
-          max-width: 600px; width: 90%; box-shadow: var(--shadow-lg); position: relative;
-          max-height: 80vh; overflow-y: auto;
-        }
-        .modal-close {
-          position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem;
-          font-weight: bold; cursor: pointer; color: var(--text-secondary);
-        }
-        .modal-close:hover { color: var(--color-danger); }
+        .log-table { width: 100%; border-collapse: collapse; }
+        .log-table th, .log-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .log-table th { background: var(--bg-tertiary); font-weight: 600; }
+        .log-row:hover { background: var(--bg-secondary); }
+        .log-warning { background: rgba(255, 193, 7, 0.1); }
+        .log-danger { background: rgba(220, 53, 69, 0.1); }
+        .table-responsive { overflow-x: auto; }
       `;
       document.head.appendChild(style);
     }
@@ -541,190 +310,872 @@ AppSecWidgets.LogAnalyzer = {
 
 /**
  * ============================================
- * 8. JWT Decoder & Analyzer
+ * 5. Progress Tracker (REFACTORED - Dynamic Data)
  * ============================================
  */
-AppSecWidgets.JWTAnalyzer = {
-  create(containerId) {
+AppSecWidgets.ProgressTracker = {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '📊 Security Skills Progress',
+      categories: [],
+      placeholder: 'No progress data available.'
+    };
+    const config = { ...defaultData, ...data };
+
     const container = document.getElementById(containerId);
+    
+    const categoriesHtml = config.categories.length > 0
+      ? config.categories.map(cat => `
+          <div class="progress-category">
+            <div class="progress-header">
+              <span>${cat.icon || '📘'} ${cat.name || 'Unknown'}</span>
+              <span class="progress-percent">${cat.progress || 0}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${cat.progress || 0}%"></div>
+            </div>
+            ${cat.items && cat.items.length > 0 ? `
+              <ul class="progress-items">
+                ${cat.items.map(item => `
+                  <li>
+                    <span class="progress-status">${item.completed ? '✅' : '⬜'}</span>
+                    ${item.name || ''}
+                  </li>
+                `).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `).join('')
+      : `<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>`;
+
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🎫 JWT Decoder & Security Analyzer</h3>
+          <h3 class="widget-title">${config.title}</h3>
         </div>
         <div class="widget-body">
-          <label>Paste JWT Token</label>
-          <textarea id="${containerId}-input" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
-          <button class="btn btn-primary mt-1" onclick="AppSecWidgets.JWTAnalyzer.decode('${containerId}')">Decode & Analyze</button>
-          
-          <div id="${containerId}-output" class="mt-1" style="display: none;">
-            <h4>📄 Header</h4>
-            <pre id="${containerId}-header"></pre>
-            
-            <h4>📦 Payload</h4>
-            <pre id="${containerId}-payload"></pre>
-            
-            <h4>🔍 Security Analysis</h4>
-            <div id="${containerId}-analysis"></div>
-          </div>
+          ${categoriesHtml}
         </div>
       </div>
     `;
+
+    this.addStyles();
   },
 
-  decode(containerId) {
-    const input = document.getElementById(`${containerId}-input`).value.trim();
-    const output = document.getElementById(`${containerId}-output`);
-
-    if (!input) {
-      window.AppSec.Notify.show('Please enter a JWT token', 'warning');
-      return;
-    }
-
-    try {
-      const parts = input.split('.');
-      if (parts.length !== 3) throw new Error('Invalid JWT format');
-
-      const header = JSON.parse(atob(parts[0]));
-      const payload = JSON.parse(atob(parts[1]));
-
-      document.getElementById(`${containerId}-header`).textContent = JSON.stringify(header, null, 2);
-      document.getElementById(`${containerId}-payload`).textContent = JSON.stringify(payload, null, 2);
-
-      const issues = [];
-      if (header.alg === 'none') {
-        issues.push('<div class="alert alert-danger">🚨 Critical: Algorithm set to "none" - signature bypassed!</div>');
-      }
-      if (header.alg === 'HS256' && !payload.exp) {
-        issues.push('<div class="alert alert-warning">⚠️ Warning: No expiration time set</div>');
-      }
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        issues.push('<div class="alert alert-danger">🚨 Token expired</div>');
-      }
-      if (!payload.iss) {
-        issues.push('<div class="alert alert-warning">⚠️ No issuer claim</div>');
-      }
-      if (issues.length === 0) {
-        issues.push('<div class="alert alert-success">✅ No major security issues detected</div>');
-      }
-
-      document.getElementById(`${containerId}-analysis`).innerHTML = issues.join('');
-      output.style.display = 'block';
-      window.AppSec.Notify.show('JWT decoded successfully', 'success');
-    } catch (error) {
-      window.AppSec.Notify.show('Invalid JWT format', 'danger');
+  addStyles() {
+    if (!document.getElementById('progress-tracker-styles')) {
+      const style = document.createElement('style');
+      style.id = 'progress-tracker-styles';
+      style.textContent = `
+        .progress-category { margin-bottom: 1.5rem; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600; }
+        .progress-percent { color: var(--color-primary); }
+        .progress-bar { height: 0.5rem; background: var(--bg-tertiary); border-radius: 0.25rem; overflow: hidden; margin-bottom: 0.75rem; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-success)); transition: width 0.3s ease; }
+        .progress-items { list-style: none; padding: 0; margin: 0; }
+        .progress-items li { padding: 0.5rem; display: flex; gap: 0.5rem; align-items: center; }
+        .progress-status { font-size: 1rem; }
+      `;
+      document.head.appendChild(style);
     }
   }
 };
 
 /**
  * ============================================
- * 9. Password Strength Meter
+ * 6. Attack Vector Sandbox (REFACTORED - Dynamic Data)
  * ============================================
  */
-AppSecWidgets.PasswordMeter = {
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">🔑 Password Strength Analyzer</h3>
-        </div>
-        <div class="widget-body">
-          <label>Enter Password</label>
-          <input type="text" id="${containerId}-input" placeholder="Type password..." oninput="AppSecWidgets.PasswordMeter.analyze('${containerId}')">
-          
-          <div class="mt-1">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-              <div style="flex: 1; height: 20px; background: var(--bg-tertiary); border-radius: 10px; overflow: hidden;">
-                <div id="${containerId}-bar" style="height: 100%; width: 0%; transition: all 0.3s ease;"></div>
-              </div>
-              <span id="${containerId}-label" style="font-weight: bold; min-width: 100px;">-</span>
-            </div>
-          </div>
-          
-          <div id="${containerId}-details" class="mt-1"></div>
-        </div>
-      </div>
-    `;
-  },
+AppSecWidgets.AttackSandbox = {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '🎯 Attack Vector Sandbox',
+      scenarios: [],
+      placeholder: 'No attack scenarios available.'
+    };
+    const config = { ...defaultData, ...data };
 
-  analyze(containerId) {
-    const password = document.getElementById(`${containerId}-input`).value;
-    const bar = document.getElementById(`${containerId}-bar`);
-    const label = document.getElementById(`${containerId}-label`);
-    const details = document.getElementById(`${containerId}-details`);
-
-    if (!password) {
-      bar.style.width = '0%';
-      label.textContent = '-';
-      details.innerHTML = '';
-      return;
-    }
-
-    let score = 0;
-    const checks = {
-      length: password.length >= 12,
-      uppercase: /[A-Z]/.test(password),
-      lowercase: /[a-z]/.test(password),
-      numbers: /[0-9]/.test(password),
-      special: /[^A-Za-z0-9]/.test(password)
+    AppSecWidgets._state[containerId] = { 
+      scenarios: config.scenarios,
+      currentScenario: 0,
+      output: ''
     };
 
-    score += Math.min(password.length * 4, 40);
-    if (checks.uppercase) score += 10;
-    if (checks.lowercase) score += 10;
-    if (checks.numbers) score += 10;
-    if (checks.special) score += 15;
-    if (password.length >= 16) score += 15;
+    this.render(containerId, config.title, config.placeholder);
+    this.addStyles();
+  },
 
-    let charset = 0;
-    if (checks.lowercase) charset += 26;
-    if (checks.uppercase) charset += 26;
-    if (checks.numbers) charset += 10;
-    if (checks.special) charset += 32;
-    const entropy = password.length * Math.log2(charset);
+  render(containerId, title = '🎯 Attack Vector Sandbox', placeholder = '') {
+    const state = AppSecWidgets._state[containerId];
+    const { scenarios, currentScenario, output } = state;
+    const container = document.getElementById(containerId);
 
-    let strength, color;
-    if (score < 30) {
-      strength = 'Very Weak';
-      color = '#dc3545';
-    } else if (score < 50) {
-      strength = 'Weak';
-      color = '#fd7e14';
-    } else if (score < 70) {
-      strength = 'Fair';
-      color = '#ffc107';
-    } else if (score < 85) {
-      strength = 'Strong';
-      color = '#28a745';
-    } else {
-      strength = 'Very Strong';
-      color = '#20c997';
+    if (scenarios.length === 0) {
+      container.innerHTML = `
+        <div class="widget">
+          <div class="widget-header">
+            <h3 class="widget-title">${title}</h3>
+          </div>
+          <div class="widget-body">
+            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${placeholder}</p>
+          </div>
+        </div>
+      `;
+      return;
     }
 
-    bar.style.width = Math.min(score, 100) + '%';
-    bar.style.background = color;
-    label.textContent = strength;
-    label.style.color = color;
+    const scenario = scenarios[currentScenario];
+    const scenarioButtons = scenarios.map((s, idx) => `
+      <button class="btn ${idx === currentScenario ? 'btn-primary' : 'btn-secondary'}" 
+              onclick="AppSecWidgets.AttackSandbox.selectScenario('${containerId}', ${idx})">
+        ${s.name || `Scenario ${idx + 1}`}
+      </button>
+    `).join('');
 
-    details.innerHTML = `
-      <p><strong>Entropy:</strong> ${entropy.toFixed(1)} bits</p>
-      <p><strong>Criteria:</strong></p>
-      <ul style="margin-left: 1.5rem;">
-        <li style="color: ${checks.length ? 'var(--color-success)' : 'var(--color-danger)'}">${checks.length ? '✅' : '❌'} At least 12 characters</li>
-        <li style="color: ${checks.uppercase ? 'var(--color-success)' : 'var(--color-danger)'}">${checks.uppercase ? '✅' : '❌'} Uppercase letters</li>
-        <li style="color: ${checks.lowercase ? 'var(--color-success)' : 'var(--color-danger)'}">${checks.lowercase ? '✅' : '❌'} Lowercase letters</li>
-        <li style="color: ${checks.numbers ? 'var(--color-success)' : 'var(--color-danger)'}">${checks.numbers ? '✅' : '❌'} Numbers</li>
-        <li style="color: ${checks.special ? 'var(--color-success)' : 'var(--color-danger)'}">${checks.special ? '✅' : '❌'} Special characters</li>
-      </ul>
+    container.innerHTML = `
+      <div class="widget">
+        <div class="widget-header">
+          <h3 class="widget-title">${title}</h3>
+        </div>
+        <div class="widget-body">
+          <div class="attack-scenarios mb-1">
+            ${scenarioButtons}
+          </div>
+          <div class="attack-details">
+            <h4>${scenario.name || 'Attack Scenario'}</h4>
+            <p>${scenario.description || ''}</p>
+            <div class="grid grid-2 mt-1">
+              <div>
+                <label><strong>Attack Payload</strong></label>
+                <textarea id="${containerId}-payload" rows="6">${scenario.payload || ''}</textarea>
+                <button class="btn btn-danger mt-1" onclick="AppSecWidgets.AttackSandbox.executeAttack('${containerId}')">
+                  ⚔️ Execute Attack
+                </button>
+              </div>
+              <div>
+                <label><strong>System Response</strong></label>
+                <textarea id="${containerId}-output" rows="6" readonly placeholder="Output will appear here...">${output}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
+  },
+
+  selectScenario(containerId, index) {
+    const state = AppSecWidgets._state[containerId];
+    state.currentScenario = index;
+    state.output = '';
+    this.render(containerId);
+  },
+
+  executeAttack(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    const scenario = state.scenarios[state.currentScenario];
+    const payload = document.getElementById(`${containerId}-payload`).value;
+
+    let response = scenario.response || 'Attack executed. No specific response defined.';
+    
+    // Check if scenario has custom response logic
+    if (scenario.checkPayload && typeof scenario.checkPayload === 'function') {
+      response = scenario.checkPayload(payload);
+    }
+
+    state.output = response;
+    document.getElementById(`${containerId}-output`).value = response;
+
+    if (scenario.notifyType && window.AppSec?.Notify) {
+      window.AppSec.Notify.show(scenario.notifyMessage || 'Attack executed', scenario.notifyType);
+    }
+  },
+
+  addStyles() {
+    if (!document.getElementById('attack-sandbox-styles')) {
+      const style = document.createElement('style');
+      style.id = 'attack-sandbox-styles';
+      style.textContent = `
+        .attack-scenarios { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .attack-details h4 { margin-bottom: 0.5rem; color: var(--color-danger); }
+        .attack-details p { margin-bottom: 1rem; color: var(--text-secondary); }
+      `;
+      document.head.appendChild(style);
+    }
   }
 };
 
 /**
  * ============================================
- * 10. Threat Modeling Canvas (Guided + Context)
+ * 7. TLS Certificate Inspector (REFACTORED - Dynamic Data)
+ * ============================================
+ */
+AppSecWidgets.CertificateInspector = {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '🔐 TLS Certificate Inspector',
+      certificate: null,
+      placeholder: 'No certificate data provided.'
+    };
+    const config = { ...defaultData, ...data };
+
+    const container = document.getElementById(containerId);
+
+    if (!config.certificate) {
+      container.innerHTML = `
+        <div class="widget">
+          <div class="widget-header">
+            <h3 class="widget-title">${config.title}</h3>
+          </div>
+          <div class="widget-body">
+            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const cert = config.certificate;
+    const now = new Date();
+    const validFrom = cert.validFrom ? new Date(cert.validFrom) : null;
+    const validTo = cert.validTo ? new Date(cert.validTo) : null;
+    const isExpired = validTo && validTo < now;
+    const daysUntilExpiry = validTo ? Math.floor((validTo - now) / (1000 * 60 * 60 * 24)) : null;
+
+    container.innerHTML = `
+      <div class="widget">
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+          <span class="cert-status ${isExpired ? 'cert-expired' : 'cert-valid'}">
+            ${isExpired ? '❌ Expired' : '✅ Valid'}
+          </span>
+        </div>
+        <div class="widget-body">
+          <div class="cert-details">
+            <div class="cert-field">
+              <strong>Common Name (CN):</strong>
+              <span>${cert.commonName || 'N/A'}</span>
+            </div>
+            <div class="cert-field">
+              <strong>Issuer:</strong>
+              <span>${cert.issuer || 'N/A'}</span>
+            </div>
+            <div class="cert-field">
+              <strong>Valid From:</strong>
+              <span>${cert.validFrom || 'N/A'}</span>
+            </div>
+            <div class="cert-field">
+              <strong>Valid To:</strong>
+              <span>${cert.validTo || 'N/A'}</span>
+            </div>
+            <div class="cert-field">
+              <strong>Serial Number:</strong>
+              <span>${cert.serialNumber || 'N/A'}</span>
+            </div>
+            <div class="cert-field">
+              <strong>Signature Algorithm:</strong>
+              <span>${cert.signatureAlgorithm || 'N/A'}</span>
+            </div>
+            ${daysUntilExpiry !== null ? `
+              <div class="cert-field">
+                <strong>Days Until Expiry:</strong>
+                <span class="${daysUntilExpiry < 30 ? 'text-danger' : daysUntilExpiry < 90 ? 'text-warning' : 'text-success'}">
+                  ${daysUntilExpiry} days
+                </span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.addStyles();
+  },
+
+  addStyles() {
+    if (!document.getElementById('cert-inspector-styles')) {
+      const style = document.createElement('style');
+      style.id = 'cert-inspector-styles';
+      style.textContent = `
+        .cert-status { padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 600; }
+        .cert-valid { background: var(--color-success); color: white; }
+        .cert-expired { background: var(--color-danger); color: white; }
+        .cert-details { display: flex; flex-direction: column; gap: 1rem; }
+        .cert-field { display: flex; justify-content: space-between; padding: 0.75rem; background: var(--bg-secondary); border-radius: 0.25rem; }
+        .cert-field strong { color: var(--text-primary); }
+        .cert-field span { color: var(--text-secondary); }
+        .text-success { color: var(--color-success); }
+        .text-warning { color: var(--color-warning); }
+        .text-danger { color: var(--color-danger); }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+};
+
+/**
+ * ============================================
+ * 8. Code Review Checker (REFACTORED - Dynamic Data)
+ * ============================================
+ */
+AppSecWidgets.CodeReviewChecker = {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '🔎 Security Code Review',
+      code: '',
+      vulnerabilities: [],
+      placeholder: 'No code provided for review.'
+    };
+    const config = { ...defaultData, ...data };
+
+    const container = document.getElementById(containerId);
+
+    if (!config.code) {
+      container.innerHTML = `
+        <div class="widget">
+          <div class="widget-header">
+            <h3 class="widget-title">${config.title}</h3>
+          </div>
+          <div class="widget-body">
+            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const vulnCount = config.vulnerabilities.length;
+    const vulnHtml = config.vulnerabilities.length > 0
+      ? config.vulnerabilities.map(vuln => `
+          <div class="vuln-item vuln-${vuln.severity || 'info'}">
+            <div class="vuln-header">
+              <span class="vuln-badge vuln-badge-${vuln.severity || 'info'}">
+                ${vuln.severity ? vuln.severity.toUpperCase() : 'INFO'}
+              </span>
+              <strong>${vuln.title || 'Security Issue'}</strong>
+            </div>
+            <p>${vuln.description || ''}</p>
+            ${vuln.line ? `<p class="vuln-line">Line ${vuln.line}</p>` : ''}
+            ${vuln.recommendation ? `
+              <div class="vuln-fix">
+                <strong>💡 Fix:</strong>
+                <p>${vuln.recommendation}</p>
+              </div>
+            ` : ''}
+          </div>
+        `).join('')
+      : '<p style="color: var(--color-success);">✅ No vulnerabilities detected!</p>';
+
+    container.innerHTML = `
+      <div class="widget">
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+          <span class="vuln-count">
+            ${vulnCount} issue${vulnCount !== 1 ? 's' : ''} found
+          </span>
+        </div>
+        <div class="widget-body">
+          <div class="code-review-section">
+            <label><strong>Code Under Review</strong></label>
+            <pre><code>${this.escapeHtml(config.code)}</code></pre>
+          </div>
+          <div class="code-review-section mt-1">
+            <label><strong>Security Findings</strong></label>
+            ${vulnHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.addStyles();
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  },
+
+  addStyles() {
+    if (!document.getElementById('code-review-styles')) {
+      const style = document.createElement('style');
+      style.id = 'code-review-styles';
+      style.textContent = `
+        .code-review-section { margin-bottom: 1rem; }
+        .code-review-section pre { background: var(--bg-tertiary); padding: 1rem; border-radius: 0.25rem; overflow-x: auto; }
+        .vuln-count { padding: 0.25rem 0.75rem; background: var(--color-danger); color: white; border-radius: 0.25rem; font-size: 0.875rem; }
+        .vuln-item { padding: 1rem; margin-bottom: 1rem; border-left: 4px solid; border-radius: 0.25rem; background: var(--bg-secondary); }
+        .vuln-critical { border-color: #dc3545; }
+        .vuln-high { border-color: #fd7e14; }
+        .vuln-medium { border-color: #ffc107; }
+        .vuln-low { border-color: #0dcaf0; }
+        .vuln-info { border-color: #6c757d; }
+        .vuln-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .vuln-badge { padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; color: white; }
+        .vuln-badge-critical { background: #dc3545; }
+        .vuln-badge-high { background: #fd7e14; }
+        .vuln-badge-medium { background: #ffc107; color: #000; }
+        .vuln-badge-low { background: #0dcaf0; color: #000; }
+        .vuln-badge-info { background: #6c757d; }
+        .vuln-line { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem; }
+        .vuln-fix { margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 0.25rem; }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+};
+
+/**
+ * ============================================
+ * 9. Vulnerability Timeline (REFACTORED - Dynamic Data)
+ * ============================================
+ */
+AppSecWidgets.VulnerabilityTimeline = {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '📅 Vulnerability Timeline',
+      vulnerabilities: [],
+      placeholder: 'No vulnerability data available.'
+    };
+    const config = { ...defaultData, ...data };
+
+    const container = document.getElementById(containerId);
+
+    if (config.vulnerabilities.length === 0) {
+      container.innerHTML = `
+        <div class="widget">
+          <div class="widget-header">
+            <h3 class="widget-title">${config.title}</h3>
+          </div>
+          <div class="widget-body">
+            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const timelineHtml = config.vulnerabilities.map((vuln, idx) => `
+      <div class="timeline-item">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <strong>${vuln.id || `VULN-${idx + 1}`}</strong>
+            <span class="timeline-date">${vuln.date || 'N/A'}</span>
+          </div>
+          <h4>${vuln.title || 'Vulnerability'}</h4>
+          <p>${vuln.description || ''}</p>
+          ${vuln.severity ? `
+            <span class="severity-badge severity-${vuln.severity.toLowerCase()}">
+              ${vuln.severity}
+            </span>
+          ` : ''}
+          ${vuln.link ? `
+            <a href="${vuln.link}" target="_blank" class="timeline-link">
+              View Details →
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="widget">
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+        </div>
+        <div class="widget-body">
+          <div class="timeline">
+            ${timelineHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.addStyles();
+  },
+
+  addStyles() {
+    if (!document.getElementById('timeline-styles')) {
+      const style = document.createElement('style');
+      style.id = 'timeline-styles';
+      style.textContent = `
+        .timeline { position: relative; padding-left: 2rem; }
+        .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: var(--border-color); }
+        .timeline-item { position: relative; margin-bottom: 2rem; }
+        .timeline-marker { position: absolute; left: -1.6rem; top: 0.25rem; width: 1rem; height: 1rem; border-radius: 50%; background: var(--color-primary); border: 2px solid var(--bg-primary); }
+        .timeline-content { background: var(--bg-secondary); padding: 1rem; border-radius: 0.5rem; }
+        .timeline-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .timeline-header strong { color: var(--color-primary); }
+        .timeline-date { font-size: 0.875rem; color: var(--text-secondary); }
+        .timeline-content h4 { margin: 0.5rem 0; }
+        .timeline-content p { color: var(--text-secondary); margin-bottom: 0.75rem; }
+        .severity-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 600; }
+        .severity-critical { background: #dc3545; color: white; }
+        .severity-high { background: #fd7e14; color: white; }
+        .severity-medium { background: #ffc107; color: #000; }
+        .severity-low { background: #0dcaf0; color: #000; }
+        .timeline-link { display: inline-block; margin-top: 0.5rem; color: var(--color-primary); text-decoration: none; }
+        .timeline-link:hover { text-decoration: underline; }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+};
+
+/* ============================================================
+ * 10. JSON-Driven Quiz Widget (improved, step-by-step by default)
+ * ============================================================ */
+AppSecWidgets.Quiz = {
+  create(containerId, data) {
+    const container = document.getElementById(containerId);
+    if (!container || !data || !Array.isArray(data.questions)) return;
+
+    const mode = data.mode || 'step';
+
+    // Classic mode: render all questions at once + single "Check answers" button
+    if (mode === 'classic') {
+      const questionsHtml = data.questions.map((q, idx) => `
+        <li class="quiz-question">
+          <p>${q.text}</p>
+          ${q.options.map((opt) => `
+            <label class="quiz-option">
+              <input type="radio" name="q${idx}" value="${opt.value}">
+              ${opt.label}
+            </label>
+          `).join("")}
+        </li>
+      `).join("");
+
+      // Add widget classes to container itself
+      container.classList.add("widget", "widget-quiz");
+
+      // Inject only inner widget structure
+      container.innerHTML = `
+        <div class="widget-header">
+          <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
+        </div>
+        <div class="widget-body">
+          ${data.intro ? `<p class="quiz-intro">${data.intro}</p>` : ""}
+          <ol class="quiz-list">${questionsHtml}</ol>
+          <button class="btn btn-primary mt-1 quiz-check-btn">
+            Check Answers
+          </button>
+          <div class="quiz-result mt-1" id="${containerId}-result"></div>
+        </div>
+      `;
+
+      const checkBtn = container.querySelector(".quiz-check-btn");
+      if (checkBtn) {
+        checkBtn.addEventListener("click", () => {
+          this.checkClassic(containerId, data.questions);
+        });
+      }
+      return;
+    }
+
+    // STEP MODE (default): one question at a time with Start button
+    AppSecWidgets._state[containerId] = {
+      questions: data.questions,
+      currentIndex: 0,
+      score: 0
+    };
+
+    container.innerHTML = `
+      <div class="widget-header">
+        <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
+        <div class="quiz-meta" id="${containerId}-meta" style="display:none;">
+          <span class="quiz-progress" id="${containerId}-progress"></span>
+          <span class="quiz-score" id="${containerId}-score"></span>
+        </div>
+      </div>
+      <div class="widget-body">
+        ${data.intro ? `<p class="quiz-intro" id="${containerId}-intro">${data.intro}</p>` :
+        `<p class="quiz-intro" id="${containerId}-intro">Short quiz to test your understanding.</p>`}
+        <button class="btn btn-primary" id="${containerId}-start-btn">Start Quiz</button>
+        <div class="quiz-question-container" id="${containerId}-question" style="display:none;"></div>
+        <div class="quiz-result mt-1" id="${containerId}-result"></div>
+      </div>
+    `;
+
+    const startBtn = document.getElementById(`${containerId}-start-btn`);
+    if (startBtn) {
+      startBtn.addEventListener("click", () => {
+        this.start(containerId);
+      });
+    }
+  },
+
+  // Classic mode checker
+  checkClassic(containerId, questions) {
+    let score = 0;
+    questions.forEach((q, idx) => {
+      const selected = document.querySelector(`input[name="q${idx}"]:checked`);
+      if (selected && q.options.find(o => o.correct && o.value === selected.value)) {
+        score++;
+      }
+    });
+
+    const result = document.getElementById(`${containerId}-result`);
+    if (!result) return;
+    result.innerHTML = `
+      <div class="callout callout-info-solid">
+        You scored <strong>${score}</strong> / <strong>${questions.length}</strong>
+      </div>
+    `;
+  },
+
+  start(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
+    const introEl = document.getElementById(`${containerId}-intro`);
+    const startBtn = document.getElementById(`${containerId}-start-btn`);
+    const metaEl = document.getElementById(`${containerId}-meta`);
+    const questionContainer = document.getElementById(`${containerId}-question`);
+
+    if (introEl) introEl.style.display = "none";
+    if (startBtn) startBtn.style.display = "none";
+    if (metaEl) metaEl.style.display = "flex";
+    if (questionContainer) questionContainer.style.display = "block";
+
+    state.currentIndex = 0;
+    state.score = 0;
+    this.renderQuestion(containerId);
+  },
+
+  renderQuestion(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
+    const { questions, currentIndex, score } = state;
+    const q = questions[currentIndex];
+    const total = questions.length;
+
+    const progressEl = document.getElementById(`${containerId}-progress`);
+    const scoreEl = document.getElementById(`${containerId}-score`);
+    const questionContainer = document.getElementById(`${containerId}-question`);
+
+    if (progressEl) progressEl.textContent = `Question ${currentIndex + 1}/${total}`;
+    if (scoreEl) scoreEl.textContent = `Score: ${score}`;
+    if (!questionContainer) return;
+
+    const optionsHtml = q.options.map(opt => `
+      <button type="button" class="quiz-option-btn" data-value="${opt.value}">
+        ${opt.label}
+      </button>
+    `).join("");
+
+    questionContainer.innerHTML = `
+      <div class="quiz-question-card">
+        <p class="quiz-question-text">${q.text}</p>
+        <div class="quiz-options">
+          ${optionsHtml}
+        </div>
+      </div>
+    `;
+
+    questionContainer.querySelectorAll(".quiz-option-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const value = e.currentTarget.getAttribute("data-value");
+        this.handleAnswer(containerId, value);
+      });
+    });
+  },
+
+  handleAnswer(containerId, value) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+    const { questions, currentIndex } = state;
+    const q = questions[currentIndex];
+
+    const isCorrect = q.options.some(o => o.correct && o.value === value);
+    if (isCorrect) {
+      state.score += 1;
+    }
+
+    const result = document.getElementById(`${containerId}-result`);
+    if (result) {
+      result.innerHTML = `
+        <div class="alert ${isCorrect ? "alert-success-solid" : "alert-danger-solid"}">
+          ${isCorrect ? "✅ Correct!" : "❌ Not quite. Review the concept above and try to reason why."}
+        </div>
+      `;
+    }
+
+    if (currentIndex + 1 < questions.length) {
+      state.currentIndex += 1;
+      this.renderQuestion(containerId);
+    } else {
+      this.finish(containerId);
+    }
+  },
+
+  finish(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+    const { questions, score } = state;
+
+    const questionContainer = document.getElementById(`${containerId}-question`);
+    const progressEl = document.getElementById(`${containerId}-progress`);
+    const scoreEl = document.getElementById(`${containerId}-score`);
+    const result = document.getElementById(`${containerId}-result`);
+
+    if (questionContainer) {
+      questionContainer.innerHTML = `
+        <div class="quiz-question-card">
+          <p class="quiz-question-text">Nice work! You answered all questions.</p>
+        </div>
+      `;
+    }
+    if (progressEl) progressEl.textContent = "Completed";
+    if (scoreEl) scoreEl.textContent = `Final score: ${score}/${questions.length}`;
+
+    if (result) {
+      result.innerHTML = `
+        <div class="callout callout-info-solid">
+          You scored <strong>${score}</strong> out of <strong>${questions.length}</strong>.
+        </div>
+      `;
+    }
+  }
+};
+
+/**
+ * ============================================
+ * 11. Input Validation Trainer (NEW!)
+ * ============================================
+ * Purpose: Practice input validation patterns
+ * Use for: Regex, sanitization, validation
+ */
+AppSecWidgets.ValidationTrainer = {
+  create(containerId, data = {}) {
+    const defaultPatterns = {
+      email: {
+        regex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        examples: ['user@example.com', 'john.doe+tag@company.co.uk'],
+        description: 'Valid email format'
+      },
+      url: {
+        regex: /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/,
+        examples: ['https://example.com', 'http://sub.example.com/path'],
+        description: 'Valid HTTP/HTTPS URL'
+      },
+      phone: {
+        regex: /^\+?1?\d{10,14}$/,
+        examples: ['+12025551234', '2025551234'],
+        description: 'Valid phone number'
+      },
+      ssn: {
+        regex: /^\d{3}-\d{2}-\d{4}$/,
+        examples: ['123-45-6789'],
+        description: 'Valid SSN format (should be encrypted!)'
+      },
+      creditcard: {
+        regex: /^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}$/,
+        examples: ['4532-1234-5678-9010', '4532123456789010'],
+        description: 'Valid credit card format (should be tokenized!)'
+      }
+    };
+
+    const config = {
+      title: data.title || '✅ Input Validation Trainer',
+      patterns: data.patterns || defaultPatterns
+    };
+
+    const ruleOptions = Object.keys(config.patterns).map(key => {
+      const pattern = config.patterns[key];
+      const label = pattern.label || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+      return `<option value="${key}">${label}</option>`;
+    }).join('');
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = `
+      <div class="widget">
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+        </div>
+        <div class="widget-body">
+          <div class="grid grid-2">
+            <div>
+              <label><strong>Validation Rule</strong></label>
+              <select id="${containerId}-rule" onchange="AppSecWidgets.ValidationTrainer.updateExample('${containerId}')">
+                ${ruleOptions}
+              </select>
+              
+              <label class="mt-1"><strong>Regex Pattern</strong></label>
+              <input type="text" id="${containerId}-pattern" readonly>
+              
+              <label class="mt-1"><strong>Test Input</strong></label>
+              <input type="text" id="${containerId}-input" placeholder="Enter test value...">
+              
+              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.ValidationTrainer.validate('${containerId}')">Validate</button>
+            </div>
+            
+            <div>
+              <label><strong>Validation Result</strong></label>
+              <div id="${containerId}-result" class="mt-1"></div>
+              
+              <label class="mt-1"><strong>Example Valid Inputs</strong></label>
+              <div id="${containerId}-examples" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    AppSecWidgets._state[containerId] = { config: config };
+    this.updateExample(containerId);
+  },
+
+  updateExample(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    const config = state.config;
+    const rule = document.getElementById(`${containerId}-rule`).value;
+    const pattern = config.patterns[rule];
+
+    document.getElementById(`${containerId}-pattern`).value = pattern.regex.toString();
+    document.getElementById(`${containerId}-examples`).innerHTML =
+      `<p><strong>${pattern.description}</strong></p>` +
+      pattern.examples.map(ex => `<code>${ex}</code>`).join('<br>');
+  },
+
+  validate(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    const config = state.config;
+    const rule = document.getElementById(`${containerId}-rule`).value;
+    const input = document.getElementById(`${containerId}-input`).value;
+    const result = document.getElementById(`${containerId}-result`);
+    const pattern = config.patterns[rule];
+
+    if (!input) {
+      result.innerHTML = '<div class="alert alert-warning">⚠️ Please enter a value to validate</div>';
+      return;
+    }
+
+    const isValid = pattern.regex.test(input);
+
+    if (isValid) {
+      result.innerHTML = `
+        <div class="callout callout-success">
+          <p><strong>✅ Valid Input</strong></p>
+          <p>Matches pattern: ${pattern.description}</p>
+        </div>
+      `;
+    } else {
+      result.innerHTML = `
+        <div class="callout callout-danger">
+          <p><strong>❌ Invalid Input</strong></p>
+          <p>Does not match required pattern</p>
+          <p><strong>Expected:</strong> ${pattern.description}</p>
+        </div>
+      `;
+    }
+  }
+};
+
+/**
+ * ============================================
+ * 12. Threat Modeling Canvas (Guided + Context)
  * ============================================
  */
 AppSecWidgets.ThreatModel = {
@@ -1010,275 +1461,54 @@ AppSecWidgets.ThreatModel = {
 
 /**
  * ============================================
- * 11. Interactive Flowchart Builder (NEW!)
- * ============================================
- * Purpose: Create security flowcharts and diagrams
- * Use for: Attack trees, decision flows, architecture diagrams
- */
-AppSecWidgets.FlowchartBuilder = {
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">🗺️ Security Flowchart Builder</h3>
-          <div>
-            <button class="btn btn-primary" onclick="AppSecWidgets.FlowchartBuilder.addNode('${containerId}', 'box')">+ Box</button>
-            <button class="btn btn-success" onclick="AppSecWidgets.FlowchartBuilder.addNode('${containerId}', 'diamond')">+ Decision</button>
-            <button class="btn btn-secondary" onclick="AppSecWidgets.FlowchartBuilder.clear('${containerId}')">Clear</button>
-          </div>
-        </div>
-        <div class="widget-body">
-          <div id="${containerId}-canvas" style="min-height: 400px; background: var(--bg-tertiary); border-radius: 0.5rem; padding: 1rem; position: relative;">
-            <p style="text-align: center; color: var(--text-muted); padding-top: 10rem;">Click buttons above to add shapes</p>
-          </div>
-        </div>
-      </div>
-    `;
-
-    AppSecWidgets._state[containerId] = { nodes: [], nextId: 1 };
-    this.addFlowchartStyles();
-  },
-
-  addNode(containerId, type) {
-    const state = AppSecWidgets._state[containerId];
-    const canvas = document.getElementById(`${containerId}-canvas`);
-
-    if (state.nodes.length === 0) {
-      canvas.innerHTML = '';
-    }
-
-    const nodeId = `${containerId}-node-${state.nextId++}`;
-    const node = {
-      id: nodeId,
-      type: type,
-      text: type === 'diamond' ? 'Decision?' : 'Process',
-      x: Math.random() * 200 + 50,
-      y: Math.random() * 200 + 50
-    };
-
-    state.nodes.push(node);
-
-    const nodeDiv = document.createElement('div');
-    nodeDiv.id = nodeId;
-    nodeDiv.className = `flowchart-node flowchart-${type}`;
-    nodeDiv.style.left = node.x + 'px';
-    nodeDiv.style.top = node.y + 'px';
-    nodeDiv.innerHTML = `
-      <div class="flowchart-node-content" contenteditable="true">${node.text}</div>
-      <button class="flowchart-node-delete" onclick="AppSecWidgets.FlowchartBuilder.deleteNode('${containerId}', '${nodeId}')">&times;</button>
-    `;
-
-    this.makeDraggable(nodeDiv);
-    canvas.appendChild(nodeDiv);
-  },
-
-  deleteNode(containerId, nodeId) {
-    const state = AppSecWidgets._state[containerId];
-    state.nodes = state.nodes.filter(n => n.id !== nodeId);
-    document.getElementById(nodeId).remove();
-
-    if (state.nodes.length === 0) {
-      const canvas = document.getElementById(`${containerId}-canvas`);
-      canvas.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding-top: 10rem;">Click buttons above to add shapes</p>';
-    }
-  },
-
-  clear(containerId) {
-    AppSecWidgets._state[containerId] = { nodes: [], nextId: 1 };
-    const canvas = document.getElementById(`${containerId}-canvas`);
-    canvas.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding-top: 10rem;">Click buttons above to add shapes</p>';
-  },
-
-  makeDraggable(element) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-    element.onmousedown = dragMouseDown;
-
-    function dragMouseDown(e) {
-      if (e.target.contentEditable === 'true') return;
-      e.preventDefault();
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      document.onmouseup = closeDragElement;
-      document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-      e.preventDefault();
-      pos1 = pos3 - e.clientX;
-      pos2 = pos4 - e.clientY;
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      element.style.top = (element.offsetTop - pos2) + "px";
-      element.style.left = (element.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-      document.onmouseup = null;
-      document.onmousemove = null;
-    }
-  },
-
-  addFlowchartStyles() {
-    if (!document.getElementById('flowchart-styles')) {
-      const style = document.createElement('style');
-      style.id = 'flowchart-styles';
-      style.textContent = `
-        .flowchart-node {
-          position: absolute; cursor: move; user-select: none;
-          background: var(--bg-primary); border: 2px solid var(--color-primary);
-          padding: 1rem; border-radius: 0.5rem; min-width: 120px;
-          box-shadow: var(--shadow-md); transition: all 0.2s ease;
-        }
-        .flowchart-node:hover { box-shadow: var(--shadow-lg); z-index: 10; }
-        .flowchart-box { border-radius: 0.5rem; }
-        .flowchart-diamond {
-          border-radius: 0; transform: rotate(45deg);
-          min-width: 100px; min-height: 100px; display: flex;
-          align-items: center; justify-content: center;
-        }
-        .flowchart-diamond .flowchart-node-content {
-          transform: rotate(-45deg); text-align: center;
-        }
-        .flowchart-node-content {
-          outline: none; min-height: 20px; word-break: break-word;
-        }
-        .flowchart-node-delete {
-          position: absolute; top: -10px; right: -10px; width: 24px; height: 24px;
-          border-radius: 50%; background: var(--color-danger); color: white;
-          border: none; cursor: pointer; font-size: 16px; line-height: 20px;
-        }
-        .flowchart-node-delete:hover { background: #c82333; }
-      `;
-      document.head.appendChild(style);
-    }
-  }
-};
-
-/**
- * ============================================
- * 12. Interactive XSS Playground (NEW!)
- * ============================================
- * Purpose: Safe XSS testing environment
- * Use for: Understanding XSS contexts and bypasses
- */
-AppSecWidgets.XSSPlayground = {
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">⚠️ XSS Testing Playground</h3>
-        </div>
-        <div class="widget-body">
-          <div class="callout callout-warning">
-            <strong>⚠️ Safe Learning Environment:</strong> This widget demonstrates XSS without actually executing malicious code.
-          </div>
-          
-          <div class="grid grid-2">
-            <div>
-              <label><strong>Injection Context</strong></label>
-              <select id="${containerId}-context">
-                <option value="html">HTML Context</option>
-                <option value="attribute">HTML Attribute</option>
-                <option value="javascript">JavaScript Context</option>
-                <option value="url">URL Parameter</option>
-              </select>
-              
-              <label class="mt-1"><strong>Your Payload</strong></label>
-              <textarea id="${containerId}-input" rows="4" placeholder="Try: <script>alert('XSS')</script>"></textarea>
-              
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.XSSPlayground.test('${containerId}')">Test Payload</button>
-            </div>
-            
-            <div>
-              <label><strong>Sanitized Output</strong></label>
-              <pre id="${containerId}-output" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem; min-height: 100px;"></pre>
-              
-              <label class="mt-1"><strong>Security Analysis</strong></label>
-              <div id="${containerId}-analysis"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  test(containerId) {
-    const context = document.getElementById(`${containerId}-context`).value;
-    const input = document.getElementById(`${containerId}-input`).value;
-    const output = document.getElementById(`${containerId}-output`);
-    const analysis = document.getElementById(`${containerId}-analysis`);
-
-    let sanitized = '';
-    let issues = [];
-
-    switch (context) {
-      case 'html':
-        sanitized = input.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        if (input.includes('<script>')) {
-          issues.push('<div class="alert alert-danger">🚨 <script> tag detected and neutralized</div>');
-        }
-        if (input.includes('onerror=') || input.includes('onload=')) {
-          issues.push('<div class="alert alert-danger">🚨 Event handler detected</div>');
-        }
-        break;
-
-      case 'attribute':
-        sanitized = input.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        if (input.includes('"') || input.includes("'")) {
-          issues.push('<div class="alert alert-danger">🚨 Quote escape attempt detected</div>');
-        }
-        break;
-
-      case 'javascript':
-        sanitized = JSON.stringify(input);
-        if (input.includes('\\') || input.includes('"')) {
-          issues.push('<div class="alert alert-warning">⚠️ Escape characters detected</div>');
-        }
-        break;
-
-      case 'url':
-        sanitized = encodeURIComponent(input);
-        if (input.includes('javascript:') || input.includes('data:')) {
-          issues.push('<div class="alert alert-danger">🚨 Dangerous URL scheme detected</div>');
-        }
-        break;
-    }
-
-    if (issues.length === 0) {
-      issues.push('<div class="alert alert-success">✅ No obvious XSS patterns detected</div>');
-    }
-
-    output.textContent = sanitized;
-    analysis.innerHTML = issues.join('');
-  }
-};
-
-/**
- * ============================================
  * 13. API Security Tester (NEW!)
  * ============================================
  * Purpose: Test API authentication and authorization
  * Use for: JWT, API keys, rate limiting
  */
 AppSecWidgets.APITester = {
-  create(containerId) {
+  create(containerId, data = {}) {
+    const defaultData = {
+      title: '🔌 API Security Tester',
+      endpoints: [
+        { value: 'public', label: '/api/public', requiresAuth: false },
+        { value: 'protected', label: '/api/protected', requiresAuth: true },
+        { value: 'admin', label: '/api/admin', requiresAuth: true, requiresAdmin: true }
+      ],
+      rateLimit: 3,
+      responses: {
+        public: { status: 200, message: 'Public data accessible' },
+        protected: {
+          noAuth: { status: 401, error: 'Missing authentication token' },
+          invalid: { status: 401, error: 'Invalid token' },
+          success: { status: 200, message: 'Protected data', user: 'john@example.com' }
+        },
+        admin: {
+          noAuth: { status: 401, error: 'Missing authentication' },
+          forbidden: { status: 403, error: 'Insufficient permissions' },
+          success: { status: 200, message: 'Admin data', users: 150 }
+        }
+      }
+    };
+
+    const config = { ...defaultData, ...data };
+    
+    const endpointOptions = config.endpoints.map(ep => 
+      `<option value="${ep.value}">${ep.label}</option>`
+    ).join('');
+
     const container = document.getElementById(containerId);
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🔌 API Security Tester</h3>
+          <h3 class="widget-title">${config.title}</h3>
         </div>
         <div class="widget-body">
           <div class="grid grid-2">
             <div>
               <label><strong>API Endpoint</strong></label>
               <select id="${containerId}-endpoint">
-                <option value="public">/api/public</option>
-                <option value="protected">/api/protected</option>
-                <option value="admin">/api/admin</option>
+                ${endpointOptions}
               </select>
               
               <label class="mt-1"><strong>Authentication</strong></label>
@@ -1300,10 +1530,17 @@ AppSecWidgets.APITester = {
       </div>
     `;
 
-    AppSecWidgets._state[containerId] = { requestCount: 0, lastRequest: 0 };
+    AppSecWidgets._state[containerId] = { 
+      requestCount: 0, 
+      lastRequest: 0,
+      config: config
+    };
   },
 
   testAuth(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    const config = state.config;
+    
     const endpoint = document.getElementById(`${containerId}-endpoint`).value;
     const token = document.getElementById(`${containerId}-token`).value;
     const log = document.getElementById(`${containerId}-log`);
@@ -1311,23 +1548,28 @@ AppSecWidgets.APITester = {
     let response = '';
     const timestamp = new Date().toLocaleTimeString();
 
-    if (endpoint === 'public') {
-      response = `[${timestamp}] ✅ 200 OK\n{"message": "Public data accessible"}\n\n`;
-    } else if (endpoint === 'protected') {
+    const endpointConfig = config.endpoints.find(ep => ep.value === endpoint);
+    const responses = config.responses[endpoint];
+
+    if (!endpointConfig.requiresAuth) {
+      const data = responses.status ? responses : config.responses.public;
+      response = `[${timestamp}] ✅ ${data.status} OK\n${JSON.stringify({ message: data.message }, null, 2)}\n\n`;
+    } else if (endpointConfig.requiresAuth) {
       if (!token) {
-        response = `[${timestamp}] ❌ 401 Unauthorized\n{"error": "Missing authentication token"}\n\n`;
+        const data = responses.noAuth;
+        response = `[${timestamp}] ❌ ${data.status} Unauthorized\n${JSON.stringify({ error: data.error }, null, 2)}\n\n`;
       } else if (token.includes('invalid')) {
-        response = `[${timestamp}] ❌ 401 Unauthorized\n{"error": "Invalid token"}\n\n`;
+        const data = responses.invalid || responses.noAuth;
+        response = `[${timestamp}] ❌ ${data.status} Unauthorized\n${JSON.stringify({ error: data.error }, null, 2)}\n\n`;
+      } else if (endpointConfig.requiresAdmin && !token.includes('admin')) {
+        const data = responses.forbidden;
+        response = `[${timestamp}] ❌ ${data.status} Forbidden\n${JSON.stringify({ error: data.error }, null, 2)}\n\n`;
       } else {
-        response = `[${timestamp}] ✅ 200 OK\n{"message": "Protected data", "user": "john@example.com"}\n\n`;
-      }
-    } else if (endpoint === 'admin') {
-      if (!token) {
-        response = `[${timestamp}] ❌ 401 Unauthorized\n{"error": "Missing authentication"}\n\n`;
-      } else if (!token.includes('admin')) {
-        response = `[${timestamp}] ❌ 403 Forbidden\n{"error": "Insufficient permissions"}\n\n`;
-      } else {
-        response = `[${timestamp}] ✅ 200 OK\n{"message": "Admin data", "users": 150}\n\n`;
+        const data = responses.success;
+        const responseData = { message: data.message };
+        if (data.user) responseData.user = data.user;
+        if (data.users) responseData.users = data.users;
+        response = `[${timestamp}] ✅ ${data.status} OK\n${JSON.stringify(responseData, null, 2)}\n\n`;
       }
     }
 
@@ -1339,7 +1581,7 @@ AppSecWidgets.APITester = {
     const log = document.getElementById(`${containerId}-log`);
     const state = AppSecWidgets._state[containerId];
 
-    const rateLimit = 3; // Max 3 requests
+    const rateLimit = state.config.rateLimit;
     let output = '';
 
     for (let i = 0; i < requests; i++) {
@@ -1359,350 +1601,13 @@ AppSecWidgets.APITester = {
     log.textContent = output + log.textContent;
 
     if (state.requestCount > rateLimit) {
-      window.AppSec.Notify.show('Rate limit exceeded!', 'warning');
+      if (window.AppSec && window.AppSec.Notify) {
+        window.AppSec.Notify.show('Rate limit exceeded!', 'warning');
+      }
     }
 
     // Reset counter after 5 seconds
     setTimeout(() => { state.requestCount = 0; }, 5000);
-  }
-};
-
-/**
- * ============================================
- * 14. Input Validation Trainer (NEW!)
- * ============================================
- * Purpose: Practice input validation patterns
- * Use for: Regex, sanitization, validation
- */
-AppSecWidgets.ValidationTrainer = {
-  create(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">✅ Input Validation Trainer</h3>
-        </div>
-        <div class="widget-body">
-          <div class="grid grid-2">
-            <div>
-              <label><strong>Validation Rule</strong></label>
-              <select id="${containerId}-rule" onchange="AppSecWidgets.ValidationTrainer.updateExample('${containerId}')">
-                <option value="email">Email Address</option>
-                <option value="url">URL</option>
-                <option value="phone">Phone Number</option>
-                <option value="ssn">SSN (redacted)</option>
-                <option value="creditcard">Credit Card</option>
-              </select>
-              
-              <label class="mt-1"><strong>Regex Pattern</strong></label>
-              <input type="text" id="${containerId}-pattern" readonly>
-              
-              <label class="mt-1"><strong>Test Input</strong></label>
-              <input type="text" id="${containerId}-input" placeholder="Enter test value...">
-              
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.ValidationTrainer.validate('${containerId}')">Validate</button>
-            </div>
-            
-            <div>
-              <label><strong>Validation Result</strong></label>
-              <div id="${containerId}-result" class="mt-1"></div>
-              
-              <label class="mt-1"><strong>Example Valid Inputs</strong></label>
-              <div id="${containerId}-examples" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    this.updateExample(containerId);
-  },
-
-  patterns: {
-    email: {
-      regex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      examples: ['user@example.com', 'john.doe+tag@company.co.uk'],
-      description: 'Valid email format'
-    },
-    url: {
-      regex: /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/,
-      examples: ['https://example.com', 'http://sub.example.com/path'],
-      description: 'Valid HTTP/HTTPS URL'
-    },
-    phone: {
-      regex: /^\+?1?\d{10,14}$/,
-      examples: ['+12025551234', '2025551234'],
-      description: 'Valid phone number'
-    },
-    ssn: {
-      regex: /^\d{3}-\d{2}-\d{4}$/,
-      examples: ['123-45-6789'],
-      description: 'Valid SSN format (should be encrypted!)'
-    },
-    creditcard: {
-      regex: /^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}$/,
-      examples: ['4532-1234-5678-9010', '4532123456789010'],
-      description: 'Valid credit card format (should be tokenized!)'
-    }
-  },
-
-  updateExample(containerId) {
-    const rule = document.getElementById(`${containerId}-rule`).value;
-    const pattern = this.patterns[rule];
-
-    document.getElementById(`${containerId}-pattern`).value = pattern.regex.toString();
-    document.getElementById(`${containerId}-examples`).innerHTML =
-      `<p><strong>${pattern.description}</strong></p>` +
-      pattern.examples.map(ex => `<code>${ex}</code>`).join('<br>');
-  },
-
-  validate(containerId) {
-    const rule = document.getElementById(`${containerId}-rule`).value;
-    const input = document.getElementById(`${containerId}-input`).value;
-    const result = document.getElementById(`${containerId}-result`);
-    const pattern = this.patterns[rule];
-
-    if (!input) {
-      result.innerHTML = '<div class="alert alert-warning">⚠️ Please enter a value to validate</div>';
-      return;
-    }
-
-    const isValid = pattern.regex.test(input);
-
-    if (isValid) {
-      result.innerHTML = `
-        <div class="callout callout-success">
-          <p><strong>✅ Valid Input</strong></p>
-          <p>Matches pattern: ${pattern.description}</p>
-        </div>
-      `;
-    } else {
-      result.innerHTML = `
-        <div class="callout callout-danger">
-          <p><strong>❌ Invalid Input</strong></p>
-          <p>Does not match required pattern</p>
-          <p><strong>Expected:</strong> ${pattern.description}</p>
-        </div>
-      `;
-    }
-  }
-};
-
-/* ============================================================
- * JSON-Driven Quiz Widget (improved, step-by-step by default)
- * ============================================================ */
-AppSecWidgets.Quiz = {
-  create(containerId, data) {
-    const container = document.getElementById(containerId);
-    if (!container || !data || !Array.isArray(data.questions)) return;
-
-    const mode = data.mode || 'step';
-
-    // Classic mode: render all questions at once + single "Check answers" button
-    if (mode === 'classic') {
-      const questionsHtml = data.questions.map((q, idx) => `
-        <li class="quiz-question">
-          <p>${q.text}</p>
-          ${q.options.map((opt) => `
-            <label class="quiz-option">
-              <input type="radio" name="q${idx}" value="${opt.value}">
-              ${opt.label}
-            </label>
-          `).join("")}
-        </li>
-      `).join("");
-
-      // Add widget classes to container itself
-      container.classList.add("widget", "widget-quiz");
-
-      // Inject only inner widget structure
-      container.innerHTML = `
-        <div class="widget-header">
-          <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
-        </div>
-        <div class="widget-body">
-          ${data.intro ? `<p class="quiz-intro">${data.intro}</p>` : ""}
-          <ol class="quiz-list">${questionsHtml}</ol>
-          <button class="btn btn-primary mt-1 quiz-check-btn">
-            Check Answers
-          </button>
-          <div class="quiz-result mt-1" id="${containerId}-result"></div>
-        </div>
-      `;
-
-      const checkBtn = container.querySelector(".quiz-check-btn");
-      if (checkBtn) {
-        checkBtn.addEventListener("click", () => {
-          this.checkClassic(containerId, data.questions);
-        });
-      }
-      return;
-    }
-
-    // STEP MODE (default): one question at a time with Start button
-    AppSecWidgets._state[containerId] = {
-      questions: data.questions,
-      currentIndex: 0,
-      score: 0
-    };
-
-    container.innerHTML = `
-      <div class="widget-header">
-        <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
-        <div class="quiz-meta" id="${containerId}-meta" style="display:none;">
-          <span class="quiz-progress" id="${containerId}-progress"></span>
-          <span class="quiz-score" id="${containerId}-score"></span>
-        </div>
-      </div>
-      <div class="widget-body">
-        ${data.intro ? `<p class="quiz-intro" id="${containerId}-intro">${data.intro}</p>` :
-        `<p class="quiz-intro" id="${containerId}-intro">Short quiz to test your understanding.</p>`}
-        <button class="btn btn-primary" id="${containerId}-start-btn">Start Quiz</button>
-        <div class="quiz-question-container" id="${containerId}-question" style="display:none;"></div>
-        <div class="quiz-result mt-1" id="${containerId}-result"></div>
-      </div>
-    `;
-
-    const startBtn = document.getElementById(`${containerId}-start-btn`);
-    if (startBtn) {
-      startBtn.addEventListener("click", () => {
-        this.start(containerId);
-      });
-    }
-  },
-
-  // Classic mode checker
-  checkClassic(containerId, questions) {
-    let score = 0;
-    questions.forEach((q, idx) => {
-      const selected = document.querySelector(`input[name="q${idx}"]:checked`);
-      if (selected && q.options.find(o => o.correct && o.value === selected.value)) {
-        score++;
-      }
-    });
-
-    const result = document.getElementById(`${containerId}-result`);
-    if (!result) return;
-    result.innerHTML = `
-      <div class="callout callout-info-solid">
-        You scored <strong>${score}</strong> / <strong>${questions.length}</strong>
-      </div>
-    `;
-  },
-
-  start(containerId) {
-    const state = AppSecWidgets._state[containerId];
-    if (!state) return;
-
-    const introEl = document.getElementById(`${containerId}-intro`);
-    const startBtn = document.getElementById(`${containerId}-start-btn`);
-    const metaEl = document.getElementById(`${containerId}-meta`);
-    const questionContainer = document.getElementById(`${containerId}-question`);
-
-    if (introEl) introEl.style.display = "none";
-    if (startBtn) startBtn.style.display = "none";
-    if (metaEl) metaEl.style.display = "flex";
-    if (questionContainer) questionContainer.style.display = "block";
-
-    state.currentIndex = 0;
-    state.score = 0;
-    this.renderQuestion(containerId);
-  },
-
-  renderQuestion(containerId) {
-    const state = AppSecWidgets._state[containerId];
-    if (!state) return;
-
-    const { questions, currentIndex, score } = state;
-    const q = questions[currentIndex];
-    const total = questions.length;
-
-    const progressEl = document.getElementById(`${containerId}-progress`);
-    const scoreEl = document.getElementById(`${containerId}-score`);
-    const questionContainer = document.getElementById(`${containerId}-question`);
-
-    if (progressEl) progressEl.textContent = `Question ${currentIndex + 1}/${total}`;
-    if (scoreEl) scoreEl.textContent = `Score: ${score}`;
-    if (!questionContainer) return;
-
-    const optionsHtml = q.options.map(opt => `
-      <button type="button" class="quiz-option-btn" data-value="${opt.value}">
-        ${opt.label}
-      </button>
-    `).join("");
-
-    questionContainer.innerHTML = `
-      <div class="quiz-question-card">
-        <p class="quiz-question-text">${q.text}</p>
-        <div class="quiz-options">
-          ${optionsHtml}
-        </div>
-      </div>
-    `;
-
-    questionContainer.querySelectorAll(".quiz-option-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const value = e.currentTarget.getAttribute("data-value");
-        this.handleAnswer(containerId, value);
-      });
-    });
-  },
-
-  handleAnswer(containerId, value) {
-    const state = AppSecWidgets._state[containerId];
-    if (!state) return;
-    const { questions, currentIndex } = state;
-    const q = questions[currentIndex];
-
-    const isCorrect = q.options.some(o => o.correct && o.value === value);
-    if (isCorrect) {
-      state.score += 1;
-    }
-
-    const result = document.getElementById(`${containerId}-result`);
-    if (result) {
-      result.innerHTML = `
-        <div class="alert ${isCorrect ? "alert-success-solid" : "alert-danger-solid"}">
-          ${isCorrect ? "✅ Correct!" : "❌ Not quite. Review the concept above and try to reason why."}
-        </div>
-      `;
-    }
-
-    if (currentIndex + 1 < questions.length) {
-      state.currentIndex += 1;
-      this.renderQuestion(containerId);
-    } else {
-      this.finish(containerId);
-    }
-  },
-
-  finish(containerId) {
-    const state = AppSecWidgets._state[containerId];
-    if (!state) return;
-    const { questions, score } = state;
-
-    const questionContainer = document.getElementById(`${containerId}-question`);
-    const progressEl = document.getElementById(`${containerId}-progress`);
-    const scoreEl = document.getElementById(`${containerId}-score`);
-    const result = document.getElementById(`${containerId}-result`);
-
-    if (questionContainer) {
-      questionContainer.innerHTML = `
-        <div class="quiz-question-card">
-          <p class="quiz-question-text">Nice work! You answered all questions.</p>
-        </div>
-      `;
-    }
-    if (progressEl) progressEl.textContent = "Completed";
-    if (scoreEl) scoreEl.textContent = `Final score: ${score}/${questions.length}`;
-
-    if (result) {
-      result.innerHTML = `
-        <div class="callout callout-info-solid">
-          You scored <strong>${score}</strong> out of <strong>${questions.length}</strong>.
-        </div>
-      `;
-    }
   }
 };
 
