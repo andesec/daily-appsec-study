@@ -28,8 +28,10 @@ User-Agent: AppSec-Student
     const settings = { ...defaultConfig, ...config };
 
     const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
           <h3 class="widget-title">${settings.title}</h3>
         </div>
@@ -46,7 +48,6 @@ User-Agent: AppSec-Student
             </div>
           </div>
         </div>
-      </div>
     `;
   },
 
@@ -62,7 +63,7 @@ User-Agent: AppSec-Student
 
     if (path && path.includes("'")) {
       responseText = 'HTTP/1.1 500 Internal Server Error\nContent-Type: text/html\n\n';
-      responseText += 'SQL Error: You have an error in your SQL syntax near \'"\'';
+      responseText += 'SQL Error: You have an error in your SQL syntax near \'\'';
       window.AppSec.Notify.show('⚠️ SQLi detected!', 'warning');
     } else if (path && path.includes('../')) {
       responseText = 'HTTP/1.1 403 Forbidden\nContent-Type: text/html\n\n';
@@ -72,7 +73,7 @@ User-Agent: AppSec-Student
       responseText += '{"message": "User IP logged from X-Forwarded-For header", "warning": "Trusting client headers can be dangerous!"}';
       window.AppSec.Notify.show('💡 X-Forwarded-For spoofing', 'info');
     } else {
-      responseText += '{"users": [{"id": 1, "name": "Alice", "role": "admin"}]}';
+      responseText += '{"users": [{"id": 1, "name": "Alice", "role": "admin"}] }';
     }
 
     response.value = responseText;
@@ -87,10 +88,14 @@ User-Agent: AppSec-Student
 AppSecWidgets.ConfigDiff = {
   create(containerId, title, insecureCode, secureCode) {
     const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const widgetTitle = title || '🔒 Config Diff Viewer';
+
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🔒 ${title}}</h3>
+          <h3 class="widget-title">${widgetTitle}</h3>
           <div>
             <button class="btn btn-danger" id="${containerId}-insecure-btn">❌ Insecure</button>
             <button class="btn btn-success" id="${containerId}-secure-btn">✅ Secure</button>
@@ -106,11 +111,17 @@ AppSecWidgets.ConfigDiff = {
             <pre><code>${this.escapeHtml(secureCode)}</code></pre>
           </div>
         </div>
-      </div>
     `;
 
     document.getElementById(`${containerId}-insecure-btn`).onclick = () => this.showMode(containerId, 'insecure');
     document.getElementById(`${containerId}-secure-btn`).onclick = () => this.showMode(containerId, 'secure');
+
+    // Add line numbers to code blocks if available
+    if (window.AppSec && window.AppSec.CodeDisplay && typeof window.AppSec.CodeDisplay.addLineNumbers === 'function') {
+      container.querySelectorAll('pre').forEach(pre => {
+        window.AppSec.CodeDisplay.addLineNumbers(pre);
+      });
+    }
   },
 
   showMode(containerId, mode) {
@@ -131,16 +142,37 @@ AppSecWidgets.ConfigDiff = {
  * ============================================
  */
 AppSecWidgets.FlowVisualizer = {
-  create(containerId, steps) {
-    AppSecWidgets._state[containerId] = { steps, currentStep: 0 };
+  create(containerId, stepsOrConfig, maybeTitle) {
+    let steps = [];
+    let title = maybeTitle || '🔄 Flow Visualizer';
+
+    if (Array.isArray(stepsOrConfig)) {
+      steps = stepsOrConfig;
+    } else if (stepsOrConfig && typeof stepsOrConfig === 'object') {
+      steps = stepsOrConfig.steps || [];
+      if (stepsOrConfig.title) {
+        title = stepsOrConfig.title;
+      }
+    }
+
+    AppSecWidgets._state[containerId] = { steps, currentStep: 0, title };
+
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.classList.add('widget');
+    }
+
     this.render(containerId);
     this.addStyles();
   },
 
   render(containerId) {
     const state = AppSecWidgets._state[containerId];
-    const { steps, currentStep } = state;
+    if (!state) return;
+
+    const { steps, currentStep, title } = state;
     const container = document.getElementById(containerId);
+    if (!container) return;
 
     const visibleSteps = steps.slice(0, currentStep + 1);
 
@@ -155,9 +187,8 @@ AppSecWidgets.FlowVisualizer = {
     `).join('');
 
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🔄 Flow Visualizer</h3>
+          <h3 class="widget-title">${title}</h3>
         </div>
         <div class="widget-body">
           <div class="flow-container">${stepsHtml}</div>
@@ -167,7 +198,6 @@ AppSecWidgets.FlowVisualizer = {
             <button class="btn btn-primary" id="${containerId}-next" ${currentStep === steps.length - 1 ? 'disabled' : ''}>Next →</button>
           </div>
         </div>
-      </div>
     `;
 
     // Add event listeners
@@ -213,7 +243,7 @@ AppSecWidgets.FlowVisualizer = {
           animation: pulse 2s infinite;
         }
         .flow-step.completed .flow-node { background: var(--color-success); color: white; border-color: var(--color-success); }
-        .flow-content { flex: 1; padding: 0.5rem; }
+        .flow-content { flex: 1; }
         .flow-controls { display: flex; justify-content: space-between; align-items: center; }
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
@@ -241,8 +271,9 @@ AppSecWidgets.LogAnalyzer = {
     const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
-    
-    const tableRows = config.logs.length > 0 
+    if (!container) return;
+
+    const tableRows = config.logs.length > 0
       ? config.logs.map(log => `
           <tr class="log-row log-${log.severity || 'info'}">
             <td>${log.time || ''}</td>
@@ -254,8 +285,8 @@ AppSecWidgets.LogAnalyzer = {
         `).join('')
       : `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</td></tr>`;
 
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
           <h3 class="widget-title">${config.title}</h3>
           <button class="btn btn-secondary" onclick="AppSecWidgets.LogAnalyzer.refresh('${containerId}')">🔄 Refresh</button>
@@ -274,7 +305,6 @@ AppSecWidgets.LogAnalyzer = {
             </table>
           </div>
         </div>
-      </div>
     `;
 
     AppSecWidgets._state[containerId] = { config };
@@ -284,8 +314,6 @@ AppSecWidgets.LogAnalyzer = {
   refresh(containerId) {
     const state = AppSecWidgets._state[containerId];
     if (!state) return;
-    
-    // Recreate with same config
     this.create(containerId, state.config);
     window.AppSec?.Notify?.show('🔄 Logs refreshed', 'info');
   },
@@ -323,7 +351,8 @@ AppSecWidgets.ProgressTracker = {
     const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
-    
+    if (!container) return;
+
     const categoriesHtml = config.categories.length > 0
       ? config.categories.map(cat => `
           <div class="progress-category">
@@ -348,15 +377,14 @@ AppSecWidgets.ProgressTracker = {
         `).join('')
       : `<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>`;
 
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
           <h3 class="widget-title">${config.title}</h3>
         </div>
         <div class="widget-body">
           ${categoriesHtml}
         </div>
-      </div>
     `;
 
     this.addStyles();
@@ -395,30 +423,38 @@ AppSecWidgets.AttackSandbox = {
     };
     const config = { ...defaultData, ...data };
 
-    AppSecWidgets._state[containerId] = { 
+    AppSecWidgets._state[containerId] = {
       scenarios: config.scenarios,
       currentScenario: 0,
-      output: ''
+      output: '',
+      title: config.title,
+      placeholder: config.placeholder
     };
 
-    this.render(containerId, config.title, config.placeholder);
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.classList.add('widget');
+    }
+
+    this.render(containerId);
     this.addStyles();
   },
 
-  render(containerId, title = '🎯 Attack Vector Sandbox', placeholder = '') {
+  render(containerId) {
     const state = AppSecWidgets._state[containerId];
-    const { scenarios, currentScenario, output } = state;
+    if (!state) return;
+
+    const { scenarios, currentScenario, output, title, placeholder } = state;
     const container = document.getElementById(containerId);
+    if (!container) return;
 
     if (scenarios.length === 0) {
       container.innerHTML = `
-        <div class="widget">
-          <div class="widget-header">
-            <h3 class="widget-title">${title}</h3>
-          </div>
-          <div class="widget-body">
-            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${placeholder}</p>
-          </div>
+        <div class="widget-header">
+          <h3 class="widget-title">${title}</h3>
+        </div>
+        <div class="widget-body">
+          <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${placeholder}</p>
         </div>
       `;
       return;
@@ -433,7 +469,6 @@ AppSecWidgets.AttackSandbox = {
     `).join('');
 
     container.innerHTML = `
-      <div class="widget">
         <div class="widget-header">
           <h3 class="widget-title">${title}</h3>
         </div>
@@ -459,12 +494,12 @@ AppSecWidgets.AttackSandbox = {
             </div>
           </div>
         </div>
-      </div>
     `;
   },
 
   selectScenario(containerId, index) {
     const state = AppSecWidgets._state[containerId];
+    if (!state) return;
     state.currentScenario = index;
     state.output = '';
     this.render(containerId);
@@ -472,18 +507,23 @@ AppSecWidgets.AttackSandbox = {
 
   executeAttack(containerId) {
     const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
     const scenario = state.scenarios[state.currentScenario];
     const payload = document.getElementById(`${containerId}-payload`).value;
 
     let response = scenario.response || 'Attack executed. No specific response defined.';
-    
+
     // Check if scenario has custom response logic
     if (scenario.checkPayload && typeof scenario.checkPayload === 'function') {
       response = scenario.checkPayload(payload);
     }
 
     state.output = response;
-    document.getElementById(`${containerId}-output`).value = response;
+    const outputEl = document.getElementById(`${containerId}-output`);
+    if (outputEl) {
+      outputEl.value = response;
+    }
 
     if (scenario.notifyType && window.AppSec?.Notify) {
       window.AppSec.Notify.show(scenario.notifyMessage || 'Attack executed', scenario.notifyType);
@@ -519,16 +559,17 @@ AppSecWidgets.CertificateInspector = {
     const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.classList.add('widget');
 
     if (!config.certificate) {
       container.innerHTML = `
-        <div class="widget">
-          <div class="widget-header">
-            <h3 class="widget-title">${config.title}</h3>
-          </div>
-          <div class="widget-body">
-            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
-          </div>
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+        </div>
+        <div class="widget-body">
+          <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
         </div>
       `;
       return;
@@ -542,48 +583,46 @@ AppSecWidgets.CertificateInspector = {
     const daysUntilExpiry = validTo ? Math.floor((validTo - now) / (1000 * 60 * 60 * 24)) : null;
 
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">${config.title}</h3>
-          <span class="cert-status ${isExpired ? 'cert-expired' : 'cert-valid'}">
-            ${isExpired ? '❌ Expired' : '✅ Valid'}
-          </span>
-        </div>
-        <div class="widget-body">
-          <div class="cert-details">
-            <div class="cert-field">
-              <strong>Common Name (CN):</strong>
-              <span>${cert.commonName || 'N/A'}</span>
-            </div>
-            <div class="cert-field">
-              <strong>Issuer:</strong>
-              <span>${cert.issuer || 'N/A'}</span>
-            </div>
-            <div class="cert-field">
-              <strong>Valid From:</strong>
-              <span>${cert.validFrom || 'N/A'}</span>
-            </div>
-            <div class="cert-field">
-              <strong>Valid To:</strong>
-              <span>${cert.validTo || 'N/A'}</span>
-            </div>
-            <div class="cert-field">
-              <strong>Serial Number:</strong>
-              <span>${cert.serialNumber || 'N/A'}</span>
-            </div>
-            <div class="cert-field">
-              <strong>Signature Algorithm:</strong>
-              <span>${cert.signatureAlgorithm || 'N/A'}</span>
-            </div>
-            ${daysUntilExpiry !== null ? `
-              <div class="cert-field">
-                <strong>Days Until Expiry:</strong>
-                <span class="${daysUntilExpiry < 30 ? 'text-danger' : daysUntilExpiry < 90 ? 'text-warning' : 'text-success'}">
-                  ${daysUntilExpiry} days
-                </span>
-              </div>
-            ` : ''}
+      <div class="widget-header">
+        <h3 class="widget-title">${config.title}</h3>
+        <span class="cert-status ${isExpired ? 'cert-expired' : 'cert-valid'}">
+          ${isExpired ? '❌ Expired' : '✅ Valid'}
+        </span>
+      </div>
+      <div class="widget-body">
+        <div class="cert-details">
+          <div class="cert-field">
+            <strong>Common Name (CN):</strong>
+            <span>${cert.commonName || 'N/A'}</span>
           </div>
+          <div class="cert-field">
+            <strong>Issuer:</strong>
+            <span>${cert.issuer || 'N/A'}</span>
+          </div>
+          <div class="cert-field">
+            <strong>Valid From:</strong>
+            <span>${cert.validFrom || 'N/A'}</span>
+          </div>
+          <div class="cert-field">
+            <strong>Valid To:</strong>
+            <span>${cert.validTo || 'N/A'}</span>
+          </div>
+          <div class="cert-field">
+            <strong>Serial Number:</strong>
+            <span>${cert.serialNumber || 'N/A'}</span>
+          </div>
+          <div class="cert-field">
+            <strong>Signature Algorithm:</strong>
+            <span>${cert.signatureAlgorithm || 'N/A'}</span>
+          </div>
+          ${daysUntilExpiry !== null ? `
+            <div class="cert-field">
+              <strong>Days Until Expiry:</strong>
+              <span class="${daysUntilExpiry < 30 ? 'text-danger' : daysUntilExpiry < 90 ? 'text-warning' : 'text-success'}">
+                ${daysUntilExpiry} days
+              </span>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -628,16 +667,16 @@ AppSecWidgets.CodeReviewChecker = {
     const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
+    if (!container) return;
 
     if (!config.code) {
+      container.classList.add('widget');
       container.innerHTML = `
-        <div class="widget">
-          <div class="widget-header">
-            <h3 class="widget-title">${config.title}</h3>
-          </div>
-          <div class="widget-body">
-            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
-          </div>
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+        </div>
+        <div class="widget-body">
+          <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
         </div>
       `;
       return;
@@ -665,26 +704,32 @@ AppSecWidgets.CodeReviewChecker = {
         `).join('')
       : '<p style="color: var(--color-success);">✅ No vulnerabilities detected!</p>';
 
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">${config.title}</h3>
-          <span class="vuln-count">
-            ${vulnCount} issue${vulnCount !== 1 ? 's' : ''} found
-          </span>
+      <div class="widget-header">
+        <h3 class="widget-title">${config.title}</h3>
+        <span class="vuln-count">
+          ${vulnCount} issue${vulnCount !== 1 ? 's' : ''} found
+        </span>
+      </div>
+      <div class="widget-body">
+        <div class="code-review-section">
+          <label><strong>Code Under Review</strong></label>
+          <pre><code>${this.escapeHtml(config.code)}</code></pre>
         </div>
-        <div class="widget-body">
-          <div class="code-review-section">
-            <label><strong>Code Under Review</strong></label>
-            <pre><code>${this.escapeHtml(config.code)}</code></pre>
-          </div>
-          <div class="code-review-section mt-1">
-            <label><strong>Security Findings</strong></label>
-            ${vulnHtml}
-          </div>
+        <div class="code-review-section mt-1">
+          <label><strong>Security Findings</strong></label>
+          ${vulnHtml}
         </div>
       </div>
     `;
+
+    // Add line numbers to code blocks if available
+    if (window.AppSec && window.AppSec.CodeDisplay && typeof window.AppSec.CodeDisplay.addLineNumbers === 'function') {
+      container.querySelectorAll('pre').forEach(pre => {
+        window.AppSec.CodeDisplay.addLineNumbers(pre);
+      });
+    }
 
     this.addStyles();
   },
@@ -739,16 +784,16 @@ AppSecWidgets.VulnerabilityTimeline = {
     const config = { ...defaultData, ...data };
 
     const container = document.getElementById(containerId);
+    if (!container) return;
 
     if (config.vulnerabilities.length === 0) {
+      container.classList.add('widget');
       container.innerHTML = `
-        <div class="widget">
-          <div class="widget-header">
-            <h3 class="widget-title">${config.title}</h3>
-          </div>
-          <div class="widget-body">
-            <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
-          </div>
+        <div class="widget-header">
+          <h3 class="widget-title">${config.title}</h3>
+        </div>
+        <div class="widget-body">
+          <p style="text-align: center; padding: 2rem; color: var(--text-secondary);">${config.placeholder}</p>
         </div>
       `;
       return;
@@ -778,15 +823,14 @@ AppSecWidgets.VulnerabilityTimeline = {
       </div>
     `).join('');
 
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">${config.title}</h3>
-        </div>
-        <div class="widget-body">
-          <div class="timeline">
-            ${timelineHtml}
-          </div>
+      <div class="widget-header">
+        <h3 class="widget-title">${config.title}</h3>
+      </div>
+      <div class="widget-body">
+        <div class="timeline">
+          ${timelineHtml}
         </div>
       </div>
     `;
@@ -830,6 +874,8 @@ AppSecWidgets.Quiz = {
     const container = document.getElementById(containerId);
     if (!container || !data || !Array.isArray(data.questions)) return;
 
+    container.classList.add('widget', 'widget-quiz');
+
     const mode = data.mode || 'step';
 
     // Classic mode: render all questions at once + single "Check answers" button
@@ -846,13 +892,10 @@ AppSecWidgets.Quiz = {
         </li>
       `).join("");
 
-      // Add widget classes to container itself
-      container.classList.add("widget", "widget-quiz");
-
       // Inject only inner widget structure
       container.innerHTML = `
         <div class="widget-header">
-          <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
+          <h3 class="widget-title">${data.title || "🗘️ Knowledge Check"}</h3>
         </div>
         <div class="widget-body">
           ${data.intro ? `<p class="quiz-intro">${data.intro}</p>` : ""}
@@ -882,7 +925,7 @@ AppSecWidgets.Quiz = {
 
     container.innerHTML = `
       <div class="widget-header">
-        <h3 class="widget-title">${data.title || "📝 Knowledge Check"}</h3>
+        <h3 class="widget-title">${data.title || "🗘️ Knowledge Check"}</h3>
         <div class="quiz-meta" id="${containerId}-meta" style="display:none;">
           <span class="quiz-progress" id="${containerId}-progress"></span>
           <span class="quiz-score" id="${containerId}-score"></span>
@@ -1089,35 +1132,36 @@ AppSecWidgets.ValidationTrainer = {
     }).join('');
 
     const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">${config.title}</h3>
-        </div>
-        <div class="widget-body">
-          <div class="grid grid-2">
-            <div>
-              <label><strong>Validation Rule</strong></label>
-              <select id="${containerId}-rule" onchange="AppSecWidgets.ValidationTrainer.updateExample('${containerId}')">
-                ${ruleOptions}
-              </select>
-              
-              <label class="mt-1"><strong>Regex Pattern</strong></label>
-              <input type="text" id="${containerId}-pattern" readonly>
-              
-              <label class="mt-1"><strong>Test Input</strong></label>
-              <input type="text" id="${containerId}-input" placeholder="Enter test value...">
-              
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.ValidationTrainer.validate('${containerId}')">Validate</button>
-            </div>
+      <div class="widget-header">
+        <h3 class="widget-title">${config.title}</h3>
+      </div>
+      <div class="widget-body">
+        <div class="grid grid-2">
+          <div>
+            <label><strong>Validation Rule</strong></label>
+            <select id="${containerId}-rule" onchange="AppSecWidgets.ValidationTrainer.updateExample('${containerId}')">
+              ${ruleOptions}
+            </select>
             
-            <div>
-              <label><strong>Validation Result</strong></label>
-              <div id="${containerId}-result" class="mt-1"></div>
-              
-              <label class="mt-1"><strong>Example Valid Inputs</strong></label>
-              <div id="${containerId}-examples" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem;"></div>
-            </div>
+            <label class="mt-1"><strong>Regex Pattern</strong></label>
+            <input type="text" id="${containerId}-pattern" readonly>
+            
+            <label class="mt-1"><strong>Test Input</strong></label>
+            <input type="text" id="${containerId}-input" placeholder="Enter test value...">
+            
+            <button class="btn btn-primary mt-1" onclick="AppSecWidgets.ValidationTrainer.validate('${containerId}')">Validate</button>
+          </div>
+          
+          <div>
+            <label><strong>Validation Result</strong></label>
+            <div id="${containerId}-result" class="mt-1"></div>
+            
+            <label class="mt-1"><strong>Example Valid Inputs</strong></label>
+            <div id="${containerId}-examples" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem;"></div>
           </div>
         </div>
       </div>
@@ -1129,6 +1173,7 @@ AppSecWidgets.ValidationTrainer = {
 
   updateExample(containerId) {
     const state = AppSecWidgets._state[containerId];
+    if (!state) return;
     const config = state.config;
     const rule = document.getElementById(`${containerId}-rule`).value;
     const pattern = config.patterns[rule];
@@ -1141,6 +1186,7 @@ AppSecWidgets.ValidationTrainer = {
 
   validate(containerId) {
     const state = AppSecWidgets._state[containerId];
+    if (!state) return;
     const config = state.config;
     const rule = document.getElementById(`${containerId}-rule`).value;
     const input = document.getElementById(`${containerId}-input`).value;
@@ -1218,12 +1264,15 @@ AppSecWidgets.ThreatModel = {
     ]
   },
 
-  create(containerId, prefill = null) {
+  create(containerId, prefill = null, options = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    const title = options.title || '🎯 Threat Modeling Canvas (STRIDE)';
+    container.classList.add('widget');
+
     const categories = [
-      { id: 'spoofing', label: 'Spoofing', emoji: '🎭', color: 'var(--color-danger)' },
+      { id: 'spoofing', label: 'Spoofing', emoji: '🗝', color: 'var(--color-danger)' },
       { id: 'tampering', label: 'Tampering', emoji: '🔧', color: 'var(--color-danger)' },
       { id: 'repudiation', label: 'Repudiation', emoji: '📝', color: 'var(--color-warning)' },
       { id: 'information', label: 'Information Disclosure', emoji: '📢', color: 'var(--color-danger)' },
@@ -1250,60 +1299,58 @@ AppSecWidgets.ThreatModel = {
     }).join('');
 
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">🎯 Threat Modeling Canvas (STRIDE)</h3>
+      <div class="widget-header">
+        <h3 class="widget-title">${title}</h3>
+      </div>
+      <div class="widget-body">
+        <!-- Architecture / Context Section -->
+        <div class="grid grid-2 threat-architecture mb-1">
+          <div>
+            <h4>📦 System Overview</h4>
+            <label class="mt-0-5">System / Feature Name</label>
+            <input type="text" id="${containerId}-system-name" placeholder="e.g., Payments API, Login service">
+            
+            <label class="mt-0-5">System Type</label>
+            <select id="${containerId}-system-type">
+              <option value="">Select...</option>
+              <option value="web-app">Web Application</option>
+              <option value="api">Public / Internal API</option>
+              <option value="mobile">Mobile App + Backend</option>
+              <option value="saas-multitenant">SaaS (Multi-tenant)</option>
+              <option value="microservices">Microservices / Event-driven</option>
+              <option value="other">Other / Mixed</option>
+            </select>
+
+            <label class="mt-0-5">Primary Actors</label>
+            <textarea id="${containerId}-actors" rows="3" placeholder="Users, admins, services, third parties..."></textarea>
+          </div>
+          <div>
+            <h4>🧩 Assets, Data & Boundaries</h4>
+            <label class="mt-0-5">Critical Assets</label>
+            <textarea id="${containerId}-assets" rows="3" placeholder="What are we protecting? (money, PII, secrets, IP, availability)"></textarea>
+
+            <label class="mt-0-5">Entry Points</label>
+            <textarea id="${containerId}-entrypoints" rows="3" placeholder="Login, APIs, webhooks, message queues, admin interfaces..."></textarea>
+
+            <label class="mt-0-5">Data Classification & Trust Boundaries</label>
+            <textarea id="${containerId}-boundaries" rows="3" placeholder="Where does trust change? (internet ↔ edge, app ↔ DB, tenant ↔ tenant, etc.)"></textarea>
+          </div>
         </div>
-        <div class="widget-body">
-          <!-- Architecture / Context Section -->
-          <div class="grid grid-2 threat-architecture mb-1">
-            <div>
-              <h4>📦 System Overview</h4>
-              <label class="mt-0-5">System / Feature Name</label>
-              <input type="text" id="${containerId}-system-name" placeholder="e.g., Payments API, Login service">
-              
-              <label class="mt-0-5">System Type</label>
-              <select id="${containerId}-system-type">
-                <option value="">Select...</option>
-                <option value="web-app">Web Application</option>
-                <option value="api">Public / Internal API</option>
-                <option value="mobile">Mobile App + Backend</option>
-                <option value="saas-multitenant">SaaS (Multi-tenant)</option>
-                <option value="microservices">Microservices / Event-driven</option>
-                <option value="other">Other / Mixed</option>
-              </select>
 
-              <label class="mt-0-5">Primary Actors</label>
-              <textarea id="${containerId}-actors" rows="3" placeholder="Users, admins, services, third parties..."></textarea>
-            </div>
-            <div>
-              <h4>🧩 Assets, Data & Boundaries</h4>
-              <label class="mt-0-5">Critical Assets</label>
-              <textarea id="${containerId}-assets" rows="3" placeholder="What are we protecting? (money, PII, secrets, IP, availability)"></textarea>
+        <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
 
-              <label class="mt-0-5">Entry Points</label>
-              <textarea id="${containerId}-entrypoints" rows="3" placeholder="Login, APIs, webhooks, message queues, admin interfaces..."></textarea>
+        <!-- STRIDE Categories -->
+        <div class="grid grid-3">
+          ${categoriesHtml}
+        </div>
 
-              <label class="mt-0-5">Data Classification & Trust Boundaries</label>
-              <textarea id="${containerId}-boundaries" rows="3" placeholder="Where does trust change? (internet ↔ edge, app ↔ DB, tenant ↔ tenant, etc.)"></textarea>
-            </div>
-          </div>
-
-          <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
-
-          <!-- STRIDE Categories -->
-          <div class="grid grid-3">
-            ${categoriesHtml}
-          </div>
-
-          <div class="mt-1" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            <button class="btn btn-primary" onclick="AppSecWidgets.ThreatModel.exportModel('${containerId}')">
-              📥 Export JSON
-            </button>
-            <button class="btn btn-secondary" onclick="AppSecWidgets.ThreatModel.exportMarkdown('${containerId}')">
-              📄 Export Markdown Summary
-            </button>
-          </div>
+        <div class="mt-1" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <button class="btn btn-primary" onclick="AppSecWidgets.ThreatModel.exportModel('${containerId}')">
+            💽 Export JSON
+          </button>
+          <button class="btn btn-secondary" onclick="AppSecWidgets.ThreatModel.exportMarkdown('${containerId}')">
+            📄 Export Markdown Summary
+          </button>
         </div>
       </div>
     `;
@@ -1469,7 +1516,7 @@ AppSecWidgets.ThreatModel = {
 AppSecWidgets.APITester = {
   create(containerId, data = {}) {
     const defaultData = {
-      title: '🔌 API Security Tester',
+      title: '🐜 API Security Tester',
       endpoints: [
         { value: 'public', label: '/api/public', requiresAuth: false },
         { value: 'protected', label: '/api/protected', requiresAuth: true },
@@ -1492,46 +1539,47 @@ AppSecWidgets.APITester = {
     };
 
     const config = { ...defaultData, ...data };
-    
-    const endpointOptions = config.endpoints.map(ep => 
+
+    const endpointOptions = config.endpoints.map(ep =>
       `<option value="${ep.value}">${ep.label}</option>`
     ).join('');
 
     const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.classList.add('widget');
     container.innerHTML = `
-      <div class="widget">
-        <div class="widget-header">
-          <h3 class="widget-title">${config.title}</h3>
-        </div>
-        <div class="widget-body">
-          <div class="grid grid-2">
-            <div>
-              <label><strong>API Endpoint</strong></label>
-              <select id="${containerId}-endpoint">
-                ${endpointOptions}
-              </select>
-              
-              <label class="mt-1"><strong>Authentication</strong></label>
-              <input type="text" id="${containerId}-token" placeholder="Bearer token or API key">
-              
-              <label class="mt-1"><strong>Rate Limit Test</strong></label>
-              <input type="number" id="${containerId}-requests" value="5" min="1" max="20">
-              
-              <button class="btn btn-primary mt-1" onclick="AppSecWidgets.APITester.testAuth('${containerId}')">Test Auth</button>
-              <button class="btn btn-secondary mt-1" onclick="AppSecWidgets.APITester.testRateLimit('${containerId}')">Test Rate Limit</button>
-            </div>
+      <div class="widget-header">
+        <h3 class="widget-title">${config.title}</h3>
+      </div>
+      <div class="widget-body">
+        <div class="grid grid-2">
+          <div>
+            <label><strong>API Endpoint</strong></label>
+            <select id="${containerId}-endpoint">
+              ${endpointOptions}
+            </select>
             
-            <div>
-              <label><strong>Response Log</strong></label>
-              <pre id="${containerId}-log" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem; min-height: 300px; overflow-y: auto;"></pre>
-            </div>
+            <label class="mt-1"><strong>Authentication</strong></label>
+            <input type="text" id="${containerId}-token" placeholder="Bearer token or API key">
+            
+            <label class="mt-1"><strong>Rate Limit Test</strong></label>
+            <input type="number" id="${containerId}-requests" value="5" min="1" max="20">
+            
+            <button class="btn btn-primary mt-1" onclick="AppSecWidgets.APITester.testAuth('${containerId}')">Test Auth</button>
+            <button class="btn btn-secondary mt-1" onclick="AppSecWidgets.APITester.testRateLimit('${containerId}')">Test Rate Limit</button>
+          </div>
+          
+          <div>
+            <label><strong>Response Log</strong></label>
+            <pre id="${containerId}-log" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem; min-height: 300px; overflow-y: auto;"></pre>
           </div>
         </div>
       </div>
     `;
 
-    AppSecWidgets._state[containerId] = { 
-      requestCount: 0, 
+    AppSecWidgets._state[containerId] = {
+      requestCount: 0,
       lastRequest: 0,
       config: config
     };
@@ -1539,8 +1587,9 @@ AppSecWidgets.APITester = {
 
   testAuth(containerId) {
     const state = AppSecWidgets._state[containerId];
+    if (!state) return;
     const config = state.config;
-    
+
     const endpoint = document.getElementById(`${containerId}-endpoint`).value;
     const token = document.getElementById(`${containerId}-token`).value;
     const log = document.getElementById(`${containerId}-log`);
@@ -1573,13 +1622,16 @@ AppSecWidgets.APITester = {
       }
     }
 
-    log.textContent = response + log.textContent;
+    if (log) {
+      log.textContent = response + log.textContent;
+    }
   },
 
   testRateLimit(containerId) {
-    const requests = parseInt(document.getElementById(`${containerId}-requests`).value);
+    const requests = parseInt(document.getElementById(`${containerId}-requests`).value, 10);
     const log = document.getElementById(`${containerId}-log`);
     const state = AppSecWidgets._state[containerId];
+    if (!state || !log) return;
 
     const rateLimit = state.config.rateLimit;
     let output = '';

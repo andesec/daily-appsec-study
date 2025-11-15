@@ -45,23 +45,40 @@ const CodeDisplay = {
   /**
    * Adds line numbers to code blocks
    * Usage: CodeDisplay.addLineNumbers(codeElement);
+   * 
+   * Automatically trims any leading or trailing blank lines so
+   * line numbering and rendered code both start at line 1 cleanly.
    */
   addLineNumbers(codeElement) {
-    const lines = codeElement.textContent.split('\n');
+    // Get raw text
+    let text = codeElement.textContent;
+
+    // Trim trailing blank line
+    text = text.replace(/\n+$/, '');
+
+    // Trim leading blank line
+    text = text.replace(/^\n+/, '');
+
+    const lines = text.split('\n');
+
     const container = document.createElement('div');
     container.className = 'code-with-lines';
 
     const lineNumbers = document.createElement('div');
     lineNumbers.className = 'line-numbers';
     lines.forEach((_, i) => {
-      const lineNum = document.createElement('div');
-      lineNum.textContent = i + 1;
+      const lineNum = document.createElement('pre');
+      lineNum.textContent = i + 1; // Always start at 1
       lineNumbers.appendChild(lineNum);
     });
 
     const codeContent = document.createElement('div');
     codeContent.className = 'code-content';
-    codeContent.appendChild(codeElement.cloneNode(true));
+    // codeContent.appendChild(codeElement.cloneNode(true));
+    const cloned = codeElement.cloneNode(true);
+    cloned.textContent = text; // ensure trimmed content is used
+
+    codeContent.appendChild(cloned);
 
     container.appendChild(lineNumbers);
     container.appendChild(codeContent);

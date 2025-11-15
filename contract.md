@@ -97,18 +97,19 @@ Teach the topic from the ground up using the following structure below.
 - Think like an AppSec reviewer, cloud specialist, CISO, and attacker.
 - Be descriptive and precise about the explanations and examples.
 - Relate explanations to design reviews, threat models, diffs, and IaC changes.
-- Refer to the **appsec-theme-widgets-guide.md** for theme, widget, and class reference when generating HTML.
+- Refer to the **appsec_widgets_usage_guide.md** for theme, widget, and class reference when generating HTML.
 
 ---
 
 ## Output Contract
 - Search through and cite authoritative external security sources where possible.
 - Output HTML in batches for each section containing the section and script code which I will later combine myself. when required and ask whether to proceed.
-- Use AppSec theming, classes, and widgets consistently for learning experiences like mentioned in **appsec_lesson_structure.md**
 - Use widget suggestions as mentioned in the requirements to organize the information and foster better learning.
 - Inside the card header, just directly output the text, don't use h2, h3, ... etc
 - Use a section/header/footer element for ".card" class and div for .card-header and .card-body. These elements should not contain any other classes as it is already handled by the theme files.
 - Every subsection (for example: 1.1, 1.5, 3.4) should be a separate card outside the main section after it.
+- Use Emojis and glyph icons and graphics wherever possible to brigthen up the text.
+- Cite references and further learning links in each section wherever possible.
 
 ## Execution Flow
 Follow the below steps without overwrites or confusion!

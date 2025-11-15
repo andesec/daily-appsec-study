@@ -149,14 +149,14 @@ p {
 
 /* Code Blocks - FIXED */
 pre {
-  background: var(--code-bg);
+  /* background: var(--code-bg);
   border: 1px solid var(--code-border);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
-  margin: var(--spacing-md) 0;
+  margin: var(--spacing-md) 0; */
   overflow-x: auto;
   position: relative;
-  box-shadow: var(--shadow-sm);
+  /* box-shadow: var(--shadow-sm); */
 }
 
 code {
@@ -687,7 +687,7 @@ label {
 /* ===============================
    FIX: Mobile button spacing
    =============================== */
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .btn {
     margin-bottom: 0.55rem !important;
   }
