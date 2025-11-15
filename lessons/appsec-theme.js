@@ -212,6 +212,162 @@ if (document.readyState === 'loading') {
   ThemeManager.init();
 }
 
+// =====================================================
+// Floating Navigation + Collapse/Expand All
+// =====================================================
+const NavFloating = {
+  init() {
+    this.sections = Array.from(document.querySelectorAll("section.card"));
+    if (this.sections.length === 0) return;
+
+    this.createButtons();
+    this.updateButtons();
+
+    window.addEventListener("scroll", () => this.updateButtons());
+  },
+
+  createButtons() {
+    this.nav = document.createElement("div");
+    this.nav.className = "floating-nav";
+
+    // Navigation buttons
+    this.prevBtn = this.make("⬆ Previous", () => this.scrollToPrev());
+    this.topBtn = this.make("⇧ Top", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    this.nextBtn = this.make("Next ⬇", () => this.scrollToNext());
+    this.bottomBtn = this.make("⇩ Bottom", () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+
+    // Collapse / Expand all
+    this.collapseAllBtn = this.make("– Collapse All", () => this.collapseAll());
+    this.expandAllBtn = this.make("+ Expand All", () => this.expandAll());
+
+    this.nav.appendChild(this.prevBtn);
+    this.nav.appendChild(this.topBtn);
+    this.nav.appendChild(this.nextBtn);
+    this.nav.appendChild(this.bottomBtn);
+
+    const divider = document.createElement("div");
+    divider.style.borderTop = "1px solid var(--border-color)";
+    divider.style.margin = "0.5rem 0";
+    this.nav.appendChild(divider);
+
+    this.nav.appendChild(this.collapseAllBtn);
+    this.nav.appendChild(this.expandAllBtn);
+
+    document.body.appendChild(this.nav);
+  },
+
+  make(label, onClick) {
+    const b = document.createElement("button");
+    b.className = "floating-btn";
+    b.textContent = label;
+    b.onclick = onClick;
+    return b;
+  },
+
+  getCurrentSectionIndex() {
+    const scrollY = window.scrollY + 150;
+    let index = 0;
+
+    this.sections.forEach((sec, i) => {
+      if (scrollY >= sec.offsetTop) index = i;
+    });
+
+    return index;
+  },
+
+  scrollToPrev() {
+    const idx = this.getCurrentSectionIndex();
+    if (idx > 0) {
+      this.sections[idx - 1].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  },
+
+  scrollToNext() {
+    const idx = this.getCurrentSectionIndex();
+    if (idx < this.sections.length - 1) {
+      this.sections[idx + 1].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  },
+
+  updateButtons() {
+    const idx = this.getCurrentSectionIndex();
+    const lastIdx = this.sections.length - 1;
+
+    const atBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 2;
+
+    this.prevBtn.disabled = idx === 0;
+    this.topBtn.disabled = idx === 0;
+
+    this.nextBtn.disabled = idx === lastIdx || atBottom;
+    this.bottomBtn.disabled = atBottom;
+  },
+
+  collapseAll() {
+    this.sections.forEach(sec => sec.classList.add("collapsed"));
+  },
+
+  expandAll() {
+    this.sections.forEach(sec => sec.classList.remove("collapsed"));
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => NavFloating.init());
+
+// =====================================================
+// Collapsible Cards
+// =====================================================
+const CollapsibleCards = {
+  init() {
+    const cards = document.querySelectorAll("section.card");
+    cards.forEach(card => {
+      const header = card.querySelector(".card-header");
+      const body = card.querySelector(".card-body");
+
+      if (!header || !body) return;
+
+      header.classList.add("collapsible-header");
+      body.classList.add("collapsible-body");
+
+      header.addEventListener("click", () => {
+        card.classList.toggle("collapsed");
+      });
+    });
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  CollapsibleCards.init();
+});
+
+function applyTableScroll() {
+    const tables = document.querySelectorAll("table");
+
+    tables.forEach(table => {
+        // Check up to 3 ancestors
+        const parent1 = table.parentElement;
+        const parent2 = parent1?.parentElement || null;
+        const parent3 = parent2?.parentElement || null;
+
+        const ancestors = [parent1, parent2, parent3];
+
+        // If ANY ancestor has .widget, skip
+        const insideWidget = ancestors.some(a => a && a.classList.contains("widget"));
+        if (insideWidget) return;
+
+        // Already wrapped? Skip
+        if (parent1 && parent1.classList.contains("table-scroll")) return;
+
+        // Wrap table in .table-scroll
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("table-scroll");
+
+        parent1.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", applyTableScroll);
+
 // Export for use in other modules
 window.AppSec = {
   ThemeManager,

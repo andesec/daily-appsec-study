@@ -749,7 +749,7 @@ ol {
   margin: 0;
 }
 
-#toc > ul > li {
+#toc>ul>li {
   margin-top: 0.6rem;
   font-weight: 600;
 }
@@ -808,4 +808,123 @@ ol {
   flex: 1;
   cursor: pointer;
   line-height: 1.4;
+}
+
+/* Floating Navigation */
+.floating-nav {
+  position: fixed;
+  right: 1rem;
+  bottom: 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.floating-btn {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(6px);
+}
+
+.floating-btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.floating-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Collapsible Card */
+.collapsible-header {
+  cursor: pointer;
+  position: relative;
+  padding-right: 1.8rem;
+}
+
+.collapsible-header::after {
+  content: "▾";
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+}
+
+section.card.collapsed .collapsible-header::after {
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+.collapsible-body {
+  transition: all 0.25s ease;
+}
+
+section.card.collapsed .collapsible-body {
+  max-height: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+section.card.collapsed .card-header {
+  border-bottom: none !important;
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Desktop – fully fluid, no scroll */
+.table-scroll table {
+  width: 100%;
+  table-layout: auto;
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+  .table-scroll {
+    max-width: 90vw;
+    /* limits scroll width */
+  }
+
+  .table-scroll table {
+    width: 140%;
+    /* partial cramming + short scroll */
+    table-layout: fixed;
+    /* even column shrinking */
+  }
+
+  /* HEADERS should stay on one line */
+  .table-scroll th {
+    white-space: nowrap;
+  }
+
+  /* BODY CELLS wrap cleanly to avoid overlap */
+  .table-scroll td {
+    white-space: normal;
+    /* allows wrapping */
+    word-break: break-word;
+    /* prevents long strings from overflowing */
+  }
+
+  /* Optional: limit columns to avoid squeezing too hard */
+  .table-scroll td,
+  .table-scroll th {
+    max-width: 160px;
+    /* adjust this if needed */
+  }
 }
