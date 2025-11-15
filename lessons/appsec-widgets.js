@@ -238,11 +238,11 @@ AppSecWidgets.AttackDefense = {
         </div>
         <div class="widget-body">
           <div id="${containerId}-attack" style="display: block;">
-            <div class="alert alert-danger"><strong>⚠️ Red Team Perspective</strong></div>
+            <div class="callout callout-danger"><strong>⚠️ Red Team Perspective</strong></div>
             ${attackContent}
           </div>
           <div id="${containerId}-defense" style="display: none;">
-            <div class="alert alert-success"><strong>✅ Blue Team Perspective</strong></div>
+            <div class="callout callout-success"><strong>✅ Blue Team Perspective</strong></div>
             ${defenseContent}
           </div>
         </div>
@@ -1172,7 +1172,7 @@ AppSecWidgets.XSSPlayground = {
           <h3 class="widget-title">⚠️ XSS Testing Playground</h3>
         </div>
         <div class="widget-body">
-          <div class="alert alert-warning">
+          <div class="callout callout-warning">
             <strong>⚠️ Safe Learning Environment:</strong> This widget demonstrates XSS without actually executing malicious code.
           </div>
           
@@ -1471,14 +1471,14 @@ AppSecWidgets.ValidationTrainer = {
 
     if (isValid) {
       result.innerHTML = `
-        <div class="alert alert-success">
+        <div class="callout callout-success">
           <p><strong>✅ Valid Input</strong></p>
           <p>Matches pattern: ${pattern.description}</p>
         </div>
       `;
     } else {
       result.innerHTML = `
-        <div class="alert alert-danger">
+        <div class="callout callout-danger">
           <p><strong>❌ Invalid Input</strong></p>
           <p>Does not match required pattern</p>
           <p><strong>Expected:</strong> ${pattern.description}</p>
@@ -1584,7 +1584,7 @@ AppSecWidgets.Quiz = {
     const result = document.getElementById(`${containerId}-result`);
     if (!result) return;
     result.innerHTML = `
-      <div class="alert alert-info-solid">
+      <div class="callout callout-info-solid">
         You scored <strong>${score}</strong> / <strong>${questions.length}</strong>
       </div>
     `;
@@ -1698,7 +1698,7 @@ AppSecWidgets.Quiz = {
 
     if (result) {
       result.innerHTML = `
-        <div class="alert alert-info-solid">
+        <div class="callout callout-info-solid">
           You scored <strong>${score}</strong> out of <strong>${questions.length}</strong>.
         </div>
       `;
