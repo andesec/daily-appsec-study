@@ -1,0 +1,383 @@
+<!-- ====================================== -->
+<!-- Section 7: Practical Implementation & Review (Hands-On) -->
+<!-- ====================================== -->
+<section class="card">
+  <div class="card-header">7. Practical Implementation & Review (Hands-On) 🛠️</div>
+  <div class="card-body">
+    <p>
+      In this section, you will mentally “run” a TOCTOU lab: a simple wallet debit API in Python, exercised under
+      concurrent load. We will contrast insecure vs secure implementations, then look at how logs and tooling
+      reveal the race condition in practice.
+    </p>
+
+    <div class="callout callout-info-solid">
+      Goal: Be able to look at a code diff or design doc and quickly say
+      “this is susceptible to TOCTOU” and propose a concrete, testable fix.
+    </div>
+
+    <p><strong>Lab scenario:</strong></p>
+    <pre>
+Client / Load tool
+        │
+        ▼
+  /api/debit  (Python service)
+        │
+        ▼
+   Database (balances table)
+    </pre>
+
+    <p><strong>Workflow:</strong></p>
+    <ul>
+      <li>Step 1 – Review vulnerable debit endpoint.</li>
+      <li>Step 2 – Imagine concurrency test (curl/Burp/locust) to trigger race.</li>
+      <li>Step 3 – Observe logs indicating double-spend / negative balances.</li>
+      <li>Step 4 – Apply transactional locking and retry-safe patterns.</li>
+      <li>Step 5 – Re-test and confirm that race no longer succeeds.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 7.1: Python Implementation – Insecure vs Secure -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">7.1 Python Implementation – Insecure vs Secure</div>
+  <div class="card-body">
+    <p>
+      Below is a minimal Python-style debit function showing an explicit TOCTOU issue,
+      followed by the corrected transactional variant.
+    </p>
+
+    <div id="section7-codereview"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.CodeReviewChecker.create("section7-codereview", {
+        title: "🔎 Security Code Review – TOCTOU in debit_wallet",
+        code: `# Insecure: check-then-use without locking
+async def debit_wallet_insecure(db, user_id, amount):
+    balance = await db.get_balance(user_id)     # Time-of-Check
+    if balance >= amount:
+        # artificial latency widens race window
+        await asyncio.sleep(0.05)
+        new_balance = balance - amount
+        await db.update_balance(user_id, new_balance)  # Time-of-Use
+        return new_balance
+    raise ValueError("Insufficient funds")
+
+# Secure: single transaction + row-level lock
+async def debit_wallet_secure(db, user_id, amount):
+    async with db.transaction():
+        balance = await db.get_balance_for_update(user_id)  # SELECT ... FOR UPDATE
+        if balance < amount:
+            raise ValueError("Insufficient funds")
+        new_balance = balance - amount
+        await db.update_balance(user_id, new_balance)
+        return new_balance`,
+        vulnerabilities: [
+          {
+            severity: "high",
+            title: "TOCTOU race condition",
+            description: "Balance is checked and later updated without a transaction or row lock.",
+            line: 3,
+            recommendation: "Use a transaction + SELECT ... FOR UPDATE or equivalent to make check+update atomic."
+          },
+          {
+            severity: "medium",
+            title: "Artificial delay in critical section",
+            description: "Introduces unnecessary latency and increases the race window for attackers.",
+            line: 5,
+            recommendation: "Remove sleeps or heavy work from critical sections; perform them before or after the transaction."
+          }
+        ]
+      });
+    });
+    </script>
+
+    <p><strong>What to observe in code review:</strong></p>
+    <ul>
+      <li>Any read of shared state followed by a separate write using the same value.</li>
+      <li>Lack of transactions or row locks around the critical section.</li>
+      <li>Any deliberate sleep, network call, or heavy computation between check and write.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 7.2: Observability – Logs & Signals -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">7.2 Observability – Logs & Signals</div>
+  <div class="card-body">
+    <p>
+      When you (or a tester) hammer the insecure endpoint with parallel requests, your main evidence will be in logs
+      and account snapshots. Below is an example of how a logging view might highlight the race.
+    </p>
+
+    <div id="section7-logs"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.LogAnalyzer.create("section7-logs", {
+        title: "🔍 Security Log Analyzer – Debit Race",
+        columns: ["Time", "Event", "User", "Amount", "BalanceBefore", "BalanceAfter", "Status"],
+        logs: [
+          {
+            time: "10:00:01.001",
+            event: "debit_wallet",
+            user: "user-123",
+            ip: "203.0.113.5",
+            status: "success",
+            severity: "info",
+            amount: "100",
+            BalanceBefore: "150",
+            BalanceAfter: "50"
+          },
+          {
+            time: "10:00:01.003",
+            event: "debit_wallet",
+            user: "user-123",
+            ip: "203.0.113.5",
+            status: "success",
+            severity: "danger",
+            amount: "100",
+            BalanceBefore: "150",
+            BalanceAfter: "-50"
+          },
+          {
+            time: "10:00:01.005",
+            event: "alert_negative_balance",
+            user: "user-123",
+            ip: "n/a",
+            status: "blocked",
+            severity: "warning"
+          }
+        ],
+        placeholder: "Trigger your race test and inspect logs for overlapping debits and negative balances."
+      });
+    });
+    </script>
+
+    <p><strong>What success/failure looks like:</strong></p>
+    <ul>
+      <li><strong>Failure (vulnerable):</strong> negative balances, duplicate debits, same “BalanceBefore” across multiple concurrent requests.</li>
+      <li><strong>Success (fixed):</strong> at most one debit succeeds when funds are limited; others fail cleanly with “insufficient funds”.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 7.3: Attack Sandbox – Thinking like an Attacker -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">7.3 Attack Sandbox – Thinking like an Attacker 🎯</div>
+  <div class="card-body">
+    <p>
+      Use this mental sandbox to reason about payloads and attacker strategies.  
+      The goal is to develop intuition for how small code changes affect exploitability.
+    </p>
+
+    <div id="section7-attack-sandbox"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.AttackSandbox.create("section7-attack-sandbox", {
+        title: "🎯 Attack Vector Sandbox – Debit Flood",
+        scenarios: [
+          {
+            name: "Parallel debit flood",
+            description: "Simulate 20 concurrent debit requests on a $150 balance for $100 each.",
+            payload: "for i in {1..20}; do curl -X POST /api/debit -d '{\"amount\":100}' & done",
+            response: "Observe whether multiple requests succeed and whether balance goes negative.",
+            notifyType: "warning",
+            notifyMessage: "If more than one debit succeeds, your implementation is vulnerable to TOCTOU."
+          },
+          {
+            name: "Latency injection",
+            description: "Add artificial delay between balance check and update and repeat the test.",
+            payload: "# Insert sleep(50ms) between check and update\n# Re-run parallel debit script.",
+            response: "Race window widens; exploit becomes more reliable.",
+            notifyType: "info",
+            notifyMessage: "Any latency between check and use widens the window. Keep critical sections tight."
+          }
+        ],
+        placeholder: "Use these scenarios as templates when designing your own race-condition tests."
+      });
+    });
+    </script>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 7.4: Knowledge Check -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">7.4 Knowledge Check</div>
+  <div class="card-body">
+    <div id="section7-quiz"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section7-quiz", {
+        title: "🗘️ Section 7 Quiz",
+        mode: "step",
+        questions: [
+          {
+            text: "Which change most directly mitigates TOCTOU in debit_wallet?",
+            options: [
+              { value: "1", label: "Adding a sleep between check and update", correct: false },
+              { value: "2", label: "Using a transaction and row-level lock (SELECT ... FOR UPDATE)", correct: true },
+              { value: "3", label: "Logging every debit to stdout only", correct: false }
+            ]
+          },
+          {
+            text: "What is a strong signal of a TOCTOU issue in logs?",
+            options: [
+              { value: "1", label: "Negative balances after concurrent debits", correct: true },
+              { value: "2", label: "Single request with HTTP 200", correct: false }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>
+
+<!-- ====================================== -->
+<!-- Section 8: Good Design Principles, Defense & Mitigation -->
+<!-- ====================================== -->
+<section class="card">
+  <div class="card-header">8. Good Design Principles, Defense & Mitigation 🛡️</div>
+  <div class="card-body">
+    <p>
+      This section distils TOCTOU defenses into design rules, patterns, and review checklists you can apply in design
+      reviews, threat models, and code reviews. The goal is to make “race-safe” logic your default.
+    </p>
+
+    <div class="callout callout-info-solid">
+      Think in terms of <strong>atomic operations, idempotent APIs, and explicit ownership of shared state</strong>.
+      If two actors can mutate the same resource without coordination, you probably have a race risk.
+    </div>
+
+    <p><strong>High-level principles:</strong></p>
+    <ul>
+      <li>Collapse “check then act” into a single atomic operation where possible.</li>
+      <li>Use strong consistency for critical invariants (balances, quotas, permissions).</li>
+      <li>Design endpoints to be idempotent so retries can’t amplify races.</li>
+      <li>Keep critical sections small: avoid sleeps, blocking I/O, or remote calls inside them.</li>
+      <li>Use explicit locking or optimistic concurrency for shared resources.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 8.1: Secure Flow Patterns -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">8.1 Secure Flow Patterns</div>
+  <div class="card-body">
+    <p>
+      Below is a secure debit flow visualised step-by-step. Each step is designed to minimise or eliminate race windows.
+    </p>
+
+    <div id="section8-flow"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.FlowVisualizer.create("section8-flow", [
+        {
+          title: "Step 1 – Begin transaction",
+          description: "Open a DB transaction scoped to the minimal operation (debit one wallet)."
+        },
+        {
+          title: "Step 2 – Lock row / select for update",
+          description: "Read the current balance using SELECT ... FOR UPDATE to prevent concurrent writers."
+        },
+        {
+          title: "Step 3 – Validate invariant",
+          description: "Check that balance >= amount; if not, abort the transaction immediately."
+        },
+        {
+          title: "Step 4 – Apply mutation",
+          description: "Update the locked row with the new balance."
+        },
+        {
+          title: "Step 5 – Commit transaction",
+          description: "Commit changes atomically, releasing the lock."
+        },
+        {
+          title: "Step 6 – Emit event / log",
+          description: "Log the successful debit and publish events after commit (outside of critical section)."
+        }
+      ]);
+    });
+    </script>
+
+    <p><strong>Key design rules you should internalise:</strong></p>
+    <ul>
+      <li>Any state that defines money, quota, or privileges must be mutated under a clear concurrency control mechanism.</li>
+      <li>External side effects (emails, downstream APIs) should happen after commit, never inside the lock.</li>
+      <li>When using caches, treat them as hints; always enforce invariants in the system of record (DB).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 8.2: Reviewer Checklist (TOCTOU Defense) -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">8.2 Reviewer Checklist (TOCTOU Defense)</div>
+  <div class="card-body">
+    <p>
+      Use this checklist when reviewing designs or code related to shared resources and critical business invariants.
+    </p>
+
+    <div id="section8-checklist"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Checklist.create("section8-checklist", {
+        title: "✅ TOCTOU Defense Checklist",
+        items: [
+          "Is any critical business decision implemented as check-then-act across multiple statements?",
+          "Are transactions and locks used around shared resource updates (balances, inventory, permissions)?",
+          "Is there any artificial latency (sleep, remote calls) in the critical section?",
+          "Are caches only advisory, with final checks enforced in the database or system of record?",
+          "Are APIs idempotent where retries or duplicates are expected?",
+          "Do logs capture enough context (user, balance_before, balance_after, correlation IDs) to detect races?"
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 8.3: Knowledge Check -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">8.3 Knowledge Check</div>
+  <div class="card-body">
+    <div id="section8-quiz"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section8-quiz", {
+        title: "🗘️ Section 8 Quiz",
+        mode: "step",
+        questions: [
+          {
+            text: "Which design choice most effectively prevents TOCTOU in critical balance updates?",
+            options: [
+              { value: "1", label: "Performing balance checks in a cache only", correct: false },
+              { value: "2", label: "Using DB transactions with row-level locking or optimistic concurrency", correct: true },
+              { value: "3", label: "Adding more logging but no locking", correct: false }
+            ]
+          },
+          {
+            text: "Where should you place slow operations (emails, external API calls) relative to the critical section?",
+            options: [
+              { value: "1", label: "Inside the critical section for strong consistency", correct: false },
+              { value: "2", label: "After the transaction commits / lock is released", correct: true }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>
