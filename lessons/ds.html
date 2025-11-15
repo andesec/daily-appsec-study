@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lesson 31 – Digital Signatures: Hash, Sign, Verify</title>
+    <!-- AppSec theme and widgets CSS/JS -->
+    <link rel="stylesheet" href="appsec-theme.css" />
+</head>
+
+<body>
+    <div class="container my-4">
+        <!-- Lesson Intro Card -->
+        <section class="card mb-4">
+            <div class="card-header">
+                <h1>Lesson 31: Digital Signatures – Hash, Sign, Verify</h1>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for lesson introduction and overview.</p>
+            </div>
+        </section>
+
+        <!-- 1. Foundations -->
+        <section class="card">
+            <div class="card-header">
+                1. Foundations
+            </div>
+            <div class="card-body">
+                <div class="callout callout-info-solid mb-2">
+                    <strong>Goal of this section:</strong>
+                    Build a precise mental base for digital signatures: what they are, the core building blocks (hash,
+                    private/public keys, algorithms), and how they fit into real systems.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.1 What a digital signature actually guarantees
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>Integrity</strong> – the message has not changed since it was signed.</li>
+                    <li><strong>Authenticity</strong> – the holder of a specific <em>private key</em> produced the
+                        signature.</li>
+                    <li><strong>Non-repudiation (context-dependent)</strong> – the signer cannot easily deny having
+                        signed, assuming the private key is well protected and bound to an identity.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.2 Core components
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>Message (M)</strong> – the data to be protected. This could be an API response, a JWT
+                        claims set, a software package, or a document.</li>
+                    <li><strong>Hash function H(·)</strong> – a one-way function (e.g., SHA-256) that maps
+                        arbitrary-length input to a fixed-length <strong>message digest</strong> <code>h = H(M)</code>.
+                    </li>
+                    <li><strong>Private key (SK)</strong> – secret key held only by the signer. Used to generate
+                        signatures.</li>
+                    <li><strong>Public key (PK)</strong> – key that can be shared widely. Used by verifiers to check
+                        signatures created with SK.</li>
+                    <li><strong>Signature algorithm</strong> – the concrete math and rules that use <code>SK</code>,
+                        <code>PK</code>, and the hash to create and verify signatures (e.g., RSA-PSS, ECDSA, Ed25519).
+                    </li>
+                    <li><strong>Signature value (Sig)</strong> – the output of the signing operation; a compact blob
+                        attached to or stored alongside the message.</li>
+                    <li><strong>Key binding / certificate (optional but common)</strong> – a digital certificate (e.g.,
+                        X.509) that binds <code>PK</code> to an identity (service, domain, person) and is itself signed
+                        by a trusted authority.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.3 Prerequisites recap
+            </div>
+            <div class="card-body">
+                <p>This lesson assumes you are comfortable with the following. If not, treat these bullets as a quick
+                    refresher:</p>
+                <ul>
+                    <li><strong>Hashing vs encryption</strong> – hashing is one-way and used for integrity; encryption
+                        is reversible (with a key) and used for confidentiality.</li>
+                    <li><strong>Asymmetric cryptography basics</strong> – keypairs (private/public), and the idea that
+                        what one key does, the other can undo (within the algorithm’s design).</li>
+                    <li><strong>Basic TLS / HTTPS intuition</strong> – servers prove their identity using a certificate
+                        and a private key; clients trust a CA hierarchy.</li>
+                </ul>
+
+                <div class="callout callout-warning mt-1 mb-2">
+                    <strong>Important distinction:</strong>
+                    Digital signatures are <em>not</em> about hiding data. They are about proving <strong>who</strong>
+                    created data and that it has <strong>not changed</strong>. Confidentiality, if needed, is provided
+                    separately (e.g., via TLS or encryption).
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.4 High-level signing and verification flow
+            </div>
+            <div class="card-body">
+                <p>At a high level, every standards-compliant digital signature scheme follows this pattern:</p>
+                <ol>
+                    <li><strong>Signing side (sender/service):</strong>
+                        <ol>
+                            <li>Compute a hash of the message: <code>h = H(M)</code>.</li>
+                            <li>Use the <strong>private key</strong> and the signature algorithm to sign the hash:
+                                <code>Sig = Sign(SK, h)</code>.
+                            </li>
+                            <li>Send <code>M</code> and <code>Sig</code> (and often the public key or certificate) to
+                                the verifier.</li>
+                        </ol>
+                    </li>
+                    <li><strong>Verification side (receiver/client):</strong>
+                        <ol>
+                            <li>Recompute the hash of the received message: <code>h' = H(M)</code>.</li>
+                            <li>Use the <strong>public key</strong> to verify the signature against <code>h'</code>:
+                                <code>Verify(PK, h', Sig)</code>.
+                            </li>
+                            <li>If verification succeeds, accept the message as authentic and intact; otherwise, reject
+                                or treat as tampered/untrusted.</li>
+                        </ol>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.5 How these pieces show up in real systems
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>API tokens / JWTs:</strong> Identity provider signs a token with its private key;
+                        microservices verify with the corresponding public key before trusting claims.</li>
+                    <li><strong>TLS server certificates:</strong> A certificate authority signs the server’s public key;
+                        browsers verify this signature to trust the server’s identity.</li>
+                    <li><strong>Code signing:</strong> Vendors sign binaries or packages; operating systems or package
+                        managers verify before installation or execution.</li>
+                    <li><strong>Document signing (PDF, email):</strong> Clients verify that the document content and
+                        signer identity are as claimed.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                1.6 Quick Check – Foundations Quiz
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2">Use this short quiz to confirm you have the key concepts from the Foundations
+                    section.</p>
+
+                <div id="foundations-quiz" class="mt-2"></div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (!window.AppSecWidgets || !AppSecWidgets.Quiz) return;
+
+                        AppSecWidgets.Quiz.create('foundations-quiz', {
+                            title: 'Foundations – Digital Signatures',
+                            intro: 'Answer these questions to check your understanding of what digital signatures guarantee and how they are built.',
+                            questions: [
+                                {
+                                    id: 'q1',
+                                    text: 'Which properties do digital signatures primarily provide?',
+                                    options: [
+                                        { value: 'a', label: 'Confidentiality only' },
+                                        { value: 'b', label: 'Integrity and authenticity', correct: true },
+                                        { value: 'c', label: 'Anonymity and deniability' },
+                                        { value: 'd', label: 'Key rotation and revocation' }
+                                    ]
+                                },
+                                {
+                                    id: 'q2',
+                                    text: 'In a typical signature workflow, what is actually signed with the private key?',
+                                    options: [
+                                        { value: 'a', label: 'The raw message bytes, without hashing' },
+                                        { value: 'b', label: 'A random nonce unrelated to the message' },
+                                        { value: 'c', label: 'A hash (digest) of the message', correct: true },
+                                        { value: 'd', label: 'The public key of the verifier' }
+                                    ]
+                                },
+                                {
+                                    id: 'q3',
+                                    text: 'Which component is used by the receiver to verify a digital signature?',
+                                    options: [
+                                        { value: 'a', label: 'The sender\'s private key' },
+                                        { value: 'b', label: 'A shared symmetric key' },
+                                        { value: 'c', label: 'The sender\'s public key', correct: true },
+                                        { value: 'd', label: 'A random seed generated by the client' }
+                                    ]
+                                },
+                                {
+                                    id: 'q4',
+                                    text: 'Which of the following is the <em>best</em> description of a digital certificate in this context?',
+                                    options: [
+                                        { value: 'a', label: 'A file that stores only the private key' },
+                                        { value: 'b', label: 'A signed binding between a public key and an identity', correct: true },
+                                        { value: 'c', label: 'An encrypted copy of the entire message' },
+                                        { value: 'd', label: 'A random token issued by an OAuth provider' }
+                                    ]
+                                }
+                            ]
+                        });
+                    });
+                </script>
+            </div>
+        </section>
+
+
+        <!-- 2. Intuitive Hook -->
+        <section class="card">
+            <div class="card-header">
+                2. Intuitive Hook
+            </div>
+            <div class="card-body">
+                <div class="callout callout-info-solid mb-2">
+                    <strong>Analogy:</strong>
+                    Think of a digital signature as a <strong>wax seal on a legal document</strong> combined with
+                    <strong>tamper-evident packaging</strong> for the content inside.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                2.1 The real problem: trusting data you did not see created
+            </div>
+            <div class="card-body">
+                <p>
+                    In a modern SaaS system, almost every critical decision is based on data that arrives from
+                    <em>somewhere else</em>:
+                    another microservice, an identity provider, a webhook source, or a mobile client. You rarely see how
+                    that data
+                    was created, but you still have to decide whether to trust it.
+                </p>
+                <ul>
+                    <li>Is this JWT really issued by <strong>our</strong> IdP or a fake one?</li>
+                    <li>Did an attacker modify this payment payload in transit?</li>
+                    <li>Is this binary really produced by our build pipeline, or is it a trojan?</li>
+                </ul>
+
+                <p class="text-muted mb-2">
+                    Without a reliable way to answer these questions, every boundary between systems becomes an attack
+                    surface.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                2.2 Wax seal + tamper-evident box
+            </div>
+            <div class="card-body">
+                <p>
+                    Imagine your legal team sends a physical contract to a partner company:
+                </p>
+                <ol>
+                    <li>They print the contract and place it in a special envelope.</li>
+                    <li>They melt wax on the flap and press in the company signet ring (unique stamp).</li>
+                    <li>The seal both <strong>identifies who sealed it</strong> and <strong>breaks visibly if anyone
+                            opens it</strong>.</li>
+                </ol>
+                <p>
+                    When the partner receives the envelope, they inspect the seal:
+                </p>
+                <ul>
+                    <li>If the seal matches your company stamp and is unbroken, they trust that the content is exactly
+                        what you sent.</li>
+                    <li>If the seal is missing, broken, or obviously forged, they treat the envelope as suspicious.</li>
+                </ul>
+
+                <div class="callout callout-warning mt-1 mb-2">
+                    The wax seal does <em>not</em> hide the content (someone could hold the envelope to the light). Its
+                    job is to prove
+                    <strong>who sealed it</strong> and whether it has been <strong>opened or altered</strong> since.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                2.3 Mapping the analogy to digital signatures
+            </div>
+            <div class="card-body">
+                <p>Translate the physical picture directly into crypto terms:</p>
+                <ul>
+                    <li><strong>Company signet ring</strong> &rarr; the signer&rsquo;s <strong>private key</strong>
+                        (unique, hard to forge, must be protected).</li>
+                    <li><strong>Known pattern on the seal</strong> &rarr; the corresponding <strong>public key</strong>
+                        (or certificate) that everyone knows.</li>
+                    <li><strong>Wax seal on the envelope flap</strong> &rarr; the <strong>digital signature
+                            value</strong> attached to the message.</li>
+                    <li><strong>Inspecting the seal</strong> &rarr; running the <strong>verification algorithm</strong>
+                        with the public key.</li>
+                    <li><strong>Seal breaks if opened</strong> &rarr; any change to the message after signing causes
+                        verification to fail.</li>
+                </ul>
+
+                <p>
+                    In practice, the system doesn&rsquo;t "open the envelope" by guessing; it recomputes a <strong>hash
+                        of the message</strong> and
+                    checks whether the signature was produced over exactly that hash using the signer&rsquo;s private
+                    key.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                2.4 Why this mechanism exists in your daily AppSec work
+            </div>
+            <div class="card-body">
+                <p>
+                    From an AppSec perspective, digital signatures exist to let you safely <strong>delegate trust across
+                        boundaries</strong>:
+                </p>
+                <ul>
+                    <li>Your API gateway trusts identity claims because it can verify they were signed by your
+                        IdP&rsquo;s private key.</li>
+                    <li>Your microservices trust configuration, feature flags, or events only if they carry a valid
+                        signature from a
+                        known publisher.</li>
+                    <li>Your CI/CD pipeline trusts a binary as &ldquo;ours&rdquo; only if the build/signing step in the
+                        secure pipeline produced it.</li>
+                </ul>
+
+                <p class="text-muted mb-0">
+                    The rest of the lesson will formalize this intuition and show how hashing, private keys, and
+                    verification steps
+                    implement this &ldquo;wax seal&rdquo; behavior mathematically.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                2.5 Quick Check – Intuitive Hook Quiz
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2">Use this quiz to confirm you&rsquo;ve internalized the core analogy and
+                    purpose.</p>
+
+                <div id="intuitive-hook-quiz" class="mt-2"></div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (!window.AppSecWidgets || !AppSecWidgets.Quiz) return;
+
+                        AppSecWidgets.Quiz.create('intuitive-hook-quiz', {
+                            title: 'Intuitive Hook – Digital Signatures',
+                            intro: 'Answer these questions using the wax seal / tamper-evident analogy for digital signatures.',
+                            mode: 'step',
+                            questions: [
+                                {
+                                    text: 'In the wax seal analogy, what real-world problem are digital signatures solving for distributed systems?',
+                                    options: [
+                                        { value: 'a', label: 'Keeping the content completely secret from everyone' },
+                                        { value: 'b', label: 'Making messages shorter so they travel faster' },
+                                        { value: 'c', label: 'Proving who sealed/sent the message and whether it was opened or altered', correct: true },
+                                        { value: 'd', label: 'Automatically backing up all messages to cold storage' }
+                                    ]
+                                },
+                                {
+                                    text: 'What does the company\'s signet ring correspond to in the digital world?',
+                                    options: [
+                                        { value: 'a', label: 'A random request ID' },
+                                        { value: 'b', label: 'The signer\'s private key', correct: true },
+                                        { value: 'c', label: 'The TLS version negotiated in HTTPS' },
+                                        { value: 'd', label: 'The message hash stored in a log file' }
+                                    ]
+                                },
+                                {
+                                    text: 'Who can verify the authenticity of the “seal” in the digital signature analogy?',
+                                    options: [
+                                        { value: 'a', label: 'Only the original signer' },
+                                        { value: 'b', label: 'Anyone who has the signer\'s public key', correct: true },
+                                        { value: 'c', label: 'Only the database administrator' },
+                                        { value: 'd', label: 'No one; signatures are meant to be private' }
+                                    ]
+                                },
+                                {
+                                    text: 'In the analogy, what corresponds to detecting that the envelope was opened and re-sealed by an attacker?',
+                                    options: [
+                                        { value: 'a', label: 'A failed signature verification because the message changed', correct: true },
+                                        { value: 'b', label: 'The TLS handshake taking longer than usual' },
+                                        { value: 'c', label: 'An HTTP 404 response from the API' },
+                                        { value: 'd', label: 'Rotating the keypair in the HSM' }
+                                    ]
+                                }
+                            ]
+                        });
+                    });
+                </script>
+            </div>
+        </section>
+
+        <!-- 3. Mental Model — "Why → How → What-If" -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>3. Mental Model — Why → How → What-If</h2>
+            </div>
+        </div>
+        <section class="card">
+            <div class="card-header">3.1 Why – the trust problem across boundaries</div>
+            <div class="card-body">
+                <p>
+                    In a typical SaaS architecture, almost every critical decision is based on data that crosses
+                    <strong>trust boundaries</strong>:
+                </p>
+                <ul>
+                    <li>Frontend → API gateway → microservices</li>
+                    <li>Identity provider → backend services (tokens, claims, SSO assertions)</li>
+                    <li>External partners → your webhooks / ingest endpoints</li>
+                    <li>CI/CD pipeline → production (binaries, configuration, artifacts)</li>
+                </ul>
+                <p>
+                    The core question is always the same:
+                    <strong>
+                        “Can I safely act on this message as if it genuinely came from the claimed sender and has not
+                        been
+                        altered?”
+                    </strong>
+                </p>
+                <p>
+                    The mental model for digital signatures starts from this problem: we need a way for a sender to
+                    <strong>bind their identity to specific bytes</strong>, such that any change to those bytes becomes
+                    <strong>obvious</strong> to any verifier.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">3.2 How – the hash → sign → verify pipeline</div>
+            <div class="card-body">
+                <p>
+                    Conceptually, every digital signature scheme can be viewed as a simple pipeline:
+                </p>
+                <pre><code>        +-----------+        +--------------+        +----------------+
+        | Message M | --H--> | Digest h=H(M)| --SK--> | Signature Sig  |
+        +-----------+        +--------------+        +----------------+
+                |                                      |
+                | (sent over network)                  |
+                v                                      v
+        +-----------+        +--------------+        +---------------------------+
+        | Message M | --H--> | Digest h'=H(M)| --PK--> | Verify(PK, h', Sig) ?   |
+        +-----------+        +--------------+        +---------------------------+
+      </code></pre>
+                <ul>
+                    <li><strong>Hash (H)</strong> condenses the message into a fixed-size digest that changes
+                        drastically if M changes.</li>
+                    <li><strong>Sign with SK</strong> turns that digest into a signature using the private key.</li>
+                    <li><strong>Verify with PK</strong> recomputes the digest from the received message and checks if
+                        the signature
+                        could have been produced only by the holder of the matching private key.</li>
+                </ul>
+                <p>
+                    The signer never reveals the private key; the verifier never needs it. They only need the
+                    <strong>public key</strong> and a guarantee that it is correctly bound to the signer&rsquo;s
+                    identity
+                    (often via a certificate).
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">3.3 What-If – failure modes in the mental model</div>
+            <div class="card-body">
+                <p>
+                    Thinking like an attacker, ask &ldquo;What if…&rdquo; about each element of the pipeline:
+                </p>
+                <ul>
+                    <li>
+                        <strong>What if the private key (SK) is stolen?</strong><br />
+                        An attacker can now produce signatures that verify as if they came from the legitimate service.
+                        Integrity verification still works technically, but it no longer proves the right
+                        <em>identity</em>.
+                    </li>
+                    <li>
+                        <strong>What if the hash function is weak or broken?</strong><br />
+                        If an attacker can find two messages M1, M2 with the same digest H(M1) = H(M2), they may trick a
+                        signer into signing M1 and later swap in M2.
+                    </li>
+                    <li>
+                        <strong>What if verification uses the wrong public key?</strong><br />
+                        If your service accepts any untrusted key (e.g., from the request) instead of a pinned or
+                        validated one,
+                        an attacker can generate their own key pair and sign arbitrary data that your service accepts.
+                    </li>
+                    <li>
+                        <strong>What if verification is skipped on some code paths?</strong><br />
+                        Attackers will route traffic through the <em>unverified</em> path (e.g., a debugging endpoint,
+                        internal-only API,
+                        or error handler) to bypass checks entirely.
+                    </li>
+                </ul>
+                <p>
+                    A solid mental model keeps these &ldquo;what-if&rdquo; scenarios in view whenever you review
+                    designs, tokens, or
+                    crypto-related code.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">3.4 Attack → Detect → Defend lifecycle view</div>
+            <div class="card-body">
+                <p>
+                    For AppSec, it helps to see digital signatures as part of a continuous lifecycle:
+                </p>
+                <pre><code>Attack:  
+  - Steal or misuse private keys
+  - Inject or modify messages in transit
+  - Downgrade algorithms or disable verification
+
+Detect:
+  - Monitor signature verification failures (rate, source, payload type)
+  - Alert on unexpected keys / issuers / algorithms
+  - Log token and certificate validation errors with context
+
+Defend:
+  - Protect private keys (HSM, KMS, strict access control)
+  - Enforce strong algorithms and key sizes
+  - Require verification on all trust boundaries and fail closed
+      </code></pre>
+                <p>
+                    When you read a design or review code, you should be able to point to <strong>where</strong>
+                    signatures are
+                    created, <strong>where</strong> they are verified, and <strong>how</strong> attacks against that
+                    path would be
+                    detected and mitigated.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">3.5 AppSec review checklist – using the mental model</div>
+            <div class="card-body">
+                <p>
+                    When acting as a senior AppSec reviewer, you can apply this mental model using a simple checklist:
+                </p>
+                <ul>
+                    <li><strong>Identify the signed object:</strong> What exactly is being signed (claims set, entire
+                        payload,
+                        canonicalized document, binary)?</li>
+                    <li><strong>Locate the signer:</strong> Which component owns the private key and under what trust
+                        domain?</li>
+                    <li><strong>Trace verification points:</strong> Which services verify the signature before acting on
+                        the data?</li>
+                    <li><strong>Check key binding:</strong> How do verifiers obtain and trust the public key (PKI, key
+                        pinning,
+                        configuration, JWKS endpoint)?</li>
+                    <li><strong>Evaluate algorithms:</strong> Are algorithm choices and parameters aligned with current
+                        recommendations (e.g., RSA-PSS, ECDSA with safe curves, EdDSA)?</li>
+                    <li><strong>Consider what-if scenarios:</strong> What happens if verification fails, keys rotate, or
+                        a
+                        verification dependency is unavailable?</li>
+                </ul>
+                <p>
+                    This checklist operationalizes the &ldquo;Why → How → What-if&rdquo; thinking into concrete review
+                    questions.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">3.6 Quick Check – Mental Model Quiz</div>
+            <div class="card-body">
+                <p class="text-muted mb-2">
+                    Use this quiz to validate that you can reason about signatures using the Why → How → What-if lens.
+                </p>
+                <div id="mental-model-quiz" class="mt-2"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!window.AppSecWidgets || !AppSecWidgets.Quiz) return;
+
+                AppSecWidgets.Quiz.create('mental-model-quiz', {
+                    title: 'Mental Model – Digital Signatures',
+                    intro: 'Answer these to check your understanding of the Why → How → What-if view of signatures.',
+                    questions: [
+                        {
+                            text: 'In the mental model pipeline, what is the main purpose of hashing the message before signing?',
+                            options: [
+                                { value: 'a', label: 'To keep the message secret from the signer' },
+                                { value: 'b', label: 'To produce a fixed-size representation that changes if the message changes', correct: true },
+                                { value: 'c', label: 'To compress the message for network efficiency only' },
+                                { value: 'd', label: 'To encrypt the message using the public key' }
+                            ]
+                        },
+                        {
+                            text: 'Which of the following “what-if” scenarios most directly undermines authenticity, even if verification still succeeds technically?',
+                            options: [
+                                { value: 'a', label: 'The hash function outputs 512 bits instead of 256 bits' },
+                                { value: 'b', label: 'The private key is stolen but the same key pair continues to be used', correct: true },
+                                { value: 'c', label: 'The message is very large and takes longer to hash' },
+                                { value: 'd', label: 'The public key is stored in multiple cache layers' }
+                            ]
+                        },
+                        {
+                            text: 'During a design review you see that services accept a public key supplied in each request and use it to verify the signature. Which part of the mental model is being violated?',
+                            options: [
+                                { value: 'a', label: 'The requirement that hashing must be deterministic' },
+                                { value: 'b', label: 'The principle that verifiers must know and trust the correct public key binding', correct: true },
+                                { value: 'c', label: 'The idea that signature verification must happen only once per message' },
+                                { value: 'd', label: 'The requirement that the signer must reveal their private key to verifiers' }
+                            ]
+                        },
+                        {
+                            text: 'From the Attack → Detect → Defend lifecycle, which is the best example of a “Detect” activity for signatures?',
+                            options: [
+                                { value: 'a', label: 'Generating a new key pair in an HSM' },
+                                { value: 'b', label: 'Logging and alerting on spikes in signature verification failures by source or client', correct: true },
+                                { value: 'c', label: 'Rewriting services to skip verification on health checks' },
+                                { value: 'd', label: 'Distributing the private key to multiple microservices for convenience' }
+                            ]
+                        }
+                    ]
+                });
+            });
+        </script>
+
+
+        <!-- 4. Deep Explanation (Step-by-Step) -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>4. Deep Explanation (Step-by-Step)</h2>
+            </div>
+            <div class="card-body">
+                <div class="callout callout-info-solid mb-1">
+                    <strong>Goal of this section:</strong>
+                    Turn the high-level idea of digital signatures into a precise, step-by-step process you can reason
+                    about
+                    during design and code reviews.
+                </div>
+
+                <p>
+                    In this section we treat digital signatures as a <strong>three-stage pipeline</strong>:
+                    prepare the message, sign it with the private key, and verify it with the public key. We will also
+                    cover
+                    different algorithm families and important edge cases that often cause real-world bugs.
+                </p>
+            </div>
+        </div>
+
+        <section class="card mb-3">
+            <div class="card-header">4.1 Ingredients and notation</div>
+            <div class="card-body">
+                <p>We will use the following notation throughout this section:</p>
+                <ul>
+                    <li><code>M</code> – the message (bytes) to be signed.</li>
+                    <li><code>H(·)</code> – a cryptographic hash function (typically SHA-256).</li>
+                    <li><code>h = H(M)</code> – the message digest.</li>
+                    <li><code>SK</code> – signer&rsquo;s private key (secret).</li>
+                    <li><code>PK</code> – corresponding public key (shared).</li>
+                    <li><code>Sig</code> – the signature value produced by the signing algorithm.</li>
+                    <li><code>Alg</code> – the signature scheme (e.g., RSA-PSS, ECDSA, Ed25519).</li>
+                </ul>
+                <p>
+                    At the abstract level, all secure signature schemes implement two functions:
+                </p>
+                <ul>
+                    <li><code>Sig = Sign(SK, M)</code> – produce a signature using the private key.</li>
+                    <li><code>ok = Verify(PK, M, Sig)</code> – output <code>true</code> if <code>Sig</code> is valid for
+                        <code>M</code> and <code>PK</code>, else <code>false</code>.
+                    </li>
+                </ul>
+                <p>
+                    In practice, <code>Sign</code> almost always hashes <code>M</code> internally or expects you to hash
+                    it first. The exact
+                    mapping <code>M → h → Sig</code> depends on the algorithm family.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">4.2 Signing – step-by-step</div>
+            <div class="card-body">
+                <p>For a typical modern scheme (e.g., RSA-PSS or ECDSA) the signing process looks like this:</p>
+                <ol>
+                    <li>
+                        <strong>Canonicalize the message (if needed).</strong><br />
+                        Ensure the bytes you sign are deterministic: e.g., JSON canonicalization, consistent field
+                        ordering,
+                        trimming whitespace, normalizing line endings. If different producers compute different byte
+                        representations, signatures will not verify across systems.
+                    </li>
+                    <li>
+                        <strong>Hash the message:</strong> <code>h = H(M)</code>.<br />
+                        The hash compresses arbitrary-length input to a fixed-size digest that is sensitive to any
+                        change in <code>M</code>.
+                    </li>
+                    <li>
+                        <strong>Apply the signature algorithm with the private key:</strong><br />
+                        <code>Sig = Alg.Sign(SK, h)</code>. The algorithm uses the private key and, for some schemes,
+                        internal randomness.
+                    </li>
+                    <li>
+                        <strong>Encode the signature for transport.</strong><br />
+                        Depending on the ecosystem, the raw signature may be wrapped in DER, base64url, or JOSE-style
+                        <code>r||s</code>
+                        fields (e.g., JWS/JWT).
+                    </li>
+                    <li>
+                        <strong>Attach the signature to the message.</strong><br />
+                        The system sends <code>M</code> plus <code>Sig</code> (and usually some information about
+                        <code>Alg</code> and the key id <code>kid</code>).
+                    </li>
+                </ol>
+
+                <div class="callout callout-warning mt-1">
+                    <strong>Key point:</strong> The signer must be extremely clear about <em>exactly which bytes</em>
+                    are being signed.
+                    Ambiguity here is a common source of bugs and verification failures.
+                </div>
+
+                <div id="sig-deep-flow" class="mt-1"></div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">4.3 Verification – step-by-step</div>
+            <div class="card-body">
+                <p>On the receiving side, verification mirrors the signing process:</p>
+                <ol>
+                    <li>
+                        <strong>Parse the message and extract the signature.</strong><br />
+                        For example, parse the JWT header/body, or the HTTP header that carries the signature, or the
+                        signature
+                        field in a structured document.
+                    </li>
+                    <li>
+                        <strong>Reconstruct the exact signed bytes <code>M</code>.</strong><br />
+                        This must follow the same canonicalization rules as the signer: identical fields, order,
+                        whitespace,
+                        encoding, etc.
+                    </li>
+                    <li>
+                        <strong>Re-hash the message:</strong> <code>h' = H(M)</code> using the same hash algorithm.
+                    </li>
+                    <li>
+                        <strong>Obtain or select the correct public key <code>PK</code>.</strong><br />
+                        Usually via a trusted key store, pinned certificate, or JWKS endpoint combined with the key id
+                        <code>kid</code>.
+                    </li>
+                    <li>
+                        <strong>Run signature verification:</strong> <code>ok = Alg.Verify(PK, h', Sig)</code>.<br />
+                        If <code>ok = false</code>, the message must be treated as untrusted or tampered.
+                    </li>
+                    <li>
+                        <strong>Apply policy on success/failure.</strong><br />
+                        On success, proceed with business logic. On failure, log and reject with a clear error; do not
+                        fall back
+                        silently to an insecure path.
+                    </li>
+                </ol>
+
+                <div class="callout callout-info mt-1">
+                    <strong>As an AppSec reviewer:</strong> You should be able to point to the exact place in the code
+                    or design where
+                    steps 2–5 happen and verify that failures cause a <em>hard</em> deny, not a soft fallback.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">4.4 Algorithm families and behavior</div>
+            <div class="card-body">
+                <p>At a high level there are three common families used in modern systems:</p>
+                <ul>
+                    <li>
+                        <strong>RSA (e.g., RSA-PSS, RSA-PKCS#1 v1.5)</strong><br />
+                        Based on modular exponentiation with large integers. Widely deployed, flexible, but keys and
+                        signatures are large.
+                        RSA-PSS is preferred over PKCS#1 v1.5 for new designs.
+                    </li>
+                    <li>
+                        <strong>ECDSA</strong><br />
+                        Based on elliptic curves (e.g., P-256). Provides smaller keys and signatures for equivalent
+                        security. Requires
+                        high-quality randomness per signature; poor randomness can leak the private key.
+                    </li>
+                    <li>
+                        <strong>EdDSA (e.g., Ed25519)</strong><br />
+                        Modern, fast, and designed to be easier to use correctly. Deterministic signatures (no
+                        per-signature randomness),
+                        with good side-channel resistance in typical implementations.
+                    </li>
+                </ul>
+                <p>
+                    As a senior engineer, you usually do <em>not</em> implement these primitives; you choose secure
+                    libraries and
+                    configurations, and you understand enough to evaluate whether the algorithm choice is appropriate
+                    for your context.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">4.5 Edge cases and confusing behaviors</div>
+            <div class="card-body">
+                <p>Several recurring edge cases cause subtle bugs in signature handling:</p>
+                <ul>
+                    <li>
+                        <strong>Canonicalization / normalization mismatches.</strong><br />
+                        If the signer and verifier serialize JSON differently (field order, whitespace, numeric
+                        formats), they will
+                        compute different hashes and signatures will fail, even though the semantic content is the same.
+                    </li>
+                    <li>
+                        <strong>Algorithm confusion.</strong><br />
+                        Accepting any algorithm declared by the message (e.g., JWT <code>{ "alg": "none" }</code> or
+                        weak algorithms) allows an
+                        attacker to downgrade or bypass verification. Verifiers must enforce an allowed algorithm list.
+                    </li>
+                    <li>
+                        <strong>Key confusion / wrong key selection.</strong><br />
+                        If the verifier picks the wrong public key or allows the sender to supply PK, an attacker can
+                        sign messages
+                        with their own key pair and have them accepted as trusted.
+                    </li>
+                    <li>
+                        <strong>Key rotation timing.</strong><br />
+                        During rotation, you may need to accept signatures from multiple keys for a grace period. Both
+                        signers and
+                        verifiers must agree on rotation windows; otherwise valid signatures may start failing
+                        unexpectedly.
+                    </li>
+                    <li>
+                        <strong>Signature format differences.</strong><br />
+                        Some APIs return ECDSA signatures in ASN.1/DER format, others expect raw <code>r||s</code>.
+                        Using the wrong format leads
+                        to non-obvious verification failures.
+                    </li>
+                </ul>
+
+                <div class="callout callout-warning mt-1 mb-1">
+                    <strong>Looks-safe-but-isn&rsquo;t:</strong> &ldquo;We verify signatures, but if verification fails
+                    we just log and continue.&rdquo;
+                    This completely removes the security benefit; failure must cause a hard reject.
+                </div>
+
+                <div id="sig-config-diff" class="widget mt-1">
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">4.6 Quick Check – Deep Explanation Quiz</div>
+            <div class="card-body">
+                <p class="text-muted mb-1">Check that you can follow the hash → sign → verify process and reason about
+                    edge cases.</p>
+                <div id="deep-explanation-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+                    AppSecWidgets.FlowVisualizer.create('sig-deep-flow', [
+                        {
+                            title: 'Prepare message',
+                            description: 'Canonicalize and serialize the data into a deterministic byte representation M.'
+                        },
+                        {
+                            title: 'Hash message',
+                            description: 'Compute h = H(M) using an agreed cryptographic hash function (e.g., SHA-256).'
+                        },
+                        {
+                            title: 'Sign digest',
+                            description: 'Use the private key SK and the signature algorithm Alg to compute Sig = Alg.Sign(SK, h).'
+                        },
+                        {
+                            title: 'Transmit',
+                            description: 'Send M along with Sig (and metadata like alg and kid) to the verifier.'
+                        },
+                        {
+                            title: 'Verify',
+                            description: 'Verifier recomputes h\' = H(M), selects PK, and checks Alg.Verify(PK, h\', Sig).'
+                        }
+                    ]);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
+                    var insecureCode = [
+                        '// Insecure: trusts alg from untrusted token and logs then continues on failure',
+                        'const header = JSON.parse(base64UrlDecode(tokenParts[0]));',
+                        'const alg = header.alg; // attacker-controlled',
+                        '',
+                        'const verified = crypto.verify({',
+                        '  algorithm: alg,                 // no allowed-list enforcement',
+                        '  key: getPublicKeyFromRequest(req), // key taken from request',
+                        '  signature: sig,',
+                        '  data: rawPayloadBytes',
+                        '});',
+                        '',
+                        'if (!verified) {',
+                        '  console.warn("signature failed, proceeding anyway");',
+                        '}',
+                        'handleBusinessLogic(claims);      // still executed'
+                    ].join("\n");
+
+                    var secureCode = [
+                        '// Secure: enforces allowed algorithms, trusted key source, and fails closed',
+                        'const header = JSON.parse(base64UrlDecode(tokenParts[0]));',
+                        '',
+                        'const allowedAlgs = new Set(["RS256", "PS256", "ES256"]);',
+                        'if (!allowedAlgs.has(header.alg)) {',
+                        '  throw new Error("Unsupported or unsafe signature algorithm");',
+                        '}',
+                        '',
+                        'const keyId = header.kid;',
+                        'const publicKey = trustedKeyStore.get(keyId); // from JWKS / config, not request',
+                        '',
+                        'const verified = crypto.verify({',
+                        '  algorithm: header.alg,',
+                        '  key: publicKey,',
+                        '  signature: sig,',
+                        '  data: rawPayloadBytes // exact bytes used by signer',
+                        '});',
+                        '',
+                        'if (!verified) {',
+                        '  audit.log("signature_verification_failed", { kid: keyId });',
+                        '  throw new Error("Invalid signature");',
+                        '}',
+                        'handleBusinessLogic(claims);      // only reached if signature is valid'
+                    ].join("\n");
+
+                    AppSecWidgets.ConfigDiff.create('sig-config-diff', "Unsafe vs Safe Signature Verification", insecureCode, secureCode);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('deep-explanation-quiz', {
+                        title: 'Deep Explanation – Digital Signatures',
+                        intro: 'Answer these questions to confirm your understanding of the step-by-step signing and verification process.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'Why do most signature schemes hash the message before signing?',
+                                options: [
+                                    { value: 'a', label: 'To hide the message content from the verifier' },
+                                    { value: 'b', label: 'To produce a fixed-size digest that is highly sensitive to changes in the message', correct: true },
+                                    { value: 'c', label: 'To allow the signer to skip using a private key' },
+                                    { value: 'd', label: 'To make network transmission faster by compressing the message' }
+                                ]
+                            },
+                            {
+                                text: 'During verification, which step is most likely to break if signer and verifier serialize JSON differently?',
+                                options: [
+                                    { value: 'a', label: 'Key selection (choosing PK)' },
+                                    { value: 'b', label: 'Hash computation; they will compute different digests over different bytes', correct: true },
+                                    { value: 'c', label: 'Base64 decoding of the signature' },
+                                    { value: 'd', label: 'Network transmission of the token' }
+                                ]
+                            },
+                            {
+                                text: 'Which scenario best describes an algorithm confusion vulnerability?',
+                                options: [
+                                    { value: 'a', label: 'The verifier rejects tokens older than 5 minutes' },
+                                    { value: 'b', label: 'The verifier accepts any alg value from the token, including "none" or deprecated algorithms', correct: true },
+                                    { value: 'c', label: 'The verifier logs all failed verifications with audit details' },
+                                    { value: 'd', label: 'The signer rotates keys regularly and publishes them via JWKS' }
+                                ]
+                            },
+                            {
+                                text: 'From a security perspective, what should happen if signature verification fails?',
+                                options: [
+                                    { value: 'a', label: 'Log the error but continue processing as if the token were valid' },
+                                    { value: 'b', label: 'Silently switch to a different algorithm and retry' },
+                                    { value: 'c', label: 'Reject the request, log the event, and do not execute protected business logic', correct: true },
+                                    { value: 'd', label: 'Ask the client to provide a new public key to verify against' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
+
+        <!-- 5. Real-World Context & Interactions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>5. Real-World Context &amp; Interactions</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Real-World Context &amp; Interactions content.</p>
+            </div>
+        </div>
+
+        <!-- 6. Common Weaknesses, Pitfalls & Attack Paths -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>6. Common Weaknesses, Pitfalls &amp; Attack Paths</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Common Weaknesses, Pitfalls &amp; Attack Paths content.</p>
+            </div>
+        </div>
+
+        <!-- 7. Practical Implementation and Review (Hands-On) -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>7. Practical Implementation and Review (Hands-On)</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Practical Implementation and Review (Hands-On) content.</p>
+            </div>
+        </div>
+
+        <!-- 8. Good Design Principles, Defense & Mitigation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>8. Good Design Principles, Defense &amp; Mitigation</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Good Design Principles, Defense &amp; Mitigation content.</p>
+            </div>
+        </div>
+
+        <!-- 9. Incident Case Study and Analysis -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>9. Incident Case Study and Analysis</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Incident Case Study and Analysis content.</p>
+            </div>
+        </div>
+
+        <!-- 10. Threat Model and Analysis -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>10. Threat Model and Analysis</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Threat Model and Analysis content.</p>
+            </div>
+        </div>
+
+        <!-- 11. Compliance Mapping -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>11. Compliance Mapping</h2>
+            </div>
+            <div class="card-body">
+                <p>Placeholder for Compliance Mapping content.</p>
+            </div>
+        </div>
+        </section>
+    </div>
+
+    <script src="appsec-theme.js"></script>
+    <script src="appsec-widgets.js"></script>
+</body>
+
+</html>

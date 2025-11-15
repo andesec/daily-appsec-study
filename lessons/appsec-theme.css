@@ -724,3 +724,9 @@ pre code {
   padding: 0 !important;
   white-space: pre !important;
 }
+
+ul,
+ol {
+  margin-bottom: var(--spacing-md);
+  margin-left: 1.5rem;
+}

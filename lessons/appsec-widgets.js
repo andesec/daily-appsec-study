@@ -85,12 +85,12 @@ User-Agent: AppSec-Student
  * ============================================
  */
 AppSecWidgets.ConfigDiff = {
-  create(containerId, insecureCode, secureCode) {
+  create(containerId, title, insecureCode, secureCode) {
     const container = document.getElementById(containerId);
     container.innerHTML = `
       <div class="widget">
         <div class="widget-header">
-          <h3 class="widget-title">🔒 Secure vs Insecure Config</h3>
+          <h3 class="widget-title">🔒 ${title}}</h3>
           <div>
             <button class="btn btn-danger" id="${containerId}-insecure-btn">❌ Insecure</button>
             <button class="btn btn-success" id="${containerId}-secure-btn">✅ Secure</button>

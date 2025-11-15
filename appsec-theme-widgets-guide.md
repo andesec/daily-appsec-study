@@ -86,21 +86,18 @@ When used from widgets, call via `window.AppSec.Notify.show(...)`.
 ### Layout
 - `.container` - Max-width 1400px, responsive padding
 - `.grid`, `.grid-2`, `.grid-3` - Responsive grids
-- `.card` - Card container with shadow
+- `.card` - Card container with shadow - Use with <sectiom> element
 - `.card-header` and `.card-body` for organizing the card nicely in responsive fashion.
 - `.widget` - Widget container with header/body
 
 ### Typography
-- `h1` to `h6` - Styled headings
+- `.card-header` - Card headings - Use for subsection headings as well.
 - `code` - Inline code (colorized)
 - `pre code` - Code blocks (no colorization)
 
 ### Buttons
 - `.btn` - Base button
 - `.btn-primary`, `.btn-danger`, `.btn-success`, `.btn-secondary` - Colored variants
-
-### Alerts (Border Only)
-- `.alert-danger`, `.alert-warning`, `.alert-success`, `.alert-info` - Border-left colored alerts
 
 ### Alerts (Solid)
 - `.alert-danger-solid`, `.alert-warning-solid`, `.alert-success-solid`, `.alert-info-solid` - Full-color backgrounds
@@ -160,11 +157,12 @@ Key classes: `widget`, `widget-header`, `widget-title`, `widget-body`, plus `btn
 **Signature:**
 
 ```js
-AppSecWidgets.ConfigDiff.create(containerId, insecureCode, secureCode)
+AppSecWidgets.ConfigDiff.create(containerId, title, insecureCode, secureCode)
 ```
 
 **Params:**
 
+- `title` (string) – title to show in the widget header.
 - `insecureCode` (string) – vulnerable configuration or code.
 - `secureCode`   (string) – fixed/secure version.
 
