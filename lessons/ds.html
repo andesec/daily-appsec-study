@@ -12,12 +12,14 @@
 <body>
     <div class="container my-4">
         <!-- Lesson Intro Card -->
-        <section class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h1>Lesson 31: Digital Signatures – Hash, Sign, Verify</h1>
             </div>
             <div class="card-body">
                 <p>Placeholder for lesson introduction and overview.</p>
+
+                <nav id="toc"></nav>
             </div>
         </section>
 
@@ -405,11 +407,11 @@
         </section>
 
         <!-- 3. Mental Model — "Why → How → What-If" -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>3. Mental Model — Why → How → What-If</h2>
             </div>
-        </div>
+        </section>
         <section class="card">
             <div class="card-header">3.1 Why – the trust problem across boundaries</div>
             <div class="card-body">
@@ -633,7 +635,7 @@ Defend:
 
 
         <!-- 4. Deep Explanation (Step-by-Step) -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>4. Deep Explanation (Step-by-Step)</h2>
             </div>
@@ -652,7 +654,7 @@ Defend:
                     different algorithm families and important edge cases that often cause real-world bugs.
                 </p>
             </div>
-        </div>
+        </section>
 
         <section class="card mb-3">
             <div class="card-header">4.1 Ingredients and notation</div>
@@ -990,74 +992,502 @@ Defend:
 
 
         <!-- 5. Real-World Context & Interactions -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>5. Real-World Context &amp; Interactions</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Real-World Context &amp; Interactions content.</p>
+                <div class="callout callout-info">
+                    <strong>Goal of this section:</strong>
+                    Place digital signatures into one concrete SaaS architecture so you can see how real services sign,
+                    verify,
+                    and rely on them under normal and hostile conditions.
+                </div>
+
+                <p>
+                    We will use a realistic scenario: a multi-tenant SaaS API that accepts <strong>JWT access
+                        tokens</strong> from an
+                    identity provider (IdP). The API gateway and backend services rely on these signatures to make
+                    authorization
+                    decisions, enforce tenant isolation, and prevent token forgery.
+                </p>
+
+                <p class="text-muted">
+                    Think of this section as a &ldquo;walk through the system&rdquo;: how signatures flow across
+                    components,
+                    what signals they
+                    generate, and where an attacker would try to break things.
+                </p>
             </div>
-        </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.1 Scenario – Multi-tenant SaaS with signed JWT access tokens 🌐</div>
+            <div class="card-body">
+                <p>
+                    Our example company provides a multi-tenant project management SaaS. Users authenticate via an
+                    external IdP,
+                    which issues <code>RS256</code>-signed JWTs. The high-level flow looks like this:
+                </p>
+
+                <pre><code>+-------------+        +-----------------+        +-------------------+        +-------------------+
+|  Browser /  |  (1)   |  Identity        | (2)    |  API Gateway      | (3)    |  Backend Service   |
+|  SPA Client | -----> |  Provider (IdP)  | -----> |  (verifies JWT)  | -----> |  (enforces authz)  |
++-------------+        +-----------------+        +-------------------+        +-------------------+
+       ^                         |                          |                             |
+       |                         | (issues RS256-signed     | (valid JWT with tenant_id   | (trusts claims only
+       |                         |  access token: JWT)      |  & scopes is required)      |  after verification)
+       |                         v                          v                             v
+     User                  Private key SK(IdP)        Public key PK(IdP)           DB & tenant data
+    (Tenant A)
+    </code></pre>
+
+                <p>
+                    Key properties:
+                </p>
+                <ul>
+                    <li>The IdP is the only component that holds the <strong>private key</strong> <code>SK(IdP)</code>.
+                    </li>
+                    <li>The API gateway and backend services have a trusted copy of the <strong>public key</strong> (via
+                        a JWKS URL or config).</li>
+                    <li>Every request to protected endpoints must carry a JWT whose <strong>signature verifies</strong>
+                        with <code>PK(IdP)</code>.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.2 Happy path – correctly signed JWT through the system ✅</div>
+            <div class="card-body">
+                <p>On the happy path, the digital signature enables end-to-end trust across components:</p>
+                <ol>
+                    <li>
+                        The user signs in at the IdP and successfully completes MFA.
+                    </li>
+                    <li>
+                        The IdP issues a JWT with claims like <code>sub</code>, <code>tenant_id</code>,
+                        <code>scope</code>, and an expiry <code>exp</code>, then
+                        signs it using <code>RS256</code> with its private key <code>SK(IdP)</code>.
+                    </li>
+                    <li>
+                        The SPA includes this JWT in an <code>Authorization: Bearer &lt;token&gt;</code> header when
+                        calling the API gateway.
+                    </li>
+                    <li>
+                        The API gateway:
+                        <ul>
+                            <li>Parses the JWT and reconstructs the signed bytes.</li>
+                            <li>Looks up <code>PK(IdP)</code> from its trusted key store (e.g., JWKS cache).</li>
+                            <li>Verifies the signature and validates time-based claims (<code>exp</code>,
+                                <code>nbf</code>).
+                            </li>
+                            <li>On success, injects trusted claims (user id, tenant id, scopes) into internal headers.
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        Backend services read only the trusted internal headers, not the raw JWT from the client, and
+                        enforce
+                        authorization/tenant isolation based on those values.
+                    </li>
+                </ol>
+
+                <div class="callout callout-success">
+                    <strong>Security win:</strong> None of the backend services need the private key, and they never
+                    blindly trust
+                    client-provided identity or tenant information. They trust only what passed signature verification
+                    at the
+                    gateway boundary.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.3 Attacker path – forged or tampered JWT ❌</div>
+            <div class="card-body">
+                <p>
+                    Now imagine an attacker who has a valid token for <strong>Tenant A</strong> but wants to access
+                    <strong>Tenant B</strong>&rsquo;s data.
+                    They try to tamper with the JWT:
+                </p>
+                <ol>
+                    <li>They base64-decode the JWT, change <code>"tenant_id": "tenant-a"</code> to
+                        <code>"tenant-b"</code> in the payload.
+                    </li>
+                    <li>They re-encode the header and payload, but cannot recompute a valid signature because they do
+                        not
+                        possess <code>SK(IdP)</code>.</li>
+                    <li>They send the modified token to the API gateway.</li>
+                </ol>
+
+                <p>
+                    At the gateway, verification fails:
+                </p>
+                <ul>
+                    <li>The gateway recomputes <code>h' = H(header || payload)</code> and checks the signature using
+                        <code>PK(IdP)</code>.
+                    </li>
+                    <li>The result is <code>false</code>, because the digest no longer matches what the IdP originally
+                        signed.</li>
+                    <li>The request is rejected with a 401/403; no backend service ever sees a &ldquo;trusted&rdquo;
+                        Tenant B identity.</li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    <strong>Important:</strong> This safety story <em>only</em> holds if the gateway <strong>always
+                        verifies</strong> the signature,
+                    uses a <strong>trusted source</strong> of public keys, and <strong>fails closed</strong> on any
+                    verification error.
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.4 Interactions & signals – what the system & logs should show 📈</div>
+            <div class="card-body">
+                <p>
+                    From an operational perspective, signature verification generates useful signals and interactions:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Gateway metrics:</strong> counts of successful vs failed signature verifications,
+                        grouped by client, tenant,
+                        and endpoint.
+                    </li>
+                    <li>
+                        <strong>Audit logs:</strong> records of failed verifications with reasons (expired, bad
+                        signature, unknown <code>kid</code>).
+                    </li>
+                    <li>
+                        <strong>Alerts:</strong> spikes in invalid signatures from a particular IP range can indicate
+                        replay attacks or
+                        tampering attempts.
+                    </li>
+                    <li>
+                        <strong>Key lifecycle events:</strong> logs when new keys are fetched from JWKS, when old keys
+                        are retired, and
+                        when verification starts failing due to missing keys.
+                    </li>
+                </ul>
+
+                <div class="widget">
+                    <div class="widget-header">
+                        <div class="widget-title">Signature verification events – sample log view</div>
+                    </div>
+                    <div class="widget-body">
+                        <div id="sig-log-analyzer"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.5 Practical API view – testing signed vs unsigned calls with an API tester 🧪
+            </div>
+            <div class="card-body">
+                <p>
+                    To make this tangible, imagine an internal API tester that can hit two endpoints on the gateway:
+                </p>
+                <ul>
+                    <li><code>/projects/public</code> – no auth required.</li>
+                    <li><code>/projects/tenant</code> – requires a valid signed JWT.</li>
+                </ul>
+
+                <p>
+                    Use the tester below (conceptually) to see how the presence or absence of a valid signature changes
+                    the
+                    outcome.
+                </p>
+
+                <div id="jwt-api-tester"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.6 Code review – where you check signature verification 🔍</div>
+            <div class="card-body">
+                <p>
+                    In code review, you should be able to locate and inspect the exact place where the gateway verifies
+                    signatures before routing requests. The snippet below represents a typical Node.js-like
+                    implementation.
+                </p>
+
+                <div id="signature-code-review"></div>
+
+                <p class="text-muted">
+                    Note how the verification logic is centralized, uses a trusted key store, enforces algorithms, and
+                    fails
+                    closed on any error.
+                </p>
+
+                <div class="callout callout-info">
+                    <strong>Further reading:</strong>
+                    <ul>
+                        <li>OWASP &ldquo;JSON Web Token (JWT) Cheat Sheet&rdquo; – guidance on secure JWT handling.</li>
+                        <li>OWASP API Security Top 10 – see API1:2019 (Broken Object Level Authorization) and API2:2019
+                            (Broken
+                            User Authentication) for related risks.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">5.7 Quick Check – Real-World Context Quiz 📝</div>
+            <div class="card-body">
+                <p class="text-muted">Test yourself on the SaaS scenario, happy path, and attacker path.</p>
+                <div id="real-world-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.LogAnalyzer) {
+                    AppSecWidgets.LogAnalyzer.create('sig-log-analyzer', {
+                        title: 'Signature Verification Events',
+                        columns: ['Time', 'Event', 'Tenant', 'IP', 'Status'],
+                        logs: [
+                            {
+                                time: '2025-11-15T10:01:23Z',
+                                event: 'jwt.verify.success',
+                                user: 'user-123',
+                                ip: '203.0.113.10',
+                                status: 'success',
+                                severity: 'info',
+                                tenant: 'tenant-a'
+                            },
+                            {
+                                time: '2025-11-15T10:02:01Z',
+                                event: 'jwt.verify.failure.bad_signature',
+                                user: 'unknown',
+                                ip: '203.0.113.77',
+                                status: 'blocked',
+                                severity: 'warning',
+                                tenant: 'tenant-a'
+                            },
+                            {
+                                time: '2025-11-15T10:05:45Z',
+                                event: 'jwt.verify.failure.expired',
+                                user: 'user-456',
+                                ip: '198.51.100.23',
+                                status: 'blocked',
+                                severity: 'warning',
+                                tenant: 'tenant-b'
+                            },
+                            {
+                                time: '2025-11-15T10:07:12Z',
+                                event: 'jwks.key.rotate',
+                                user: 'system',
+                                ip: '-',
+                                status: 'success',
+                                severity: 'info',
+                                tenant: 'all'
+                            }
+                        ],
+                        placeholder: 'No signature verification events yet.'
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.APITester) {
+                    AppSecWidgets.APITester.create('jwt-api-tester', {
+                        title: 'JWT-Protected API Tester',
+                        endpoints: [
+                            { value: 'public', label: '/projects/public (no auth)', requiresAuth: false },
+                            { value: 'tenant', label: '/projects/tenant (JWT required)', requiresAuth: true }
+                        ],
+                        rateLimit: 5,
+                        responses: {
+                            public: {
+                                status: 200,
+                                message: 'Public project listings – no authentication required.'
+                            },
+                            tenant: {
+                                noAuth: {
+                                    status: 401,
+                                    error: 'Missing Authorization: Bearer token. Signature cannot be verified.'
+                                },
+                                invalid: {
+                                    status: 401,
+                                    error: 'Invalid JWT signature or algorithm. Request blocked.'
+                                },
+                                success: {
+                                    status: 200,
+                                    message: 'Tenant-scoped project list.',
+                                    user: 'user-123@tenant-a'
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.CodeReviewChecker) {
+                    var codeSnippet = [
+                        'async function authenticateRequest(req, res, next) {',
+                        '  const auth = req.headers["authorization"] || "";',
+                        '  if (!auth.startsWith("Bearer ")) {',
+                        '    return res.status(401).json({ error: "missing_bearer_token" });',
+                        '  }',
+                        '',
+                        '  const token = auth.slice("Bearer ".length);',
+                        '  const header = JSON.parse(base64UrlDecode(token.split(".")[0]));',
+                        '',
+                        '  const allowedAlgs = new Set(["RS256", "PS256"]);',
+                        '  if (!allowedAlgs.has(header.alg)) {',
+                        '    return res.status(401).json({ error: "unsupported_alg" });',
+                        '  }',
+                        '',
+                        '  const kid = header.kid;',
+                        '  const publicKey = await jwksClient.getKey(kid); // trusted JWKS, cached',
+                        '',
+                        '  try {',
+                        '    const claims = verifyJwtWithKey(token, publicKey, { algorithms: [...allowedAlgs] });',
+                        '    if (claims.exp * 1000 < Date.now()) {',
+                        '      return res.status(401).json({ error: "token_expired" });',
+                        '    }',
+                        '',
+                        '    // Attach trusted identity to request context',
+                        '    req.auth = {',
+                        '      sub: claims.sub,',
+                        '      tenantId: claims.tenant_id,',
+                        '      scope: claims.scope',
+                        '    };',
+                        '    return next();',
+                        '  } catch (err) {',
+                        '    audit.log("jwt.verify.failure", { error: err.message, kid });',
+                        '    return res.status(401).json({ error: "invalid_token" });',
+                        '  }',
+                        '}',
+                        '',
+                        'app.use("/api/projects", authenticateRequest);'
+                    ].join("\n");
+
+                    AppSecWidgets.CodeReviewChecker.create('signature-code-review', {
+                        title: 'Gateway Signature Verification – Code Review',
+                        code: codeSnippet,
+                        vulnerabilities: [
+                            {
+                                severity: 'medium',
+                                title: 'Centralized verification is good – ensure all protected routes use this middleware',
+                                description: 'If any service or route bypasses authenticateRequest, it may accept unsigned or unverified requests.',
+                                recommendation: 'Enforce this middleware on all protected paths and consider default-deny routing.'
+                            },
+                            {
+                                severity: 'low',
+                                title: 'JWKS key retrieval should have timeouts and caching',
+                                description: 'If jwksClient.getKey is slow or fails open, it may impact availability or security.',
+                                recommendation: 'Implement robust caching, bounded timeouts, and fail-closed behavior on key retrieval errors.'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('real-world-quiz', {
+                        title: 'Real-World Context – Digital Signatures',
+                        intro: 'Answer these questions about the SaaS JWT scenario, happy path, and attacker behavior.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'In the happy path, which component is responsible for holding the private key used to sign JWTs?',
+                                options: [
+                                    { value: 'a', label: 'The browser SPA' },
+                                    { value: 'b', label: 'The backend service' },
+                                    { value: 'c', label: 'The identity provider (IdP)', correct: true },
+                                    { value: 'd', label: 'The API gateway' }
+                                ]
+                            },
+                            {
+                                text: 'Why do backend services read claims from internal headers instead of directly parsing the client JWT?',
+                                options: [
+                                    { value: 'a', label: 'To avoid having to support JSON parsing' },
+                                    { value: 'b', label: 'Because internal headers are cheaper to transmit' },
+                                    { value: 'c', label: 'Because internal headers are populated only after signature verification at the gateway', correct: true },
+                                    { value: 'd', label: 'Because the JWT cannot be forwarded over HTTP/2' }
+                                ]
+                            },
+                            {
+                                text: 'An attacker modifies tenant_id in the JWT payload but cannot sign with SK(IdP). What should the gateway do?',
+                                options: [
+                                    { value: 'a', label: 'Accept the token as long as the structure looks valid' },
+                                    { value: 'b', label: 'Log the error but still forward the request to the backend' },
+                                    { value: 'c', label: 'Reject the request because signature verification fails', correct: true },
+                                    { value: 'd', label: 'Attempt to auto-correct the tenant_id using heuristics' }
+                                ]
+                            },
+                            {
+                                text: 'Which log pattern is most indicative of active tampering attempts?',
+                                options: [
+                                    { value: 'a', label: 'A few jwt.verify.failure.expired events from different tenants' },
+                                    { value: 'b', label: 'A sudden spike in jwt.verify.failure.bad_signature from a small IP range', correct: true },
+                                    { value: 'c', label: 'Regular jwks.key.rotate events during key rotation' },
+                                    { value: 'd', label: 'jwt.verify.success events from multiple tenants' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
 
         <!-- 6. Common Weaknesses, Pitfalls & Attack Paths -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>6. Common Weaknesses, Pitfalls &amp; Attack Paths</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Common Weaknesses, Pitfalls &amp; Attack Paths content.</p>
             </div>
-        </div>
+        </section>
 
         <!-- 7. Practical Implementation and Review (Hands-On) -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>7. Practical Implementation and Review (Hands-On)</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Practical Implementation and Review (Hands-On) content.</p>
             </div>
-        </div>
+        </section>
 
         <!-- 8. Good Design Principles, Defense & Mitigation -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>8. Good Design Principles, Defense &amp; Mitigation</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Good Design Principles, Defense &amp; Mitigation content.</p>
             </div>
-        </div>
+        </section>
 
         <!-- 9. Incident Case Study and Analysis -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>9. Incident Case Study and Analysis</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Incident Case Study and Analysis content.</p>
             </div>
-        </div>
+        </section>
 
         <!-- 10. Threat Model and Analysis -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>10. Threat Model and Analysis</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Threat Model and Analysis content.</p>
             </div>
-        </div>
+        </section>
 
         <!-- 11. Compliance Mapping -->
-        <div class="card mb-4">
+        <section class="card">
             <div class="card-header">
                 <h2>11. Compliance Mapping</h2>
             </div>
             <div class="card-body">
                 <p>Placeholder for Compliance Mapping content.</p>
             </div>
-        </div>
         </section>
     </div>
 

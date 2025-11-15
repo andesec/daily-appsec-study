@@ -155,6 +155,56 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Generate Table of Contents
+const toc = document.getElementById("toc");
+const sections = document.querySelectorAll("section.card");
+
+const tocList = document.createElement("ul");
+let lastParent = null;
+
+sections.forEach(section => {
+  const header = section.querySelector(".card-header");
+  if (!header) return;
+
+  const text = header.textContent.trim();
+  const isSub = /^\d+\.\d+/.test(text);
+
+  // Generate stable ID
+  const id = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\. ]/g, "")
+    .replace(/\s+/g, "-");
+  section.id = id;
+
+  // Build TOC item
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = `#${id}`;
+  a.textContent = text;
+  li.appendChild(a);
+
+  if (!isSub) {
+    // Top-level
+    tocList.appendChild(li);
+    lastParent = li;
+  } else {
+    // Subsection
+    if (!lastParent) {
+      tocList.appendChild(li);
+      return;
+    }
+
+    let sub = lastParent.querySelector("ul");
+    if (!sub) {
+      sub = document.createElement("ul");
+      lastParent.appendChild(sub);
+    }
+    sub.appendChild(li);
+  }
+});
+
+toc.appendChild(tocList);
+
 // Initialize theme on page load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => ThemeManager.init());

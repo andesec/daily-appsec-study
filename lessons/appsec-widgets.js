@@ -653,7 +653,7 @@ AppSecWidgets.CertificateInspector = {
 
 /**
  * ============================================
- * 8. Code Review Checker (REFACTORED - Dynamic Data)
+ * 8. Code Review Checker (ADVANCED – Line Highlight + Collapsible Findings)
  * ============================================
  */
 AppSecWidgets.CodeReviewChecker = {
@@ -683,54 +683,71 @@ AppSecWidgets.CodeReviewChecker = {
     }
 
     const vulnCount = config.vulnerabilities.length;
-    const vulnHtml = config.vulnerabilities.length > 0
-      ? config.vulnerabilities.map(vuln => `
-          <div class="vuln-item vuln-${vuln.severity || 'info'}">
-            <div class="vuln-header">
-              <span class="vuln-badge vuln-badge-${vuln.severity || 'info'}">
-                ${vuln.severity ? vuln.severity.toUpperCase() : 'INFO'}
+
+    // Collapsible vulnerability list
+    const vulnHtml = vulnCount > 0
+      ? config.vulnerabilities.map(v => `
+        <div class="vuln-item vuln-${v.severity || 'info'}">
+          <button class="vuln-toggle" type="button">
+            <div class="vuln-toggle-left">
+              <span class="vuln-badge vuln-badge-${v.severity || 'info'}">
+                ${(v.severity || 'info').toUpperCase()}
               </span>
-              <strong>${vuln.title || 'Security Issue'}</strong>
+              <strong>${v.title || 'Security Issue'}</strong>
             </div>
-            <p>${vuln.description || ''}</p>
-            ${vuln.line ? `<p class="vuln-line">Line ${vuln.line}</p>` : ''}
-            ${vuln.recommendation ? `
+            <span class="chevron">▼</span>
+          </button>
+
+          <div class="vuln-body">
+            <p>${v.description || ''}</p>
+            ${v.line ? `<p class="vuln-line">Line ${v.line}</p>` : ''}
+            ${v.recommendation ? `
               <div class="vuln-fix">
-                <strong>💡 Fix:</strong>
-                <p>${vuln.recommendation}</p>
+                <strong>Fix:</strong>
+                <p>${v.recommendation}</p>
               </div>
             ` : ''}
           </div>
-        `).join('')
-      : '<p style="color: var(--color-success);">✅ No vulnerabilities detected!</p>';
+        </div>
+      `).join('')
+      : `<p style="color: var(--color-success);">✅ No vulnerabilities detected!</p>`;
+
 
     container.classList.add('widget');
     container.innerHTML = `
       <div class="widget-header">
         <h3 class="widget-title">${config.title}</h3>
-        <span class="vuln-count">
-          ${vulnCount} issue${vulnCount !== 1 ? 's' : ''} found
-        </span>
+        <div class="vuln-count">${vulnCount} issue${vulnCount !== 1 ? 's' : ''}</div>
       </div>
+
       <div class="widget-body">
         <div class="code-review-section">
-          <label><strong>Code Under Review</strong></label>
           <pre><code>${this.escapeHtml(config.code)}</code></pre>
         </div>
+
         <div class="code-review-section mt-1">
-          <label><strong>Security Findings</strong></label>
+          <p><strong>Security Findings</strong></p>
           ${vulnHtml}
         </div>
       </div>
     `;
 
-    // Add line numbers to code blocks if available
-    if (window.AppSec && window.AppSec.CodeDisplay && typeof window.AppSec.CodeDisplay.addLineNumbers === 'function') {
-      container.querySelectorAll('pre').forEach(pre => {
-        window.AppSec.CodeDisplay.addLineNumbers(pre);
-      });
+    // Add line numbers
+    if (window.AppSec?.CodeDisplay?.addLineNumbers) {
+      const pre = container.querySelector('pre');
+      window.AppSec.CodeDisplay.addLineNumbers(pre);
+
+      // Highlight affected lines automatically
+      const lines = config.vulnerabilities
+        .map(v => v.line)
+        .filter(Boolean);
+
+      if (lines.length > 0 && window.AppSec.CodeDisplay.highlightLines) {
+        window.AppSec.CodeDisplay.highlightLines(pre, lines);
+      }
     }
 
+    this.bindCollapseEvents(container);
     this.addStyles();
   },
 
@@ -740,32 +757,118 @@ AppSecWidgets.CodeReviewChecker = {
     return div.innerHTML;
   },
 
+  bindCollapseEvents(container) {
+    const toggles = container.querySelectorAll('.vuln-toggle');
+    toggles.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const body = btn.nextElementSibling;
+        body.classList.toggle('open');
+        btn.querySelector('.chevron').classList.toggle('rotated');
+      });
+    });
+  },
+
   addStyles() {
-    if (!document.getElementById('code-review-styles')) {
-      const style = document.createElement('style');
-      style.id = 'code-review-styles';
-      style.textContent = `
-        .code-review-section { margin-bottom: 1rem; }
-        .code-review-section pre { background: var(--bg-tertiary); padding: 1rem; border-radius: 0.25rem; overflow-x: auto; }
-        .vuln-count { padding: 0.25rem 0.75rem; background: var(--color-danger); color: white; border-radius: 0.25rem; font-size: 0.875rem; }
-        .vuln-item { padding: 1rem; margin-bottom: 1rem; border-left: 4px solid; border-radius: 0.25rem; background: var(--bg-secondary); }
-        .vuln-critical { border-color: #dc3545; }
-        .vuln-high { border-color: #fd7e14; }
-        .vuln-medium { border-color: #ffc107; }
-        .vuln-low { border-color: #0dcaf0; }
-        .vuln-info { border-color: #6c757d; }
-        .vuln-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-        .vuln-badge { padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; color: white; }
-        .vuln-badge-critical { background: #dc3545; }
-        .vuln-badge-high { background: #fd7e14; }
-        .vuln-badge-medium { background: #ffc107; color: #000; }
-        .vuln-badge-low { background: #0dcaf0; color: #000; }
-        .vuln-badge-info { background: #6c757d; }
-        .vuln-line { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem; }
-        .vuln-fix { margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 0.25rem; }
-      `;
-      document.head.appendChild(style);
-    }
+    if (document.getElementById('code-review-styles-advanced')) return;
+
+    const style = document.createElement('style');
+    style.id = 'code-review-styles-advanced';
+
+    style.textContent = `
+      /* Count badge */
+      .vuln-count {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      /* Collapsible structure */
+      .vuln-item {
+        border-radius: 0.35rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--border-color);
+        background: var(--bg-tertiary);
+        overflow: hidden;
+      }
+
+      .vuln-toggle {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+      }
+
+      .vuln-toggle-left { 
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .vuln-body {
+        display: none;
+        padding: 0.75rem 1rem;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+      }
+      .vuln-body.open { display: block; }
+
+      .chevron { transition: transform 0.2s; }
+      .chevron.rotated { transform: rotate(180deg); }
+
+      /* Left severity border */
+      .vuln-critical { border-left: 4px solid #dc3545; }
+      .vuln-high { border-left: 4px solid #fd7e14; }
+      .vuln-medium { border-left: 4px solid #ffc107; }
+      .vuln-low { border-left: 4px solid #0dcaf0; }
+      .vuln-info { border-left: 4px solid #6c757d; }
+
+      /* Small badge */
+      .vuln-badge {
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+      }
+      .vuln-badge-critical { background: #dc3545; }
+      .vuln-badge-high { background: #fd7e14; }
+      .vuln-badge-medium { background: #ffc107; color: black; }
+      .vuln-badge-low { background: #0dcaf0; color: black; }
+      .vuln-badge-info { background: #6c757d; }
+
+      /* Light green tinted fix box */
+      .vuln-fix {
+        margin-top: 0.6rem;
+        padding: 0.6rem;
+        border-radius: 0.25rem;
+        border: 1px solid rgba(0, 128, 0, 0.25);
+        background: rgba(0, 255, 0, 0.10);
+      }
+      
+      .vuln-fix > p {
+        margin-bottom: 0px;
+        font-size: 0.875rem;
+      }
+
+      /* Align line note */
+      .vuln-line {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.4rem;
+      }
+    `;
+
+    document.head.appendChild(style);
   }
 };
 
@@ -1553,8 +1656,8 @@ AppSecWidgets.APITester = {
         <h3 class="widget-title">${config.title}</h3>
       </div>
       <div class="widget-body">
-        <div class="grid grid-2">
-          <div>
+
+
             <label><strong>API Endpoint</strong></label>
             <select id="${containerId}-endpoint">
               ${endpointOptions}
@@ -1568,13 +1671,13 @@ AppSecWidgets.APITester = {
             
             <button class="btn btn-primary mt-1" onclick="AppSecWidgets.APITester.testAuth('${containerId}')">Test Auth</button>
             <button class="btn btn-secondary mt-1" onclick="AppSecWidgets.APITester.testRateLimit('${containerId}')">Test Rate Limit</button>
-          </div>
+
           
-          <div>
+
             <label><strong>Response Log</strong></label>
-            <pre id="${containerId}-log" style="background: var(--code-bg); padding: 1rem; border-radius: 0.5rem; min-height: 300px; overflow-y: auto;"></pre>
-          </div>
-        </div>
+            <pre id="${containerId}-log" style="background: var(--code-bg); padding: 0.5rem; border-radius: 0.5rem; min-height: 150px; max-height: 400px; overflow-y: auto;"></pre>
+
+
       </div>
     `;
 
