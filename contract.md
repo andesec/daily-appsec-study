@@ -123,4 +123,70 @@ Follow the below steps without overwrites or confusion!
 3. Add a quiz (using quiz widget) at the end of each section to test understanding.
 4. When all sections are complete inform the user.
 
+## HTML Template
+Use the following template to build the initial HTML document.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>[TOPIC Name]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Includes -->
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <header class="card">
+            <div class="card-header">
+                Lesson [NUMBER]: [TOPIC NAME]
+            </div>
+            <div class="card-body">
+                <p>[Topic Description]</p>
+
+                <nav id="toc"></nav>
+            </div>
+        </header>
+
+        <!-- Section 1 -->
+        <section class="card">
+            <div class="card-header">Section 1 Title</div>
+            <div class="card-body">
+                <p>Your section content goes here.</p>
+            </div>
+        </section>
+
+        <!-- Section 1.1 -->
+        <section class="card">
+            <div class="card-header">Section 1.1 Title</div>
+            <div class="card-body">
+                <p>More content.</p>
+            </div>
+        </section>
+
+        <!-- Section 1.2 -->
+        <section class="card">
+            <div class="card-header">Section 1.2 Title</div>
+            <div class="card-body">
+                <p>Your section content goes here</p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+            Daily AppSec Study · [TOPIC NAME]
+        </footer>
+
+    </div>
+
+    <script src="appsec-theme.js"></script>
+    <script src="appsec-widgets.js"></script>
+</body>
+</html>
+```
 
