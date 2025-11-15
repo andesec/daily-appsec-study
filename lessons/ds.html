@@ -1436,9 +1436,296 @@ Defend:
                 <h2>6. Common Weaknesses, Pitfalls &amp; Attack Paths</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Common Weaknesses, Pitfalls &amp; Attack Paths content.</p>
+                <div class="callout callout-danger mb-1">
+                    <strong>Goal of this section:</strong>
+                    Highlight the most common ways digital signatures are weakened or bypassed in real systems, and map
+                    them
+                    to
+                    concrete attack paths you should recognize instantly in reviews.
+                </div>
+
+                <p>
+                    Digital signatures are usually broken <em>around</em> the crypto, not inside it. As a senior AppSec
+                    engineer you need
+                    a catalog of the usual failure modes so you can quickly spot them in designs, configs, and code.
+                </p>
             </div>
         </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.1 Misuse patterns at a glance</div>
+            <div class="card-body">
+                <p>
+                    Typical weaknesses cluster into a few themes:
+                </p>
+                <ul>
+                    <li><strong>Weak or misconfigured algorithms</strong> – accepting insecure or attacker-chosen
+                        algorithms.</li>
+                    <li><strong>Key management failures</strong> – stolen private keys, keys on disk, or uncontrolled
+                        sharing.</li>
+                    <li><strong>Verification bypasses</strong> – partial verification, missing checks, or error-path
+                        fallbacks.</li>
+                    <li><strong>Binding and context bugs</strong> – mixing up which identity/tenant a signature attests
+                        to.</li>
+                    <li><strong>Lifecycle blind spots</strong> – no monitoring, no rotation, no incident response plan
+                        for keys.</li>
+                </ul>
+
+                <div id="sig-weakness-checklist"></div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.2 Algorithm & parameter weaknesses</div>
+            <div class="card-body">
+                <p>
+                    Even when using well-known libraries, applications often undermine security with bad algorithm
+                    choices or
+                    unsafe flexibility:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Accepting any algorithm from untrusted input.</strong><br />
+                        Classic JWT mistakes: accepting <code>"alg": "none"</code>, or allowing the client to switch
+                        from <code>RS256</code> to
+                        <code>HS256</code>, which changes the trust model entirely.
+                    </li>
+                    <li>
+                        <strong>Using deprecated / broken algorithms.</strong><br />
+                        e.g., small RSA key sizes, outdated hash functions (like SHA-1) in new designs, or legacy DSA.
+                    </li>
+                    <li>
+                        <strong>Ignoring algorithm-specific requirements.</strong><br />
+                        For ECDSA, reusing nonces or having weak randomness can leak the private key; this is a library
+                        choice issue,
+                        but you must ensure safe defaults and versions.
+                    </li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    <strong>Rule of thumb:</strong> <em>The verifier</em> chooses which algorithms are acceptable; the
+                    attacker should not.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.3 Key management and exposure</div>
+            <div class="card-body">
+                <p>
+                    Private key compromise is one of the most damaging events in any system using signatures:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Keys on disk / in source control.</strong><br />
+                        Private keys committed to Git, baked into container images, or stored in plain text config
+                        files.
+                    </li>
+                    <li>
+                        <strong>Over-broad access.</strong><br />
+                        Many services or humans can sign, making it difficult to attribute actions and expand blast
+                        radius
+                        when one node is compromised.
+                    </li>
+                    <li>
+                        <strong>No rotation or revocation plan.</strong><br />
+                        Long-lived keys with no documented rotation process; after a suspected compromise you cannot
+                        quickly
+                        revoke trust.
+                    </li>
+                    <li>
+                        <strong>Inconsistent key stores.</strong><br />
+                        Different environments (dev, staging, prod) accidentally share keys, or use different sources of
+                        truth,
+                        making verification and incident response fragile.
+                    </li>
+                </ul>
+
+                <div class="callout callout-info">
+                    <strong>Target state:</strong> keys live in HSM/KMS, have tight ACLs, are rotated regularly, and
+                    every rotation is
+                    observable and tested.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.4 Verification gaps & bypasses</div>
+            <div class="card-body">
+                <p>
+                    Many real incidents arose because verification was missing, partial, or treated as optional:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Unverified &ldquo;internal&rdquo; endpoints.</strong><br />
+                        Some paths (e.g., health checks, debugging routes, background jobs) skip signature verification
+                        because they
+                        were assumed to be unreachable from attackers.
+                    </li>
+                    <li>
+                        <strong>Verification errors treated as non-fatal.</strong><br />
+                        &ldquo;If verify() fails, log a warning and proceed&rdquo; – effectively disabling the security
+                        control.
+                    </li>
+                    <li>
+                        <strong>Partial verification.</strong><br />
+                        e.g., verifying only the certificate chain but never checking revocation or key usage, or
+                        verifying a JWT
+                        signature but ignoring <code>exp</code>/<code>aud</code>/<code>iss</code>.</n>
+                    </li>
+                    <li>
+                        <strong>Trusting the wrong object.</strong><br />
+                        Verifying a signature over one structure, then using values from a different, unverified
+                        structure (e.g.,
+                        trusting tenant_id from a query param instead of from the signed token).
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.5 Concrete attack paths</div>
+            <div class="card-body">
+                <p>
+                    Putting this together, here are some canonical attack paths you should recognize on sight:</p>
+
+                <div id="sig-attack-paths" class="mb-2"></div>
+
+                <p class="text-muted mb-0">
+                    These patterns recur across JWTs, code-signing, webhook signatures, and signed configuration. Only
+                    the
+                    format and libraries change; the weaknesses stay the same.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">6.6 Quick Check – Weaknesses & Attack Paths Quiz</div>
+            <div class="card-body">
+                <p class="text-muted">Test how well you can spot dangerous patterns around digital signatures.</p>
+                <div id="weaknesses-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+                    AppSecWidgets.Checklist.create('sig-weakness-checklist', {
+                        title: 'Common Signature Misuse Patterns',
+                        items: [
+                            {
+                                id: 'alg-flexible',
+                                label: 'Verifier accepts algorithm from untrusted input instead of enforcing an allow-list.'
+                            },
+                            {
+                                id: 'keys-on-disk',
+                                label: 'Private keys stored on disk, in source control, or in app config files.'
+                            },
+                            {
+                                id: 'no-rotation',
+                                label: 'No documented key rotation and revocation process exists.'
+                            },
+                            {
+                                id: 'partial-verification',
+                                label: 'Some code paths skip signature or claim verification (e.g., internal-only routes).'
+                            },
+                            {
+                                id: 'missing-monitoring',
+                                label: 'No metrics/alerts on signature verification failures or key lifecycle events.'
+                            }
+                        ],
+                        mode: 'review'
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.AttackPath) {
+                    AppSecWidgets.AttackPath.create('sig-attack-paths', {
+                        paths: [
+                            {
+                                id: 'jwt-alg-none',
+                                title: 'JWT alg=none / algorithm confusion',
+                                steps: [
+                                    'Attacker crafts JWT with header { "alg": "none" } and arbitrary payload.',
+                                    'Application accepts alg from token without an allow-list.',
+                                    'Verifier treats the token as valid without checking a signature.',
+                                    'Attacker gains unauthorized access using forged claims.'
+                                ],
+                                impact: 'Complete bypass of authentication/authorization where JWTs are used as trust anchor.'
+                            },
+                            {
+                                id: 'key-confusion',
+                                title: 'Key confusion via attacker-supplied public key',
+                                steps: [
+                                    'Application obtains public key from an untrusted header or request parameter.',
+                                    'Attacker generates their own key pair and signs arbitrary data with the private key.',
+                                    'Verifier uses attacker-supplied public key to validate the signature.',
+                                    'Attacker can impersonate any identity represented in the signed payload.'
+                                ],
+                                impact: 'Authenticity collapses; signatures attest only that attacker signed them.'
+                            },
+                            {
+                                id: 'stolen-signing-key',
+                                title: 'Stolen signing key with no rotation',
+                                steps: [
+                                    'Private key is leaked from a misconfigured server or CI system.',
+                                    'Attacker silently signs tokens/binaries that validate as &ldquo;from production&rdquo;.',
+                                    'No monitoring on unusual signature patterns or key use.',
+                                    'Compromise persists until someone notices odd behavior; revocation is slow and painful.'
+                                ],
+                                impact: 'Long-lived ability to mint perfectly valid signatures across the environment.'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('weaknesses-quiz', {
+                        title: 'Common Weaknesses, Pitfalls & Attack Paths',
+                        intro: 'Decide which behaviors are safe vs dangerous in real systems using digital signatures.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'A service accepts any JWT alg value from the token header and passes it directly into the verification library. Why is this dangerous?',
+                                options: [
+                                    { value: 'a', label: 'It is not dangerous as long as the library supports the algorithm.' },
+                                    { value: 'b', label: 'The client might choose faster algorithms that increase CPU usage.' },
+                                    { value: 'c', label: 'An attacker can select an unsafe or non-signing algorithm (e.g., "none") and bypass real verification.', correct: true },
+                                    { value: 'd', label: 'It prevents key rotation from working correctly.' }
+                                ]
+                            },
+                            {
+                                text: 'Which scenario best represents a key management failure for digital signatures?',
+                                options: [
+                                    { value: 'a', label: 'Using RS256 instead of ES256 in a new system.' },
+                                    { value: 'b', label: 'Keeping the private signing key in an encrypted database with tight ACLs.' },
+                                    { value: 'c', label: 'Storing the private signing key in a plaintext config file committed to the repository.', correct: true },
+                                    { value: 'd', label: 'Rotating keys annually and updating all verifiers accordingly.' }
+                                ]
+                            },
+                            {
+                                text: 'In which case does a verification gap most clearly appear?',
+                                options: [
+                                    { value: 'a', label: 'The gateway verifies signatures on external requests but not on internal debug endpoints reachable via VPN.', correct: true },
+                                    { value: 'b', label: 'The gateway validates exp and iss on every token.' },
+                                    { value: 'c', label: 'The system logs all failed signature verifications with tenant context.' },
+                                    { value: 'd', label: 'The system uses a hardware security module (HSM) for signing.' }
+                                ]
+                            },
+                            {
+                                text: 'A code review shows that when signature verification fails, the code logs a warning and then continues processing the request. What is the correct AppSec response?',
+                                options: [
+                                    { value: 'a', label: 'Accept this for now; logging is sufficient and we can add stricter checks later.' },
+                                    { value: 'b', label: 'Only require strict failure behavior for admin APIs.' },
+                                    { value: 'c', label: 'Flag this as a critical issue; verification failure must cause a hard deny and no business logic execution.', correct: true },
+                                    { value: 'd', label: 'Disable logging to avoid leaking internal error details.' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
 
         <!-- 7. Practical Implementation and Review (Hands-On) -->
         <section class="card">
@@ -1446,9 +1733,297 @@ Defend:
                 <h2>7. Practical Implementation and Review (Hands-On)</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Practical Implementation and Review (Hands-On) content.</p>
+                <div class="callout callout-info-solid mb-1">
+                    <strong>Goal of this section:</strong>
+                    Give you small, concrete exercises where you sign and verify data, observe logs/behavior, and
+                    contrast
+                    secure vs
+                    insecure patterns in realistic code and traffic flows.
+                </div>
+
+                <p>
+                    Treat these as mini-labs you could run locally (or mentally simulate in code review). Focus on what
+                    <strong>you</strong>
+                    would look for as an AppSec engineer: where signatures are created, where they are verified, and how
+                    failure is
+                    handled.
+                </p>
             </div>
         </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.1 Hands-on – sign and verify a message (Python)</div>
+            <div class="card-body">
+                <p>
+                    This exercise uses Python and the <code>cryptography</code> library to sign and verify a simple
+                    message. The aim is to
+                    see the <strong>hash → sign → verify</strong> flow end to end.
+                </p>
+
+                <pre><code class="language-python">from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+# 1) Generate a key pair (demo only – use KMS/HSM in real systems)
+private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+public_key = private_key.public_key()
+
+message = b"tenant=a; role=admin; ts=1731660000"
+
+# 2) Sign: hash + private key
+signature = private_key.sign(
+    message,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH,
+    ),
+    hashes.SHA256(),
+)
+
+# 3) Verify: same message, public key
+try:
+    public_key.verify(
+        signature,
+        message,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH,
+        ),
+        hashes.SHA256(),
+    )
+    print("[OK] signature valid")
+except Exception:
+    print("[FAIL] signature invalid")
+</code></pre>
+
+                <p><strong>What to try:</strong></p>
+                <ul>
+                    <li>Run once: you should see <code>[OK] signature valid</code>.</li>
+                    <li>Change <code>message</code> <em>after</em> signing but before verification – verification must
+                        fail.</li>
+                    <li>Modify any byte in <code>signature</code> – verification must fail.</li>
+                </ul>
+
+                <div class="callout callout-warning mt-1">
+                    <strong>Takeaway:</strong> verification only succeeds when the exact bytes you verify are the bytes
+                    that were signed.
+                    Any change in either message or signature must be treated as tampering or corruption.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.2 Hands-on – minimal JWT verification middleware (Go)</div>
+            <div class="card-body">
+                <p>
+                    Next, imagine a small Go API that must verify an RS256-signed JWT before serving requests on
+                    <code>/api/secure</code>. The snippet below shows a minimal middleware.
+                </p>
+
+                <pre><code class="language-go">func AuthMiddleware(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    auth := r.Header.Get("Authorization")
+    if !strings.HasPrefix(auth, "Bearer ") {
+      http.Error(w, "missing bearer token", http.StatusUnauthorized)
+      return
+    }
+
+    tokenString := strings.TrimPrefix(auth, "Bearer ")
+
+    token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+      // Enforce algorithm from server side, not from token
+      if t.Method.Alg() != jwt.SigningMethodRS256.Alg() {
+        return nil, fmt.Errorf("unexpected alg %s", t.Method.Alg())
+      }
+      return lookupPublicKey(t.Header["kid"])
+    })
+
+    if err != nil || !token.Valid {
+      http.Error(w, "invalid token", http.StatusUnauthorized)
+      auditLog("jwt.verify.failure", err, r)
+      return
+    }
+
+    // Attach trusted claims
+    claims := token.Claims.(jwt.MapClaims)
+    ctx := context.WithValue(r.Context(), ctxKeyTenantID, claims["tenant_id"])
+    next.ServeHTTP(w, r.WithContext(ctx))
+  })
+}
+</code></pre>
+
+                <p><strong>What to review / observe:</strong></p>
+                <ul>
+                    <li>Algorithm is enforced (<code>RS256</code>) instead of trusting the token&rsquo;s header.</li>
+                    <li>Public key is obtained from a trusted store (<code>lookupPublicKey</code>), not from the
+                        request.</li>
+                    <li>On failure, the request is rejected; no business logic runs.</li>
+                </ul>
+
+                <p class="text-muted mb-0">
+                    As a reviewer, you would confirm that <code>AuthMiddleware</code> wraps all sensitive routes and
+                    that there is no
+                    &ldquo;shortcut&rdquo; path that bypasses it.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.3 Hands-on – attack sandbox: forged tokens vs verification</div>
+            <div class="card-body">
+                <p>
+                    Use the sandbox below conceptually to explore forged tokens. Try payloads that change the tenant or
+                    role and
+                    see how the &ldquo;gateway&rdquo; should respond if verification is implemented correctly.
+                </p>
+
+                <div id="sig-attack-sandbox"></div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.4 Hands-on – inspecting a signed certificate</div>
+            <div class="card-body">
+                <p>
+                    Digital signatures also secure TLS and code-signing certificates. This lab conceptually inspects a
+                    certificate
+                    and highlights its signature, issuer, and subject.
+                </p>
+
+                <div id="certificate-inspector"></div>
+
+                <p class="text-muted mb-0">
+                    In a real environment you would point this type of tooling at actual PEM/DER certificates from your
+                    gateways,
+                    package repositories, or internal CAs.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.5 Hands-on – TPS impact of signature verification</div>
+            <div class="card-body">
+                <p>
+                    Signature verification has CPU cost. This simulator helps you think about throughput and scaling
+                    decisions:
+                    lowering security to &ldquo;go faster&rdquo; is almost always the wrong trade-off.
+                </p>
+
+                <div id="sig-tps-simulator"></div>
+
+                <div class="callout callout-info mt-1">
+                    <strong>Discussion prompt:</strong> How would you design capacity planning and caching (e.g., JWKS,
+                    token introspection)
+                    so that you can keep strong algorithms while still meeting performance goals?
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">7.6 Quick Check – Practical Hands-On Quiz</div>
+            <div class="card-body">
+                <p class="text-muted">Confirm you can reason about implementations, not just the theory.</p>
+                <div id="hands-on-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.AttackSandbox) {
+                    AppSecWidgets.AttackSandbox.create('sig-attack-sandbox', {
+                        title: 'Forged Token Sandbox',
+                        scenarios: [
+                            {
+                                name: 'Change tenant_id from A to B',
+                                description: 'Simulate an attacker modifying tenant_id in a JWT payload without the signing key.',
+                                payload: '{"sub":"user-123","tenant_id":"tenant-b","role":"admin"}',
+                                response: 'Gateway must reject this token because the signature no longer matches.',
+                                notifyType: 'warning'
+                            },
+                            {
+                                name: 'Set alg=none',
+                                description: 'Simulate a JWT with alg=none in the header.',
+                                payload: '{"alg":"none","typ":"JWT"}',
+                                response: 'Secure gateways ignore this and fail closed; insecure ones accept it and are vulnerable.',
+                                notifyType: 'danger'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.CertificateInspector) {
+                    AppSecWidgets.CertificateInspector.create('certificate-inspector', {
+                        title: 'Sample API TLS Certificate',
+                        certificatePEM: '-----BEGIN CERTIFICATE-----\\nMIIB...snip...\\n-----END CERTIFICATE-----',
+                        highlight: {
+                            subject: true,
+                            issuer: true,
+                            signatureAlgorithm: true,
+                            validity: true
+                        }
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.TPSimulator) {
+                    AppSecWidgets.TPSimulator.create('sig-tps-simulator', {
+                        title: 'Signature Verification TPS Simulator',
+                        baselineRPS: 1000,
+                        verificationCostMs: 2,
+                        scenarioLabel: 'RS256 verification at API gateway',
+                        hints: [
+                            'Try increasing RPS to see when CPU becomes a bottleneck.',
+                            'Explore the effect of caching keys vs re-fetching JWKS on every request.'
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('hands-on-quiz', {
+                        title: 'Practical Implementation & Review – Quiz',
+                        intro: 'Decide what correct implementation and review behavior looks like in these hands-on scenarios.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'In the Python example, what change should cause signature verification to fail?',
+                                options: [
+                                    { value: 'a', label: 'Re-running the program without changes.' },
+                                    { value: 'b', label: 'Changing the message bytes after the signature has been generated.', correct: true },
+                                    { value: 'c', label: 'Printing the public key to the console.' },
+                                    { value: 'd', label: 'Serializing the signature as base64.' }
+                                ]
+                            },
+                            {
+                                text: 'In the Go middleware, why is it important to check the algorithm (<code>t.Method.Alg()</code>)?',
+                                options: [
+                                    { value: 'a', label: 'To ensure that tokens are always compressed.' },
+                                    { value: 'b', label: 'To prevent attackers from switching to an unsafe or non-signing algorithm.', correct: true },
+                                    { value: 'c', label: 'To allow clients to choose any algorithm they prefer.' },
+                                    { value: 'd', label: 'To speed up JSON parsing of the header.' }
+                                ]
+                            },
+                            {
+                                text: 'In the AttackSandbox scenario where alg=none is used, what is the secure gateway behavior?',
+                                options: [
+                                    { value: 'a', label: 'Accept the token because alg=none is faster.' },
+                                    { value: 'b', label: 'Treat the token as unsigned and reject it.', correct: true },
+                                    { value: 'c', label: 'Ask the client to resend the token with a signature.' },
+                                    { value: 'd', label: 'Silently upgrade alg=none to RS256.' }
+                                ]
+                            },
+                            {
+                                text: 'What should a capacity planning discussion around signature verification focus on?',
+                                options: [
+                                    { value: 'a', label: 'Reducing security checks to reach maximum TPS.' },
+                                    { value: 'b', label: 'Balancing strong algorithms with adequate scaling, caching, and hardware support.', correct: true },
+                                    { value: 'c', label: 'Removing TLS to lower CPU usage.' },
+                                    { value: 'd', label: 'Letting each microservice implement its own verification logic however it wants.' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
 
         <!-- 8. Good Design Principles, Defense & Mitigation -->
         <section class="card">
