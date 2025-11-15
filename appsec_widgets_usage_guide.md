@@ -430,6 +430,62 @@ AppSecWidgets.APITester.testRateLimit(containerId)
 
 ---
 
+## 14 Checklist
+
+**What it does**  
+Provides good looking checklist for important items.
+
+**API**
+```js
+AppSecWidgets.Checklist.create("my-checklist", config);
+```
+
+```js
+AppSecWidgets.Checklist.create("my-checklist", {
+  title: "My Checklist",
+  items: [
+    "First task",
+    "Second task",
+    "Third task"
+  ]
+});
+```
+
+## 14 Pattern Library
+
+**What it does**  
+Displays AppSec design patterns as collapsible cards. Useful for architecture reviews, security patterns, and reusable guidance.
+
+**Config Structure**
+```js
+title: string,              // Optional widget title
+patterns: [
+  {
+    id: string,
+    title: string,
+    context: string,
+    rules: string[]
+  }
+]
+```
+
+```js
+AppSecWidgets.PatternLibrary.create('sig-pattern-library', {
+  patterns: [
+    {
+      id: 'jwt-idp',
+      title: 'IdP-signed JWTs for APIs',
+      context: 'Multi-tenant SaaS with external IdP issuing access tokens.',
+      rules: [
+        'Only IdP holds SK; APIs hold PK via JWKS.',
+        'Gateway verifies RS256/PS256 signatures and time-based claims.',
+        'Backends trust only gateway-injected identity context.'
+      ]
+    }
+  ]
+});
+```
+
 
 ## 1. Theme & Utility API (`window.AppSec`)
 

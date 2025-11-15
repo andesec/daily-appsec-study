@@ -1609,33 +1609,16 @@ Defend:
 
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                items = [
+                    'alg-flexible:Verifier accepts algorithm from untrusted input instead of enforcing an allow-list.',
+                    'keys-on-disk:Private keys stored on disk, in source control, or in app config files.',
+                    'no-rotation:No documented key rotation and revocation process exists.',
+                    'partial-verification:Some code paths skip signature or claim verification (e.g., internal-only routes).',
+                    'missing-monitoring:No metrics/alerts on signature verification failures or key lifecycle events.'
+                ];
+
                 if (window.AppSecWidgets && AppSecWidgets.Checklist) {
-                    AppSecWidgets.Checklist.create('sig-weakness-checklist', {
-                        title: 'Common Signature Misuse Patterns',
-                        items: [
-                            {
-                                id: 'alg-flexible',
-                                label: 'Verifier accepts algorithm from untrusted input instead of enforcing an allow-list.'
-                            },
-                            {
-                                id: 'keys-on-disk',
-                                label: 'Private keys stored on disk, in source control, or in app config files.'
-                            },
-                            {
-                                id: 'no-rotation',
-                                label: 'No documented key rotation and revocation process exists.'
-                            },
-                            {
-                                id: 'partial-verification',
-                                label: 'Some code paths skip signature or claim verification (e.g., internal-only routes).'
-                            },
-                            {
-                                id: 'missing-monitoring',
-                                label: 'No metrics/alerts on signature verification failures or key lifecycle events.'
-                            }
-                        ],
-                        mode: 'review'
-                    });
+                    AppSecWidgets.Checklist.create('sig-weakness-checklist', { title: 'Common Signature Misuse Patterns', items: items });
                 }
 
                 if (window.AppSecWidgets && AppSecWidgets.AttackPath) {
@@ -2031,9 +2014,329 @@ except Exception:
                 <h2>8. Good Design Principles, Defense &amp; Mitigation</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Good Design Principles, Defense &amp; Mitigation content.</p>
+                <div class="callout callout-info-solid mb-1">
+                    <strong>Goal of this section:</strong>
+                    Capture practical design and review rules for using digital signatures safely, with concrete
+                    patterns
+                    you can
+                    apply in real architectures and code reviews.
+                </div>
+
+                <p>
+                    Think of this section as your <strong>signature design playbook</strong>: if a system uses hashes +
+                    private keys +
+                    verification, these are the rules and patterns you should instinctively reach for.
+                </p>
             </div>
         </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.1 Design goals & threat assumptions</div>
+            <div class="card-body">
+                <p>
+                    A good signature design starts from explicit goals and threats. For most SaaS systems, you are
+                    trying to ensure:
+                </p>
+                <ul>
+                    <li><strong>Integrity:</strong> No one can change a message without detection.</li>
+                    <li><strong>Authenticity:</strong> Only a specific service or authority can produce valid
+                        signatures.</li>
+                    <li><strong>Scopable trust:</strong> You can limit where, when, and for whom a signature is
+                        considered valid.</li>
+                    <li><strong>Recoverability:</strong> You can rotate/revoke keys and recover from compromise.</li>
+                </ul>
+
+                <p>
+                    Assume from the start that attackers can:
+                </p>
+                <ul>
+                    <li>Fully control the network between clients and services.</li>
+                    <li>Generate arbitrary messages and tokens.</li>
+                    <li>See (but not modify) signed artifacts, and attempt replay.</li>
+                    <li>Compromise some non-critical services or developer endpoints.</li>
+                </ul>
+
+                <pre><code>Design motto:
+
+  "Only a small, well-protected set of components may sign.
+   Everything else must verify and fail closed."
+    </code></pre>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.2 Core design principles – flow of trust</div>
+            <div class="card-body">
+                <p>
+                    A robust design follows a simple pattern: <strong>Isolate signing</strong>, <strong>centralize
+                        verification rules</strong>, and
+                    <strong>propagate only derived, trusted claims</strong>.
+                </p>
+
+                <div id="sig-design-flow" class="mb-2"></div>
+
+                <ul>
+                    <li><strong>Isolated signing authority.</strong> Only a small set of services (IdP, build signer,
+                        CA) hold private keys.</li>
+                    <li><strong>Central verification logic.</strong> API gateways / libraries enforce algorithms, key
+                        sources, and
+                        verification behavior consistently across services.</li>
+                    <li><strong>Trusted claims fan-out.</strong> Backend services consume trusted identity/tenant
+                        context from internal
+                        headers or tokens that have already been verified.</li>
+                    <li><strong>Fail closed.</strong> Any verification error means &ldquo;deny and log&rdquo;, never
+                        &ldquo;log and continue&rdquo;.</li>
+                </ul>
+
+                <div class="callout callout-warning mb-0">
+                    <strong>Red flag in reviews:</strong> if signing keys appear in many services, or each service rolls
+                    its own
+                    verification logic, the design is fragile and hard to secure.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.3 Secure patterns for common use cases</div>
+            <div class="card-body">
+                <p>
+                    Below are condensed patterns you can apply directly to frequent signature use cases.
+                </p>
+
+                <div id="sig-pattern-library"></div>
+
+                <p class="text-muted mb-0">
+                    Use these as templates in design reviews: check that each system&rsquo;s design matches one of the
+                    safe patterns, or document why it must differ.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.4 Config hardening – insecure vs secure verification</div>
+            <div class="card-body">
+                <p>
+                    Many signature issues are purely configuration and wiring errors. This diff shows a webhook
+                    verification handler
+                    before and after hardening.
+                </p>
+
+                <div id="sig-config-diff-8" class="mb-1"></div>
+
+                <div class="callout callout-info mb-0">
+                    <strong>Review habit:</strong> when reading code, mentally categorize it as &ldquo;before&rdquo; or
+                    &ldquo;after&rdquo; hardening. If you
+                    see &ldquo;before&rdquo; patterns in production code, you have a clear set of changes to recommend.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.5 AppSec review checklist – validation trainer</div>
+            <div class="card-body">
+                <p>
+                    This checklist-style trainer helps you practice quickly labeling designs as safe or unsafe with
+                    respect to
+                    digital signatures.
+                </p>
+
+                <div id="sig-validation-trainer"></div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">8.6 Quick Check – Design & Mitigation Quiz</div>
+            <div class="card-body">
+                <p class="text-muted">Confirm that you can apply these design rules to real situations.</p>
+                <div id="design-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+                    AppSecWidgets.FlowVisualizer.create('sig-design-flow', [
+                        {
+                            title: 'Sign',
+                            description: 'A small, hardened service with SK signs a well-defined payload (tokens, binaries, certs).'
+                        },
+                        {
+                            title: 'Distribute',
+                            description: 'Artifacts + signatures are distributed; PK is published through a trusted channel (JWKS/PKI).'
+                        },
+                        {
+                            title: 'Verify',
+                            description: 'Gateways and services verify signatures using PK, enforcing allowed algorithms and key IDs.'
+                        },
+                        {
+                            title: 'Propagate claims',
+                            description: 'Only verified identity/tenant/scopes are forwarded internally as trusted context.'
+                        },
+                        {
+                            title: 'Monitor & rotate',
+                            description: 'Verification failures, key usage, and rotations are logged, monitored, and periodically tested.'
+                        }
+                    ]);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.PatternLibrary) {
+                    AppSecWidgets.PatternLibrary.create('sig-pattern-library', {
+                        patterns: [
+                            {
+                                id: 'jwt-idp',
+                                title: 'IdP-signed JWTs for APIs',
+                                context: 'Multi-tenant SaaS with external IdP issuing access tokens.',
+                                rules: [
+                                    'Only IdP holds SK; APIs hold PK via JWKS.',
+                                    'Gateway verifies RS256/PS256 signatures and time-based claims.',
+                                    'Backends trust only gateway-injected identity context, not raw client JWTs.'
+                                ]
+                            },
+                            {
+                                id: 'webhook-sig',
+                                title: 'Signed webhooks from external partners',
+                                context: 'External SaaS sends webhooks which must be authenticated.',
+                                rules: [
+                                    'Each partner has its own key pair or secret; keys stored in KMS.',
+                                    'Receiver reconstructs canonical payload and verifies signature before enqueueing work.',
+                                    'Failures are logged and result in 4xx responses; no business logic executes on invalid signatures.'
+                                ]
+                            },
+                            {
+                                id: 'code-signing',
+                                title: 'Code signing in CI/CD',
+                                context: 'Build pipeline signs artifacts before deployment.',
+                                rules: [
+                                    'Signing keys live in HSM/KMS; only CI signing step can access them.',
+                                    'Deploy systems verify signatures of artifacts before rollout.',
+                                    'Metrics/alerts exist for signature verification failures or unsigned artifacts.'
+                                ]
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
+                    var insecureCfg = [
+                        '// Insecure webhook signature checking',
+                        'const sigHeader = req.headers["x-sig"];',
+                        'const body = JSON.stringify(req.body);',
+                        '',
+                        '// Developer TODO: actually verify signature later',
+                        'if (!sigHeader) {',
+                        '  console.warn("missing x-sig header, but continuing");',
+                        '}',
+                        'queueJob(body); // runs even if signature missing or invalid'
+                    ].join("\n");
+
+                    var secureCfg = [
+                        '// Hardened webhook signature checking',
+                        'const sigHeader = req.headers["x-sig"];',
+                        'const body = JSON.stringify(req.body);',
+                        '',
+                        'if (!sigHeader) {',
+                        '  audit.log("webhook.signature.missing", { ip: req.ip });',
+                        '  return res.status(401).json({ error: "missing_signature" });',
+                        '}',
+                        '',
+                        'const publicKey = keyStore.getForPartner(req.headers["x-partner-id"]);',
+                        'const isValid = verifySignature(publicKey, body, sigHeader);',
+                        '',
+                        'if (!isValid) {',
+                        '  audit.log("webhook.signature.invalid", { ip: req.ip });',
+                        '  return res.status(401).json({ error: "invalid_signature" });',
+                        '}',
+                        '',
+                        'queueJob(body); // only enqueue when signature is valid'
+                    ].join("\n");
+
+                    AppSecWidgets.ConfigDiff.create('sig-config-diff-8', null, insecureCfg, secureCfg);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.ValidationTrainer) {
+                    AppSecWidgets.ValidationTrainer.create('sig-validation-trainer', {
+                        title: 'Signature Design Review Trainer',
+                        scenarios: [
+                            {
+                                id: 'sc1',
+                                description: 'Each microservice holds a copy of the JWT signing private key to issue local tokens.',
+                                correct: 'reject',
+                                explanation: 'Private keys should be isolated; many signers increase blast radius and complicate incident response.'
+                            },
+                            {
+                                id: 'sc2',
+                                description: 'Only the IdP signs tokens; all services use a common verification library that enforces allowed algorithms.',
+                                correct: 'accept',
+                                explanation: 'Clear separation of signing vs verification with consistent rules is a strong pattern.'
+                            },
+                            {
+                                id: 'sc3',
+                                description: 'On verification failure, the gateway logs a warning but routes the request to a &ldquo;legacy&rdquo; backend anyway.',
+                                correct: 'reject',
+                                explanation: 'Any verification failure must cause a hard deny; &ldquo;legacy&rdquo; paths are high-risk.'
+                            },
+                            {
+                                id: 'sc4',
+                                description: 'Signing keys are stored in a cloud KMS; rotation is automated and verifiers trust keys via JWKS.',
+                                correct: 'accept',
+                                explanation: 'Managed keys with rotation and a single source of truth for PK is a good target state.'
+                            }
+                        ],
+                        labels: {
+                            accept: 'Looks good',
+                            reject: 'Smells unsafe'
+                        }
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('design-quiz', {
+                        title: 'Good Design Principles, Defense & Mitigation',
+                        intro: 'Apply the design principles to determine the safest choices.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'Which statement best reflects a good separation of responsibilities for digital signatures?',
+                                options: [
+                                    { value: 'a', label: 'Every microservice should be able to sign and verify tokens independently.' },
+                                    { value: 'b', label: 'Only a small, hardened service signs; many services verify using a shared policy.', correct: true },
+                                    { value: 'c', label: 'Signing and verification should always happen in the same process for simplicity.' },
+                                    { value: 'd', label: 'Frontend clients should sign tokens to reduce load on servers.' }
+                                ]
+                            },
+                            {
+                                text: 'In a secure webhook design, what is the correct behavior when the signature header is missing?',
+                                options: [
+                                    { value: 'a', label: 'Log a warning but process the webhook to avoid losing data.' },
+                                    { value: 'b', label: 'Treat the request as unauthenticated, return 401, and do not enqueue work.', correct: true },
+                                    { value: 'c', label: 'Fallback to checking only the source IP address.' },
+                                    { value: 'd', label: 'Generate a new signature and attach it for downstream services.' }
+                                ]
+                            },
+                            {
+                                text: 'Which of the following is the best way to publish public keys for signature verification?',
+                                options: [
+                                    { value: 'a', label: 'Embed them in client-side JavaScript bundles.' },
+                                    { value: 'b', label: 'Expose them over a JWKS or PKI channel with authentication and caching.', correct: true },
+                                    { value: 'c', label: 'Send them in every API response header.' },
+                                    { value: 'd', label: 'Store them in plaintext environment variables on all servers.' }
+                                ]
+                            },
+                            {
+                                text: 'A design proposes that if the JWKS endpoint is temporarily unavailable, the gateway should skip signature verification to avoid downtime. How should you respond?',
+                                options: [
+                                    { value: 'a', label: 'Approve; availability is more important than verification.' },
+                                    { value: 'b', label: 'Approve only for read-only endpoints.' },
+                                    { value: 'c', label: 'Reject; the gateway must fail closed and use cached keys or return errors.', correct: true },
+                                    { value: 'd', label: 'Approve as long as detailed logs are kept.' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
 
         <!-- 9. Incident Case Study and Analysis -->
         <section class="card">
@@ -2041,9 +2344,367 @@ except Exception:
                 <h2>9. Incident Case Study and Analysis</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Incident Case Study and Analysis content.</p>
+                <div class="callout callout-danger mb-1">
+                    <strong>Goal of this section:</strong>
+                    Walk through a real-world class of incidents where digital signatures around JWTs were misused, show
+                    the
+                    architecture, where the failure occurred, the exploit path, and how defenses were rolled out.
+                </div>
+
+                <p>
+                    We will use the well-known <strong>JWT algorithm confusion / <code>alg=none</code> incident
+                        class</strong>, where multiple
+                    libraries and implementations accepted attacker-controlled algorithms and treated unsigned or
+                    incorrectly signed
+                    tokens as valid.
+                </p>
             </div>
         </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.1 Architecture before the incident 🏗️</header>
+            <div class="card-body">
+                <p>
+                    Many affected systems shared a similar high-level architecture:
+                </p>
+
+                <pre><code>   +-----------+         +----------------+         +----------------------+         +-------------------+
+   |  Browser  |  JWT    |  API Gateway   |  JWT    |  Auth Service /      |  DB    |  Backend Services |
+   |  / Mobile | ------> |  / Edge Proxy  |-------> |  Resource Server     |------->|  & Data Stores    |
+   +-----------+         +----------------+         +----------------------+         +-------------------+
+         |                        |                            |                              |
+         |                        | verifies?                  | may re-verify or trust      |
+         |                        |                            | gateway headers             |
+         v                        v                            v                              v
+    1) User logs in      2) Gateway parses JWT         3) Auth service checks          4) Business logic
+       and receives         from client                   claims & scopes                 and data access
+       access token
+    </code></pre>
+
+                <p>
+                    In vulnerable implementations:
+                </p>
+                <ul>
+                    <li>The gateway or auth service read the <code>alg</code> field from the JWT header and passed it
+                        directly to the
+                        verification library.</li>
+                    <li>Some libraries treated <code>alg="none"</code> as &ldquo;no signature required&rdquo;, or
+                        allowed switching from asymmetric
+                        (<code>RS256</code>) to symmetric (<code>HS256</code>) algorithms without changing
+                        configuration.</li>
+                    <li>No strict allow-list of algorithms existed on the verifier side.</li>
+                </ul>
+
+                <div class="callout callout-warning mb-0">
+                    <strong>Key design flaw:</strong> <em>the attacker</em> effectively chose which signature algorithm
+                    to use, instead of the
+                    server enforcing a safe set.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.2 Failure point & exploit path 🔓</header>
+            <div class="card-body">
+                <p>
+                    Attackers chained together several weaknesses to bypass authentication and authorization entirely.
+                </p>
+
+                <div id="jwt-incident-flow" class="mb-2"></div>
+
+                <p>
+                    Two main exploit variants appeared repeatedly:
+                </p>
+                <ol>
+                    <li>
+                        <strong><code>alg=none</code> path:</strong>
+                        <ul>
+                            <li>Attacker takes a valid JWT, modifies claims (e.g., <code>"admin": true</code> or
+                                different <code>sub</code>), sets header
+                                <code>{ "alg": "none" }</code>, and removes the signature part.
+                            </li>
+                            <li>Vulnerable library interprets <code>alg=none</code> as &ldquo;no signature
+                                expected&rdquo;.</li>
+                            <li>Application checks only the claims, not that they were cryptographically bound to the
+                                IdP&rsquo;s key.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>RSA→HMAC confusion path:</strong>
+                        <ul>
+                            <li>System originally expects <code>RS256</code> (asymmetric) tokens signed by IdP.</li>
+                            <li>Attacker crafts token with <code>alg="HS256"</code> and uses the server&rsquo;s
+                                published <strong>public key</strong> as the HMAC
+                                secret.</li>
+                            <li>Vulnerable library accepts this and treats the public key as a symmetric secret,
+                                allowing attacker to
+                                forge &ldquo;valid&rdquo; tokens.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="callout callout-danger mb-0">
+                    <strong>Impact:</strong> full account takeover and privilege escalation wherever JWTs were used as
+                    the trust anchor
+                    for sessions, APIs, or single sign-on.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.3 Incident timeline & detection signals ⏱️</header>
+            <div class="card-body">
+                <p>
+                    These issues were publicly documented around 2015–2016, with security researchers demonstrating
+                    exploits
+                    against popular JWT libraries and vendors issuing patches and guidance.
+                </p>
+
+                <div id="jwt-incident-timeline" class="mb-2"></div>
+
+                <p>
+                    From a defender perspective, what <em>could</em> you have seen in your telemetry?
+                </p>
+
+                <div id="jwt-incident-logs"></div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.4 Remediation & hardening – before vs after</header>
+            <div class="card-body">
+                <p>
+                    The core fixes were conceptual and relatively small in code, but required wide rollout:
+                </p>
+                <ul>
+                    <li>Enforce a server-side allow-list of signature algorithms.</li>
+                    <li>Never trust <code>alg</code> from untrusted input when selecting verification behavior.</li>
+                    <li>Use separate key material for symmetric vs asymmetric algorithms.</li>
+                    <li>Add logging, detection, and tests for invalid / unexpected algorithms.</li>
+                </ul>
+
+                <div id="jwt-incident-config-diff" class="mb-1"></div>
+
+                <p class="text-muted mb-0">
+                    Many vendors also updated documentation to emphasize that the <strong>verifier</strong> is
+                    responsible for choosing safe
+                    algorithms, not the incoming token.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.5 Case study wrap-up – AppSec lessons</header>
+            <div class="card-body">
+                <p>
+                    As an AppSec engineer, here are the durable lessons from this incident class:
+                </p>
+                <ul>
+                    <li>Threats often arise from <strong>API affordances</strong> (e.g., letting the client specify
+                        <code>alg</code>) rather than
+                        broken cryptography.
+                    </li>
+                    <li>Verification logic and configuration deserve as much review as application business logic.</li>
+                    <li>Telemetry on verification failures and unexpected algorithm usage is a strong early-warning
+                        signal.</li>
+                    <li>Secure defaults in libraries matter; but system owners must still configure them correctly.</li>
+                </ul>
+
+                <div class="callout callout-info mb-0">
+                    <strong>Further reading:</strong> look up &ldquo;JWT algorithm confusion vulnerabilities&rdquo; and
+                    the OWASP JWT Cheat Sheet
+                    for in-depth discussion and additional mitigations.
+                </div>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <header class="card-header">9.6 Quick Check – Incident Case Study Quiz</header>
+            <div class="card-body">
+                <p class="text-muted">Test your understanding of the architecture, failure, and remediation.</p>
+                <div id="incident-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+                    AppSecWidgets.FlowVisualizer.create('jwt-incident-flow', [
+                        {
+                            title: 'Step 1 – Client forges token',
+                            description: 'Attacker edits JWT header/payload (alg=none or HS256) and crafts arbitrary claims.'
+                        },
+                        {
+                            title: 'Step 2 – Vulnerable verifier trusts alg',
+                            description: 'Gateway/auth service reads alg from token and passes it directly to library.'
+                        },
+                        {
+                            title: 'Step 3 – Library accepts weak mode',
+                            description: 'Library treats alg=none as unsigned or misuses public key as HMAC secret.'
+                        },
+                        {
+                            title: 'Step 4 – Claims treated as trusted',
+                            description: 'Application authorizes actions based on forged claims without real signature validation.'
+                        }
+                    ]);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.VulnerabilityTimeline) {
+                    AppSecWidgets.VulnerabilityTimeline.create('jwt-incident-timeline', {
+                        title: 'JWT Algorithm Confusion – Example Timeline',
+                        vulnerabilities: [
+                            {
+                                id: 'research-disclosure',
+                                date: '2015-03-01',
+                                title: 'Security research highlights alg=none and alg confusion issues',
+                                description: 'Researchers publish PoCs showing that several JWT libraries accept alg=none or allow RS→HS confusion.',
+                                severity: 'High'
+                            },
+                            {
+                                id: 'vendor-patches',
+                                date: '2015-06-15',
+                                title: 'Vendors release patches & guidance',
+                                description: 'Library maintainers ship versions that enforce algorithms or add configuration flags.',
+                                severity: 'Medium'
+                            },
+                            {
+                                id: 'secure-guidance',
+                                date: '2016-01-10',
+                                title: 'Best-practice guidance spreads',
+                                description: 'OWASP and major IdPs publish best practices for JWT algorithm handling and verification.',
+                                severity: 'Low'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.LogAnalyzer) {
+                    AppSecWidgets.LogAnalyzer.create('jwt-incident-logs', {
+                        title: 'Sample Telemetry – JWT Verification',
+                        columns: ['Time', 'Event', 'User', 'IP', 'Status'],
+                        logs: [
+                            {
+                                time: '2015-03-04T10:01:22Z',
+                                event: 'jwt.verify.failure.alg_none',
+                                user: 'unknown',
+                                ip: '203.0.113.50',
+                                status: 'blocked'
+                            },
+                            {
+                                time: '2015-03-04T10:01:25Z',
+                                event: 'jwt.verify.failure.alg_none',
+                                user: 'unknown',
+                                ip: '203.0.113.50',
+                                status: 'blocked'
+                            },
+                            {
+                                time: '2015-03-04T10:03:10Z',
+                                event: 'jwt.verify.failure.alg_hs256_confusion',
+                                user: 'unknown',
+                                ip: '198.51.100.77',
+                                status: 'blocked'
+                            },
+                            {
+                                time: '2015-03-04T10:10:00Z',
+                                event: 'jwt.verify.success',
+                                user: 'user-123',
+                                ip: '198.51.100.23',
+                                status: 'success'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
+                    var insecureCode = [
+                        '// Before: vulnerable JWT verification',
+                        'const token = jwt.decode(authHeaderToken, { complete: true });',
+                        'const algFromHeader = token.header.alg; // attacker controlled',
+                        '',
+                        'jwt.verify(authHeaderToken, publicKeyOrSecret, { algorithm: algFromHeader }, (err, claims) => {',
+                        '  if (err) {',
+                        '    console.warn("JWT error", err);',
+                        '    // Continue as guest user to avoid breaking flow',
+                        '    return next();',
+                        '  }',
+                        '  req.user = claims;',
+                        '  next();',
+                        '});'
+                    ].join('\n');
+
+                    var secureCode = [
+                        '// After: hardened JWT verification',
+                        'const token = jwt.decode(authHeaderToken, { complete: true });',
+                        '',
+                        'const allowedAlgs = ["RS256", "PS256"];',
+                        'if (!allowedAlgs.includes(token.header.alg)) {',
+                        '  audit.log("jwt.alg.unexpected", { alg: token.header.alg });',
+                        '  return res.status(401).json({ error: "unsupported_alg" });',
+                        '}',
+                        '',
+                        'const key = selectTrustedPublicKey(token.header.kid);',
+                        '',
+                        'jwt.verify(authHeaderToken, key, { algorithms: allowedAlgs }, (err, claims) => {',
+                        '  if (err) {',
+                        '    audit.log("jwt.verify.failure", { error: err.message });',
+                        '    return res.status(401).json({ error: "invalid_token" });',
+                        '  }',
+                        '  req.user = claims;',
+                        '  next();',
+                        '});'
+                    ].join('\n');
+
+                    AppSecWidgets.ConfigDiff.create('jwt-incident-config-diff', 'JWT Verification – Before vs After Hardening', insecureCode, secureCode);
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('incident-quiz', {
+                        title: 'Incident Case Study – JWT Algorithm Confusion',
+                        intro: 'Answer these to check your understanding of the architecture, exploit, and mitigations.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'What was the core design flaw in many vulnerable JWT implementations?',
+                                options: [
+                                    { value: 'a', label: 'Using RSA instead of ECDSA.' },
+                                    { value: 'b', label: 'Allowing the token\'s alg header to determine verification behavior.', correct: true },
+                                    { value: 'c', label: 'Storing JWTs in cookies instead of localStorage.' },
+                                    { value: 'd', label: 'Including too many claims in the payload.' }
+                                ]
+                            },
+                            {
+                                text: 'In the RSA→HMAC confusion variant, why could attackers forge valid-looking tokens?',
+                                options: [
+                                    { value: 'a', label: 'Because the private key length was too small.' },
+                                    { value: 'b', label: 'Because libraries treated the published public key as an HMAC secret for HS256.', correct: true },
+                                    { value: 'c', label: 'Because JWTs are not encrypted by default.' },
+                                    { value: 'd', label: 'Because TLS was misconfigured on the gateway.' }
+                                ]
+                            },
+                            {
+                                text: 'Which remediation best addresses the root cause of the alg=none issue?',
+                                options: [
+                                    { value: 'a', label: 'Adding more claims to the JWT payload.' },
+                                    { value: 'b', label: 'Caching JWKS keys for longer.' },
+                                    { value: 'c', label: 'Enforcing a strict server-side allow-list of allowed signing algorithms.', correct: true },
+                                    { value: 'd', label: 'Switching to cookies for token storage.' }
+                                ]
+                            },
+                            {
+                                text: 'What telemetry pattern would most strongly suggest someone is probing for JWT algorithm confusion bugs?',
+                                options: [
+                                    { value: 'a', label: 'Occasional jwt.verify.failure.expired events across many users.' },
+                                    { value: 'b', label: 'A burst of jwt.verify.failure.alg_none and alg_hs256_confusion events from a small IP range.', correct: true },
+                                    { value: 'c', label: 'Steady jwt.verify.success rates during peak hours.' },
+                                    { value: 'd', label: 'Random 404 errors on static asset requests.' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
+
 
         <!-- 10. Threat Model and Analysis -->
         <section class="card">
@@ -2051,7 +2712,201 @@ except Exception:
                 <h2>10. Threat Model and Analysis</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Threat Model and Analysis content.</p>
+                <div class="callout callout-info mb-1">
+                    <strong>Goal of this section:</strong>
+                    Build a STRIDE-style threat model for a digital-signature-based SaaS architecture and practice
+                    reasoning
+                    about
+                    attack surfaces, trust boundaries, and mitigations.
+                </div>
+
+                <p>
+                    We will threat-model a multi-tenant SaaS API that relies on <strong>signed JWTs</strong> from an IdP
+                    and
+                    <strong>signed webhooks</strong>
+                    from external partners. The intent is to see how digital signatures protect key assets – and where
+                    design and
+                    implementation choices can still fail.
+                </p>
+
+                <p class="text-muted mb-0">
+                    Further reading: <a href="https://owasp.org/www-community/Threat_Modeling" target="_blank">OWASP
+                        Application
+                        Threat Modeling</a>, <a
+                        href="https://learn.microsoft.com/en-us/security/engineering/threat-modeling-tool-threats"
+                        target="_blank">Microsoft STRIDE</a>.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">10.1 System context & assets 🎯</div>
+            <div class="card-body">
+                <p>
+                    Context: multi-tenant SaaS with external IdP and signed webhooks. Digital signatures protect the
+                    integrity and
+                    authenticity of <strong>tokens</strong>, <strong>webhook payloads</strong>, and <strong>deployment
+                        artifacts</strong>.
+                </p>
+
+                <div class="table-container mb-1">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Assets 🔐</th>
+                                <th>Why they matter</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Identity & auth</td>
+                                <td>IdP signing key (SK), JWT access tokens, public JWKS</td>
+                                <td>Drive authentication and authorization across all APIs.</td>
+                            </tr>
+                            <tr>
+                                <td>Tenant isolation</td>
+                                <td>Signed claims: <code>tenant_id</code>, scopes, roles</td>
+                                <td>Ensure users only access their own tenant&rsquo;s data.</td>
+                            </tr>
+                            <tr>
+                                <td>Integrations</td>
+                                <td>Webhook signing keys, partner public keys</td>
+                                <td>Prevent spoofed webhooks and fraudulent events.</td>
+                            </tr>
+                            <tr>
+                                <td>Delivery & infra</td>
+                                <td>Build signing keys, signed artifacts, deployment manifests</td>
+                                <td>Ensure only trusted code/config reaches production.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <pre><code>ASCII Context Diagram
+
+   +----------+         +-----------------+         +------------------+         +-------------------+
+   |  Users   |  JWT    |  API Gateway     |  RPC   |  Backend Services |  SQL   |   Databases       |
+   | (Tenants)| ------> | (Verify JWT,     | -----> |  (Tenant logic,   | -----> | (Tenant data,     |
+   +----------+         |   verify webhook)|        |   business rules) |        |  config, logs)    |
+          ^              ^          ^                 ^           ^                  ^
+          |              |          |                 |           |                  |
+          |     JWKS     |   Webhooks (signed)       |   Deploys (signed artifacts) |
+          |              |          |                 |           |                  |
+      +--------+   +----------+  +----------+     +----------+    |                  |
+      |  IdP   |   | Partner  |  |  CI/CD   |     |  Signing |----+                  |
+      | (SK)   |   | Systems  |  | Pipeline |     |  Service | (HSM/KMS)             |
+      +--------+   +----------+  +----------+     +----------+                       |
+    </code></pre>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">10.2 STRIDE analysis across trust boundaries 🧩</div>
+            <div class="card-body">
+                <p>
+                    We focus on two main trust boundaries: <strong>client → gateway (JWT)</strong> and <strong>partner →
+                        webhook endpoint</strong>.
+                    For each, we consider STRIDE threats.
+                </p>
+
+                <div class="table-container mb-1">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Boundary</th>
+                                <th>STRIDE</th>
+                                <th>Threat example</th>
+                                <th>Digital signature role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td rowspan="3">Client → API Gateway (JWT)</td>
+                                <td>👤 Spoofing</td>
+                                <td>Attacker forges JWT claiming to be another user/tenant.</td>
+                                <td>Gateway verifies signature using IdP PK; forged tokens fail verification.</td>
+                            </tr>
+                            <tr>
+                                <td>✏️ Tampering</td>
+                                <td>Valid JWT is intercepted; <code>tenant_id</code> modified.</td>
+                                <td>Any payload change breaks the signature; verification fails.</td>
+                            </tr>
+                            <tr>
+                                <td>📈 Elevation of Privilege</td>
+                                <td>Attacker sets <code>"role": "admin"</code> in payload.</td>
+                                <td>Without SK, attacker cannot create a valid signature over modified claims.</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="3">Partner → Webhook Endpoint</td>
+                                <td>👤 Spoofing</td>
+                                <td>Attacker sends fake webhook pretending to be Partner X.</td>
+                                <td>Endpoint verifies Partner X&rsquo;s signature; untrusted senders fail verification.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>✏️ Tampering</td>
+                                <td>Legitimate webhook altered in transit (amount, account).</td>
+                                <td>Tampered payload no longer matches signature, request rejected.</td>
+                            </tr>
+                            <tr>
+                                <td>📉 Repudiation</td>
+                                <td>Partner denies sending a webhook that triggered a critical action.</td>
+                                <td>Signed payload + logs provide non-repudiation evidence.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-muted mb-0">
+                    These examples assume correct key management and verification. Later, you can extend the model with
+                    DoS and
+                    information disclosure threats around key infrastructure (JWKS, HSM/KMS, logs).
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">10.3 Threat modeling canvas for digital signatures 🧠</div>
+            <div class="card-body">
+                <p>
+                    Use this canvas as a starting point when threat-modeling any digital-signature-reliant architecture.
+                    It is
+                    prefilled for our SaaS+JWT+webhooks scenario.
+                </p>
+
+                <div id="digital-sig-threatmodel"></div>
+
+                <p class="text-muted mb-0">
+                    In a real workshop, you would export and iterate on this model with architects and service owners.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">10.4 Threat modeling workflow – from architecture to tests 🔄</div>
+            <div class="card-body">
+                <p>
+                    This flow summarizes how you move from architecture to actionable tests and controls for digital
+                    signatures.
+                </p>
+
+                <div id="threat-model-flow"></div>
+
+                <p class="text-muted mb-0">
+                    Try mentally mapping your current or past systems to these steps and note where digital signatures
+                    appear or
+                    are missing.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">10.5 Quick Check – Threat Model & Analysis Quiz</div>
+            <div class="card-body">
+                <p class="text-muted">Validate that you can reason about threats in terms of assets, STRIDE categories,
+                    and controls.</p>
+                <div id="threat-model-quiz"></div>
             </div>
         </section>
 
@@ -2061,9 +2916,329 @@ except Exception:
                 <h2>11. Compliance Mapping</h2>
             </div>
             <div class="card-body">
-                <p>Placeholder for Compliance Mapping content.</p>
+                <div class="callout callout-info mb-1">
+                    <strong>Goal of this section:</strong>
+                    Connect digital-signature practices (hash → sign → verify) to common compliance frameworks so you
+                    can
+                    argue for
+                    and evidence them in audits and security reviews.
+                </div>
+
+                <p>
+                    We will map signatures to key controls in <strong>ISO 27001</strong>, <strong>NIST 800-53</strong>,
+                    <strong>PCI DSS</strong> and
+                    <strong>SOC 2</strong>, with brief notes on <strong>HIPAA</strong> and <strong>GDPR</strong>. Focus
+                    is
+                    on integrity, authentication,
+                    and non-repudiation.
+                </p>
+
+                <p class="text-muted mb-0">
+                    Further reading: ISO/IEC 27001 Annex A controls, NIST SP 800-53 Rev.5, PCI DSS v4.0, SOC 2 Trust
+                    Services
+                    Criteria documentation.
+                </p>
             </div>
         </section>
+
+        <section class="card mb-3">
+            <div class="card-header">11.1 Control mapping table 📋</div>
+            <div class="card-body">
+                <p>
+                    This table highlights where robust digital-signature usage supports specific control families.
+                </p>
+
+                <div class="table-container mb-1">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Framework</th>
+                                <th>Control ID</th>
+                                <th>Theme</th>
+                                <th>How digital signatures help</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ISO 27001</td>
+                                <td>A.8.2, A.9.4, A.12.2, A.14.2</td>
+                                <td>Information integrity, access control, development security</td>
+                                <td>Signed tokens, configs, and code support integrity, prevent unauthorized changes,
+                                    and enforce strong auth.</td>
+                            </tr>
+                            <tr>
+                                <td>NIST 800-53</td>
+                                <td>AU-10, IA-2, SC-12, SC-13, SI-7</td>
+                                <td>Non-repudiation, identification, cryptographic protection, software integrity</td>
+                                <td>Immutable, signed records and artifacts provide proof of origin and tamper evidence.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>PCI DSS</td>
+                                <td>3.5, 6.4, 10.3</td>
+                                <td>Key management, secure software changes, logging</td>
+                                <td>Keys in HSM/KMS, signed deployments, and tamper-evident logs reduce risk to
+                                    cardholder data.</td>
+                            </tr>
+                            <tr>
+                                <td>SOC 2 (Security, Availability, Integrity)</td>
+                                <td>CC6.x, CC7.x, PI1.x</td>
+                                <td>Logical access, change management, processing integrity</td>
+                                <td>Signatures underpin strong auth, authorized deployments, and integrity of processed
+                                    data.</td>
+                            </tr>
+                            <tr>
+                                <td>HIPAA</td>
+                                <td>164.312(c)(1)</td>
+                                <td>Integrity controls</td>
+                                <td>Digitally signed records and audit events help demonstrate that ePHI was not altered
+                                    in transit or storage.</td>
+                            </tr>
+                            <tr>
+                                <td>GDPR</td>
+                                <td>Art. 5(1)(f), Art. 32</td>
+                                <td>Integrity & confidentiality</td>
+                                <td>Signatures reinforce integrity and authenticity of data subject records and access
+                                    logs.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-muted mb-0">
+                    Some frameworks (e.g., GDPR) do not prescribe signatures directly, but they are a strong technical
+                    measure
+                    to meet integrity-related principles.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">11.2 Evidence you should be able to show 📂</div>
+            <div class="card-body">
+                <p>
+                    Auditors and assessors typically look for <strong>evidence</strong>, not just design docs. For
+                    digital signatures, you
+                    should be able to produce:
+                </p>
+
+                <div id="compliance-evidence-checklist" class="mb-1"></div>
+
+                <p class="text-muted mb-0">
+                    Having this evidence pre-collected significantly reduces audit friction and shows operational
+                    maturity.
+                </p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">11.3 Compliance lifecycle for digital signatures 🔄</div>
+            <div class="card-body">
+                <p>
+                    Compliance is not a one-time event; it is a recurring lifecycle. For signatures, that lifecycle
+                    looks like this:
+                </p>
+
+                <div id="compliance-flow"></div>
+
+                <p class="text-muted mb-0">
+                    Map your current controls to these steps and note where you have gaps (e.g., missing key rotation
+                    tests,
+                    or incomplete logging).</p>
+            </div>
+        </section>
+
+        <section class="card mb-3">
+            <div class="card-header">11.4 Quick Check – Compliance Mapping Quiz</div>
+            <div class="card-body">
+                <p class="text-muted">Check your ability to connect digital-signature practices to compliance
+                    requirements.</p>
+                <div id="compliance-quiz"></div>
+            </div>
+        </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AppSecWidgets && AppSecWidgets.ThreatModel) {
+                    AppSecWidgets.ThreatModel.create('digital-sig-threatmodel', {
+                        system: {
+                            name: 'Multi-tenant SaaS – Digital Signatures',
+                            type: 'SaaS API with IdP, webhooks, and signed deployments',
+                            actors: 'End users (tenants), IdP, API gateway, backend services, external partners, DevOps',
+                            assets: 'IdP private keys, JWTs, webhook signing keys, build signing keys, tenant data',
+                            entryPoints: 'Public API endpoints, webhook endpoints, admin APIs, CI/CD pipeline',
+                            boundaries: 'Internet, gateway, internal service mesh, CI/CD network, KMS/HSM boundary'
+                        },
+                        stride: {
+                            spoofing: 'Forged JWTs or webhooks if signature verification is misconfigured or keys leak.',
+                            tampering: 'Token or payload modification in transit; config or artifact tampering before deploy.',
+                            repudiation: 'Signers deny having initiated actions; lack of signed events and audit trails.',
+                            information: 'Key material or signed artifacts leaked via logs, repos, or misconfigured endpoints.',
+                            dos: 'Abuse of expensive signature verification paths; DoS on JWKS/KMS dependencies.',
+                            elevation: 'Using mis-verified claims (role=admin, tenant_id) to escalate privileges.'
+                        }
+                    }, { title: '🎯 Threat Modeling Canvas (Digital Signatures)' });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+                    AppSecWidgets.FlowVisualizer.create('threat-model-flow', {
+                        title: '🔄 Threat Modeling Workflow for Digital Signatures',
+                        steps: [
+                            {
+                                title: '1. Map assets & trust boundaries',
+                                description: 'Identify tokens, keys, webhooks, artifacts, and where trust changes (client→gateway, partner→webhook, CI→prod).'
+                            },
+                            {
+                                title: '2. Identify STRIDE threats',
+                                description: 'For each boundary, list spoofing, tampering, repudiation, disclosure, DoS, and elevation risks.'
+                            },
+                            {
+                                title: '3. Map controls',
+                                description: 'Link each threat to signature-based controls (verification, key protection, logging, rotation).'
+                            },
+                            {
+                                title: '4. Add detection & response',
+                                description: 'Define metrics and alerts for verification failures, key misuse, and anomalous patterns.'
+                            },
+                            {
+                                title: '5. Validate via tests',
+                                description: 'Create unit/integ/pentest checks to ensure tampered/forged messages are rejected everywhere.'
+                            }
+                        ]
+                    });
+
+                    AppSecWidgets.FlowVisualizer.create('compliance-flow', {
+                        title: '🔄 Compliance Lifecycle for Digital Signatures',
+                        steps: [
+                            {
+                                title: '1. Design & document',
+                                description: 'Document how and where signatures are used (tokens, webhooks, code) and link to controls.'
+                            },
+                            {
+                                title: '2. Implement & enforce',
+                                description: 'Configure libraries, gateways, and KMS/HSM according to policy (alg allow-lists, fail closed).'
+                            },
+                            {
+                                title: '3. Monitor & log',
+                                description: 'Collect logs for signature verification failures, key usage, rotations, and anomalies.'
+                            },
+                            {
+                                title: '4. Test & review',
+                                description: 'Run regular tests and reviews (internal audits, pentests) to validate the controls work.'
+                            },
+                            {
+                                title: '5. Prove & improve',
+                                description: 'Prepare evidence for audits, capture findings, and feed improvements back into design.'
+                            }
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+                    AppSecWidgets.Checklist.create('compliance-evidence-checklist', {
+                        title: 'Evidence Pack – Digital Signatures',
+                        items: [
+                            'Key management docs: where private keys live (KMS/HSM), who can access them, and how rotation works.',
+                            'Architecture diagrams showing signed tokens, webhooks, and code paths with trust boundaries.',
+                            'Config samples: gateway/JWT/webhook verification settings with algorithm allow-lists.',
+                            'Logs or dashboards showing signature verification metrics and alerts.',
+                            'Sample signed artifacts (e.g., build outputs) and verification procedure screenshots.',
+                            'Incident runbooks for key compromise, including revocation and re-issuance steps.'
+                        ]
+                    });
+                }
+
+                if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                    AppSecWidgets.Quiz.create('threat-model-quiz', {
+                        title: 'Threat Model & Analysis – Quiz',
+                        intro: 'Check that you can connect assets, threats, and controls in the digital-signature-based SaaS.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'Which asset is most directly protected by signatures on JWT access tokens?',
+                                options: [
+                                    { value: 'a', label: 'Availability of the API' },
+                                    { value: 'b', label: 'Confidentiality of logs only' },
+                                    { value: 'c', label: 'Integrity and authenticity of identity/tenant claims', correct: true },
+                                    { value: 'd', label: 'Disk encryption of database volumes' }
+                                ]
+                            },
+                            {
+                                text: 'In STRIDE terms, forging a JWT that claims a different tenant_id is primarily which threat?',
+                                options: [
+                                    { value: 'a', label: 'Spoofing / Elevation of Privilege', correct: true },
+                                    { value: 'b', label: 'Information Disclosure' },
+                                    { value: 'c', label: 'Denial of Service' },
+                                    { value: 'd', label: 'Repudiation' }
+                                ]
+                            },
+                            {
+                                text: 'What is the role of the IdP private key in this threat model?',
+                                options: [
+                                    { value: 'a', label: 'It encrypts all user data in the database.' },
+                                    { value: 'b', label: 'It signs tokens so that only the IdP can produce valid JWTs.', correct: true },
+                                    { value: 'c', label: 'It is shared with all microservices for convenience.' },
+                                    { value: 'd', label: 'It is used to derive tenant_ids.' }
+                                ]
+                            },
+                            {
+                                text: 'Which activity belongs most clearly in the "Detect" step of the threat modeling workflow?',
+                                options: [
+                                    { value: 'a', label: 'Writing a new JWT library from scratch.' },
+                                    { value: 'b', label: 'Configuring the IdP to use RS256.' },
+                                    { value: 'c', label: 'Alerting on spikes in signature verification failures or unknown algorithms.', correct: true },
+                                    { value: 'd', label: 'Disabling logs to improve performance.' }
+                                ]
+                            }
+                        ]
+                    });
+
+                    AppSecWidgets.Quiz.create('compliance-quiz', {
+                        title: 'Compliance Mapping – Quiz',
+                        intro: 'Match digital-signature practices to compliance expectations.',
+                        mode: 'step',
+                        questions: [
+                            {
+                                text: 'Which NIST 800-53 control family is most closely aligned with non-repudiation via signed logs?',
+                                options: [
+                                    { value: 'a', label: 'SC-13 (Cryptographic Protection)' },
+                                    { value: 'b', label: 'AU-10 (Non-Repudiation)', correct: true },
+                                    { value: 'c', label: 'PE-3 (Physical Access Control)' },
+                                    { value: 'd', label: 'CP-2 (Contingency Planning)' }
+                                ]
+                            },
+                            {
+                                text: 'How do digital signatures support PCI DSS requirements around change management?',
+                                options: [
+                                    { value: 'a', label: 'By reducing the need to log changes.' },
+                                    { value: 'b', label: 'By allowing developers to bypass approval for emergency changes.' },
+                                    { value: 'c', label: 'By ensuring only signed, approved artifacts are deployed to environments handling card data.', correct: true },
+                                    { value: 'd', label: 'By automatically encrypting all cardholder data.' }
+                                ]
+                            },
+                            {
+                                text: 'During an ISO 27001 audit, which piece of evidence best demonstrates signature-related controls?',
+                                options: [
+                                    { value: 'a', label: 'A high-level security policy with no technical details.' },
+                                    { value: 'b', label: 'Screenshots and configs showing that gateways verify JWTs and webhooks using pinned keys.', correct: true },
+                                    { value: 'c', label: 'A list of all user passwords in a vault.' },
+                                    { value: 'd', label: 'An email from a developer saying signatures are “probably configured”.' }
+                                ]
+                            },
+                            {
+                                text: 'For GDPR, which principle is most directly helped by digital signatures on records and logs?',
+                                options: [
+                                    { value: 'a', label: 'Data minimization' },
+                                    { value: 'b', label: 'Integrity and confidentiality (Art. 5(1)(f))', correct: true },
+                                    { value: 'c', label: 'Right to be forgotten' },
+                                    { value: 'd', label: 'Data portability' }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            });
+        </script>
     </div>
 
     <script src="appsec-theme.js"></script>

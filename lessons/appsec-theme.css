@@ -772,3 +772,40 @@ ol {
 #toc li ul li {
   margin: 0.25rem 0;
 }
+
+/* Checklist container */
+.appsec-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Each checklist item becomes a soft card row */
+.appsec-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--card-bg-soft);
+  border: 1px solid #1e904b;
+}
+
+/* Checkbox aligns nicely */
+.appsec-checklist-checkbox {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  align-self: center;
+}
+
+/* Text block */
+.appsec-checklist-label {
+  flex: 1;
+  cursor: pointer;
+  line-height: 1.4;
+}

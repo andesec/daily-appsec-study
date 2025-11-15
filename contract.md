@@ -71,13 +71,14 @@ Teach the topic from the ground up using the following structure below.
    - Widget Suggestions: Callout, CodeReviewChecker, FlowVisualizer, ConfigDiff, ValidationTrainer, ASCII Diagram
 
 9. **Incident Case Study and Analysis**
-    - Describe a real world popular incident narrative.
+    - Search for a well known incident that happened to a company related to the topic.
+    - Describe the incident.
     - Show their architecture using ASCII diagram
     - Describe where the failure occurred and what was the exploit path
     - How they fixed the problem.
+    - Provide the URLs to read more about the problem.
     - Widget Suggestions: Callout, VulnerabilityTimeline, LogAnalyzer, ConfigDiff, ASCII Diagram, FlowVisualizer
     
-
 10. **Threat Model and Analysis**
     - Provide a Threat Model Diagram using ASCII for a known related architecture
     - Provide STRIDE-style attack vectors and threat details.
@@ -108,6 +109,7 @@ Teach the topic from the ground up using the following structure below.
 - Inside the card header, just directly output the text, don't use h2, h3, ... etc
 - Use a section/header/footer element for ".card" class and div for .card-header and .card-body. These elements should not contain any other classes as it is already handled by the theme files.
 - Every subsection (for example: 1.1, 1.5, 3.4) should be a separate card outside the main section after it.
+- If a bland list can be converted to a nice looking table, prefer table over list.
 - Use Emojis and glyph icons and graphics wherever possible to brigthen up the text.
 - Cite references and further learning links in each section wherever possible.
 

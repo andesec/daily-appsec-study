@@ -1766,5 +1766,149 @@ AppSecWidgets.APITester = {
   }
 };
 
+// -------------------------------------------------------------
+// 14. Checklist (Class-based, theme-friendly)
+// -------------------------------------------------------------
+AppSecWidgets.Checklist = {
+  create(containerId, config = {}) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    const title = config.title || "📝 Checklist";
+    const items = config.items || [];
+    const storageKey = "checklist-" + containerId;
+
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+    el.classList.add("widget");
+    el.innerHTML = `
+      <div class="widget-header">${title}</div>
+      <div class="widget-body">
+        <ul class="appsec-checklist">
+          ${items
+        .map((item, index) => {
+          const id = `${containerId}-item-${index}`;
+          const checked = saved[id] ? "checked" : "";
+          return `
+                <li class="appsec-checklist-item">
+                  <input 
+                    type="checkbox"
+                    id="${id}"
+                    data-checklist-id="${id}"
+                    ${checked}
+                    class="appsec-checklist-checkbox"
+                  />
+                  <label for="${id}" class="appsec-checklist-label">
+                    ${item}
+                  </label>
+                </li>
+              `;
+        })
+        .join("")}
+        </ul>
+      </div>
+    `;
+
+    const checkboxes = el.querySelectorAll(".appsec-checklist-checkbox");
+    checkboxes.forEach(cb => {
+      cb.addEventListener("change", () => {
+        saved[cb.dataset.checklistId] = cb.checked;
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+
+        if (window.AppSec?.Notify) {
+          AppSec.Notify.show(
+            cb.checked ? "Marked complete" : "Marked incomplete",
+            "info",
+            900
+          );
+        }
+      });
+    });
+  }
+};
+
+// =============================================================
+//  AppSecWidgets.PatternLibrary
+//  A reusable pattern library viewer
+// =============================================================
+AppSecWidgets.PatternLibrary = {
+  create(containerId, config) {
+    const container = document.getElementById(containerId);
+    if (!container) return console.error("PatternLibrary: container not found:", containerId);
+
+    const title = config?.title || "📚 Security Pattern Library";
+    const patterns = config?.patterns || [];
+
+    container.classList.add("widget");
+
+    // ------------------------------------------
+    // Header
+    // ------------------------------------------
+    const header = document.createElement("div");
+    header.className = "widget-header";
+    header.textContent = title;
+    container.appendChild(header);
+
+    // ------------------------------------------
+    // Body
+    // ------------------------------------------
+    const body = document.createElement("div");
+    body.className = "widget-body";
+    container.appendChild(body);
+
+    if (!patterns.length) {
+      body.innerHTML = `<p>No patterns defined.</p>`;
+      return;
+    }
+
+    // ------------------------------------------
+    // Render each pattern as a collapsible card
+    // ------------------------------------------
+    patterns.forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "card mb-2";
+
+      const cardHeader = document.createElement("div");
+      cardHeader.className = "card-header pattern-header";
+      cardHeader.textContent = `${p.title}`;
+      cardHeader.style.cursor = "pointer";
+
+      const cardBody = document.createElement("div");
+      cardBody.className = "card-body";
+      cardBody.style.display = "none";
+
+      // Content
+      const contextEl = document.createElement("p");
+      contextEl.innerHTML = `<strong>Context:</strong> ${p.context}`;
+      cardBody.appendChild(contextEl);
+
+      if (Array.isArray(p.rules)) {
+        const ul = document.createElement("ul");
+        p.rules.forEach((r) => {
+          const li = document.createElement("li");
+          li.textContent = r;
+          ul.appendChild(li);
+        });
+        cardBody.appendChild(ul);
+      }
+
+      // Toggle behavior
+      cardHeader.addEventListener("click", () => {
+        const visible = cardBody.style.display === "block";
+        cardBody.style.display = visible ? "none" : "block";
+      });
+
+      card.appendChild(cardHeader);
+      card.appendChild(cardBody);
+      body.appendChild(card);
+    });
+  }
+};
+
 // Make available globally
 window.AppSecWidgets = AppSecWidgets;
+
+// Add line numbers to code blocks if available
+document.querySelectorAll('pre').forEach(pre => {
+  window.AppSec.CodeDisplay.addLineNumbers(pre);
+});
