@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Lesson 67 – Master TOCTOU Race Conditions</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!-- Includes -->
+<link href="appsec-theme.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container">
+<!-- Header -->
+<header class="card">
+<div class="card-header">
+                Lesson 67: Master TOCTOU Race Conditions – Check-Then-Use Gap, Concurrent Requests, Mitigation with Locks
+            </div>
+<div class="card-body">
+<p>
+                    This lesson explores Time-of-Check to Time-of-Use (TOCTOU) race conditions in modern SaaS and microservice architectures.
+                    We will study how check-then-use gaps are introduced, how concurrent requests exploit them, and how to design and implement
+                    robust mitigations using locking, idempotency, and transactional patterns.
+                </p>
+<nav id="toc"></nav>
+</div>
+</header>
+<!-- Section 1: Foundations -->
+
+<!-- Section 2: Intuitive Hook -->
+
+<!-- Section 3: Mental Model -->
+
+<!-- Section 4: Deep Explanation -->
+
+<!-- Section 5: Real-World Context & Interactions -->
+
+<!-- Section 6: Common Weaknesses, Pitfalls & Attack Paths -->
+
+<!-- Section 7: Practical Implementation and Review -->
+
+<!-- Section 8: Good Design Principles, Defense & Mitigation -->
+
+<!-- Section 9: Incident Case Study and Analysis -->
+
+<!-- Section 10: Threat Model and Analysis -->
+
+<!-- Section 11: Compliance Mapping -->
+
+<!-- Footer -->
+<section class="card">
+<div class="card-header">1. Foundations 🧱 – What Are TOCTOU</div>
+<div class="card-body">
+<p>
+            TOCTOU (“Time-of-Check to Time-of-Use”) race conditions occur when an application checks a condition and
+            then,
+            before the result is used, the underlying state changes. This makes the check invalid and opens the door to
+            double-spend, privilege escalation, over-withdrawal, and data corruption. These failures are common in
+            multi-threaded, asynchronous, and microservice architectures.
+        </p>
+<div class="callout callout-info-solid">
+            TOCTOU is fundamentally a **consistency problem** disguised as a **security flaw**.
+            It emerges anywhere a check and the action based on that check are not **atomic**.
+        </div>
+<p>Core prerequisites:</p>
+<ul>
+<li>Basic understanding of concurrency (threads, async jobs, transactions)</li>
+<li>Understanding of shared state (DB rows, caches, files, queues)</li>
+<li>Familiarity with atomicity and isolation levels in databases</li>
+</ul>
+<p>ASCII overview:</p>
+<pre>
+User Request  ──►  Check balance (A=100)
+                     │
+                     │   &lt;── another request reduces A to 0
+                     ▼
+                  Use balance (still assuming 100) ───► Vulnerable outcome
+    </pre>
+</div>
+</section><section class="card">
+<div class="card-header">1.1 Core Concepts</div>
+<div class="card-body">
+<p>
+            TOCTOU arises because state can mutate between operations. In distributed systems, the “gap” is not merely
+            milliseconds — it may be seconds due to network latency, retries, caching, or queue delays.
+        </p>
+<div class="callout callout-warning">
+            **The danger:** Attackers exploit this gap by sending concurrent requests strategically to desynchronize the
+            system’s expectations from reality.
+        </div>
+<table>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+<tr>
+<td>Time-of-Check</td>
+<td>The moment the system validates a condition</td>
+</tr>
+<tr>
+<td>Time-of-Use</td>
+<td>The moment the system uses the result of the check</td>
+</tr>
+<tr>
+<td>Critical Section</td>
+<td>Region where state must not change</td>
+</tr>
+<tr>
+<td>Atomicity</td>
+<td>Check and use occur as one indivisible action</td>
+</tr>
+</table>
+<p>Authoritative sources:</p>
+<ul>
+<li>OWASP Race Conditions: https://owasp.org/www-community/attacks/Time_of_check_time_of_use</li>
+<li>CERT Oracle Coding Standard, Concurrency: https://wiki.sei.cmu.edu/confluence</li>
+</ul>
+</div>
+</section><section class="card">
+<div class="card-header">1.2 Where TOCTOU Happens</div>
+<div class="card-body">
+<p>Common scenarios where TOCTOU is typically found:</p>
+<ul>
+<li>Balance checks before withdrawal (double-spend)</li>
+<li>Inventory validation before reservation confirmation</li>
+<li>Permission checks before updating shared records</li>
+<li>Filesystem checks for symlinks or temporary files</li>
+<li>Cache vs database inconsistency during high load</li>
+</ul>
+<div class="callout callout-danger">
+            **Looks safe but isn’t:**
+            <code>if (balance &gt;= price) { charge(); }</code>
+            This is a classic TOCTOU vulnerability without transaction locking.
+        </div>
+</div>
+</section><section class="card">
+<div class="card-header">1.3 Why It Matters</div>
+<div class="card-body">
+<p>
+            Race conditions are difficult to detect through manual testing. Attackers rely on concurrency, automation,
+            and latency manipulation to force inconsistent states.
+        </p>
+<p>Why it’s severe:</p>
+<ul>
+<li>Enables financial fraud (double spending, over-withdrawal)</li>
+<li>Enables privilege escalation (permissions changing mid-flight)</li>
+<li>Corrupts shared records in multi-tenant SaaS platforms</li>
+<li>Breaks invariants guaranteed by business logic</li>
+</ul>
+<p>ASCII illustration of attackers racing requests:</p>
+<pre>
+Request A ──► Check OK ────┐
+                           │  Gap
+Request B ──► Mutate state ┘
+                           ▼
+Use result (still OK) ───► Compromised operation
+        </pre>
+<div id="section-1-quiz"></div>
+<script>
+            document.addEventListener("DOMContentLoaded", function () {
+                AppSecWidgets.Quiz.create("section-1-quiz", {
+                    title: "🗘️ Knowledge Check – Section 1",
+                    mode: "step",
+                    questions: [
+                        {
+                            text: "What makes TOCTOU possible?",
+                            options: [
+                                { value: "1", label: "A gap between check and use", correct: true },
+                                { value: "2", label: "Slow networks only", correct: false },
+                                { value: "3", label: "Outdated libraries", correct: false }
+                            ]
+                        },
+                        {
+                            text: "Which is a common real-world TOCTOU scenario?",
+                            options: [
+                                { value: "1", label: "Checking balance before withdrawal", correct: true },
+                                { value: "2", label: "Rendering UI components", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            });
+        </script>
+</div>
+</section><section class="card">
+<div class="card-header">2. Intuitive Hook</div>
+<div class="card-body">
+<p>
+            Imagine a **coffee shop loyalty card**: you check that you have 1 free drink stamp left, and while you walk
+            toward the counter, someone else uses the same physical card to redeem it. You present your card
+            confidently,
+            unaware the state has changed.
+            That gap equals TOCTOU.
+        </p>
+<div class="callout callout-info-solid">
+            TOCTOU is like believing a fact about the world that becomes false before you act — but your system
+            continues
+            believing the old truth.
+        </div>
+</div>
+</section><section class="card">
+<div class="card-header">2.1 Analogy Breakdown</div>
+<div class="card-body">
+<p>Using the loyalty card analogy:</p>
+<table>
+<tr>
+<th>Analogy Element</th>
+<th>System Equivalent</th>
+</tr>
+<tr>
+<td>Checking stamp count</td>
+<td>Business rule check (balance, quota, permissions)</td>
+</tr>
+<tr>
+<td>Walking to counter</td>
+<td>Latency / concurrency window</td>
+</tr>
+<tr>
+<td>Someone else redeeming</td>
+<td>Concurrent state mutation</td>
+</tr>
+<tr>
+<td>Presenting your card</td>
+<td>Acting on stale, invalidated assumptions</td>
+</tr>
+</table>
+<pre>
+Check: "1 stamp left"
+Gap:  Someone else redeems it
+Use:  "Redeem stamp" → inconsistent → vulnerability
+        </pre>
+<div id="section-2-quiz"></div>
+<script>
+            document.addEventListener("DOMContentLoaded", function () {
+                AppSecWidgets.Quiz.create("section-2-quiz", {
+                    title: "🗘️ Knowledge Check – Section 2",
+                    mode: "step",
+                    questions: [
+                        {
+                            text: "In the analogy, what represents the TOCTOU gap?",
+                            options: [
+                                { value: "1", label: "Walking from check to counter", correct: true },
+                                { value: "2", label: "The cashier scanning the card", correct: false }
+                            ]
+                        },
+                        {
+                            text: "What breaks the system's assumption in the analogy?",
+                            options: [
+                                { value: "1", label: "Another person redeeming the reward in between", correct: true },
+                                { value: "2", label: "The card design", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            });
+        </script>
+</div>
+</section><section class="card">
+<div class="card-header">3. Mental Model – Why → How → What-If 🧠</div>
+<div class="card-body">
+<p>
+      In the model of a system under concurrent load, a TOCTOU vulnerability arises because of three fundamental elements: 
+      <strong>Why</strong> the state is checked, <strong>How</strong> the state may change, and <strong>What-If</strong> an attacker exploits it.  
+    </p>
+<div class="callout callout-info-solid">
+      Think of it as: Check → (Gap) → Use. If the gap is non-zero and other actors intervene, the system's assumption fails.
+    </div>
+<pre>
+           ┌── Why check state? ──► (Check) ────► Gap ────► (Use) ────► Outcome
+                      │                                    ▲
+                      └── How could it change? ────────────┘ 
+    </pre>
+<p><strong>Why → How → What-If</strong> breakdown:</p>
+<ul>
+<li><strong>Why:</strong> We validate a condition (e.g., “user has enough quota”) because business logic demands it.</li>
+<li><strong>How:</strong> Concurrent requests, shared caches, async jobs or external services may mutate the condition between the check and the use.</li>
+<li><strong>What-If:</strong> An attacker or competing process collides in the gap and invalidates the check, causing the system to act on stale or false assumptions.</li>
+</ul>
+<p><strong>What-if scenarios to imagine:</strong></p>
+<ul>
+<li>What if two requests for the same user debit the last $100 in parallel? → Double withdrawal.</li>
+<li>What if a permission check is done, and before the action, the user’s role changes? → Unauthorized action.</li>
+<li>What if an inventory check passes, then before locking, a second process reserves the same item? → Over-booking.</li>
+</ul>
+<div id="section-3-quiz"></div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section-3-quiz", {
+        title: "🗘️ Knowledge Check – Section 3",
+        mode: "step",
+        questions: [
+          {
+            text: "Which part of the model introduces the vulnerability window?",
+            options: [
+              { value: "1", label: "The Check phase", correct: false },
+              { value: "2", label: "The Gap between check and use", correct: true },
+              { value: "3", label: "The Use phase", correct: false }
+            ]
+          },
+          {
+            text: "An attacker manipulates state during which stage?",
+            options: [
+              { value: "1", label: "Before the check", correct: false },
+              { value: "2", label: "Between check and use", correct: true },
+              { value: "3", label: "After the use", correct: false }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+</div>
+</section><section class="card">
+<div class="card-header">3.1 Visualising System View</div>
+<div class="card-body">
+<p>
+      Consider a microservice architecture with an API gateway, business service, cache layer and shared database. The race window can span network hops, threads and processes.
+    </p>
+<pre>
+Client ─► API Gateway ─► Business Service ─► Cache Layer / DB
+                   │              ▲
+                   │ (&lt;–– load, latency ––) │
+                   └────────────────────────┘
+    </pre>
+<p>
+      In high-concurrency environments (e.g., multi-tenant SaaS), you may see multiple threads/processes entering the check phase before one completes the use phase. That creates the race window.
+    </p>
+</div>
+</section><section class="card">
+<div class="card-header">3.2 “What-If” Attack Paths</div>
+<div class="card-body">
+<p><strong>Scenario A – Concurrent Debit</strong></p>
+<pre>
+Time 0: Account balance = $100
+Request 1: check(balance &gt;= 100) → true
+Request 2: check(balance &gt;= 100) → true
+Request 1: debit(100) → new balance = $0
+Request 2: debit(100) → new balance = -$100  ← vulnerability
+    </pre>
+<p><strong>Scenario B – Permission Change Mid-Flight</strong></p>
+<pre>
+Process A: check(user.isAdmin) → true
+Concurrent: revocation job changes user.isAdmin → false
+Process A: performPrivilegedAction() → allowed though revocation occurred  ← vulnerability
+    </pre>
+<div class="callout callout-warning">
+      Attackers often flood endpoints using parallel requests (threads, HTTP/2 streams) to maximise overlap in the gap.  [oai_citation:0‡PortSwigger](https://portswigger.net/web-security/race-conditions?utm_source=chatgpt.com)
+    </div>
+<p>Key takeaway: The gap is real, and even micro-seconds matter in distributed systems.</p>
+</div>
+</section><section class="card">
+<div class="card-header">4. Deep Explanation (Step-by-Step) 🔍</div>
+<div class="card-body">
+<p>
+      We’ll walk through the check-then‐use sequence, identify where the race window emerges, illustrate how concurrent actors exploit it, and map to code patterns in modern systems (APIs, background jobs, caches, DBs).
+    </p>
+<div class="callout callout-info-solid">
+      Always assume that between check and use, **state may change** — transiently, asynchronously, or via another thread.
+    </div>
+<h4>Step 1: Check phase</h4>
+<p>The system reads state and forms an assumption. Example: “User has 1 free voucher remaining.”</p>
+<h4>Step 2: Gap window opens</h4>
+<p>
+      The system delays while the assumption waits for use. In this period, other operations may change the state:
+    </p>
+<ul>
+<li>Concurrency: another thread uses the voucher.</li>
+<li>Distributed: another service updates the same record.</li>
+<li>Cache stale: read from old cache, write has not propagated.</li>
+</ul>
+<h4>Step 3: Use phase</h4>
+<p>The system acts on the assumption (redeem voucher, debit account, grant privilege). If state changed, the action may be invalid.</p>
+<h4>Step 4: Failure/Recovery</h4>
+<p>If the use occurs on invalid state, business invariants break. Without detection or rollback, damage occurs.</p>
+<p><strong>In code terms:</strong></p>
+<pre>
+// Vulnerable pattern
+if (account.balance &gt;= price) {
+    account.balance -= price;
+    save(account);
+}
+
+// Safe pattern (simplified)
+beginTransaction();
+account = selectForUpdate(accountId);
+if (account.balance &gt;= price) {
+    account.balance -= price;
+    save(account);
+}
+commit();
+    </pre>
+<div class="callout callout-danger">
+      Using simple “check then update” without locking or transactions opens race window.  [oai_citation:1‡CWE](https://cwe.mitre.org/data/definitions/367.html?utm_source=chatgpt.com)
+    </div>
+<p><strong>Modern system considerations:</strong></p>
+<ul>
+<li>APIs exposed via HTTP/2: high parallelism =&gt; bigger windows.</li>
+<li>Microservices using eventual-consistency caches: stale reads widen gap.</li>
+<li>Background jobs with delayed execution: state drift before use.</li>
+<li>Multi-tenant shared resources: one tenant inadvertently interferes with another.</li>
+</ul>
+<div id="section-4-quiz"></div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section-4-quiz", {
+        title: "🗘️ Knowledge Check – Section 4",
+        mode: "step",
+        questions: [
+          {
+            text: "Which code change reduces the TOCTOU risk in a debit operation?",
+            options: [
+              { value: "1", label: "Check balance then update without lock", correct: false },
+              { value: "2", label: "Select row for update within a transaction", correct: true },
+              { value: "3", label: "Cache the balance and update asynchronously", correct: false }
+            ]
+          },
+          {
+            text: "Which system design factor increases the race window?",
+            options: [
+              { value: "1", label: "Single-threaded execution", correct: false },
+              { value: "2", label: "High concurrency and stale cache reads", correct: true },
+              { value: "3", label: "Low latency synchronous calls", correct: false }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+</div>
+</section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+            Daily AppSec Study · Lesson 67 – Master TOCTOU Race Conditions
+        </footer>
+</div>
+<script src="appsec-theme.js"></script>
+<script src="appsec-widgets.js"></script>
+</body>
+</html>

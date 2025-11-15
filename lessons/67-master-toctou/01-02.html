@@ -1,35 +1,39 @@
 <!-- ========================= -->
 <!-- Section 1: Foundations    -->
 <!-- ========================= -->
-<div class="card-body">
-    <p>
-        TOCTOU (“Time-of-Check to Time-of-Use”) race conditions occur when an application checks a condition and then,
-        before the result is used, the underlying state changes. This makes the check invalid and opens the door to
-        double-spend, privilege escalation, over-withdrawal, and data corruption. These failures are common in
-        multi-threaded, asynchronous, and microservice architectures.
-    </p>
+<section class="card">
+    <div class="card-header">1. Foundations 🧱 – What Are TOCTOU</div>
+    <div class="card-body">
+        <p>
+            TOCTOU (“Time-of-Check to Time-of-Use”) race conditions occur when an application checks a condition and
+            then,
+            before the result is used, the underlying state changes. This makes the check invalid and opens the door to
+            double-spend, privilege escalation, over-withdrawal, and data corruption. These failures are common in
+            multi-threaded, asynchronous, and microservice architectures.
+        </p>
 
-    <div class="callout callout-info-solid">
-        TOCTOU is fundamentally a **consistency problem** disguised as a **security flaw**.  
-        It emerges anywhere a check and the action based on that check are not **atomic**.
-    </div>
+        <div class="callout callout-info-solid">
+            TOCTOU is fundamentally a **consistency problem** disguised as a **security flaw**.
+            It emerges anywhere a check and the action based on that check are not **atomic**.
+        </div>
 
-    <p>Core prerequisites:</p>
-    <ul>
-        <li>Basic understanding of concurrency (threads, async jobs, transactions)</li>
-        <li>Understanding of shared state (DB rows, caches, files, queues)</li>
-        <li>Familiarity with atomicity and isolation levels in databases</li>
-    </ul>
+        <p>Core prerequisites:</p>
+        <ul>
+            <li>Basic understanding of concurrency (threads, async jobs, transactions)</li>
+            <li>Understanding of shared state (DB rows, caches, files, queues)</li>
+            <li>Familiarity with atomicity and isolation levels in databases</li>
+        </ul>
 
-    <p>ASCII overview:</p>
-    <pre>
+        <p>ASCII overview:</p>
+        <pre>
 User Request  ──►  Check balance (A=100)
                      │
                      │   <── another request reduces A to 0
                      ▼
                   Use balance (still assuming 100) ───► Vulnerable outcome
     </pre>
-</div>
+    </div>
+</section>
 
 <!-- ========================= -->
 <!-- Section 1.1: Core Concepts -->
@@ -48,11 +52,26 @@ User Request  ──►  Check balance (A=100)
         </div>
 
         <table>
-            <tr><th>Term</th><th>Meaning</th></tr>
-            <tr><td>Time-of-Check</td><td>The moment the system validates a condition</td></tr>
-            <tr><td>Time-of-Use</td><td>The moment the system uses the result of the check</td></tr>
-            <tr><td>Critical Section</td><td>Region where state must not change</td></tr>
-            <tr><td>Atomicity</td><td>Check and use occur as one indivisible action</td></tr>
+            <tr>
+                <th>Term</th>
+                <th>Meaning</th>
+            </tr>
+            <tr>
+                <td>Time-of-Check</td>
+                <td>The moment the system validates a condition</td>
+            </tr>
+            <tr>
+                <td>Time-of-Use</td>
+                <td>The moment the system uses the result of the check</td>
+            </tr>
+            <tr>
+                <td>Critical Section</td>
+                <td>Region where state must not change</td>
+            </tr>
+            <tr>
+                <td>Atomicity</td>
+                <td>Check and use occur as one indivisible action</td>
+            </tr>
         </table>
 
         <p>Authoritative sources:</p>
@@ -80,8 +99,8 @@ User Request  ──►  Check balance (A=100)
         </ul>
 
         <div class="callout callout-danger">
-            **Looks safe but isn’t:**  
-            <code>if (balance >= price) { charge(); }</code>  
+            **Looks safe but isn’t:**
+            <code>if (balance >= price) { charge(); }</code>
             This is a classic TOCTOU vulnerability without transaction locking.
         </div>
     </div>
@@ -117,27 +136,29 @@ Use result (still OK) ───► Compromised operation
 
         <div id="section-1-quiz"></div>
         <script>
-        AppSecWidgets.Quiz.create("section-1-quiz", {
-            title: "🗘️ Knowledge Check – Section 1",
-            mode: "step",
-            questions: [
-                {
-                    text: "What makes TOCTOU possible?",
-                    options: [
-                        { value: "1", label: "A gap between check and use", correct: true },
-                        { value: "2", label: "Slow networks only", correct: false },
-                        { value: "3", label: "Outdated libraries", correct: false }
+            document.addEventListener("DOMContentLoaded", function () {
+                AppSecWidgets.Quiz.create("section-1-quiz", {
+                    title: "🗘️ Knowledge Check – Section 1",
+                    mode: "step",
+                    questions: [
+                        {
+                            text: "What makes TOCTOU possible?",
+                            options: [
+                                { value: "1", label: "A gap between check and use", correct: true },
+                                { value: "2", label: "Slow networks only", correct: false },
+                                { value: "3", label: "Outdated libraries", correct: false }
+                            ]
+                        },
+                        {
+                            text: "Which is a common real-world TOCTOU scenario?",
+                            options: [
+                                { value: "1", label: "Checking balance before withdrawal", correct: true },
+                                { value: "2", label: "Rendering UI components", correct: false }
+                            ]
+                        }
                     ]
-                },
-                {
-                    text: "Which is a common real-world TOCTOU scenario?",
-                    options: [
-                        { value: "1", label: "Checking balance before withdrawal", correct: true },
-                        { value: "2", label: "Rendering UI components", correct: false }
-                    ]
-                }
-            ]
-        });
+                });
+            });
         </script>
     </div>
 </section>
@@ -150,13 +171,15 @@ Use result (still OK) ───► Compromised operation
     <div class="card-body">
         <p>
             Imagine a **coffee shop loyalty card**: you check that you have 1 free drink stamp left, and while you walk
-            toward the counter, someone else uses the same physical card to redeem it. You present your card confidently,
-            unaware the state has changed.  
+            toward the counter, someone else uses the same physical card to redeem it. You present your card
+            confidently,
+            unaware the state has changed.
             That gap equals TOCTOU.
         </p>
 
         <div class="callout callout-info-solid">
-            TOCTOU is like believing a fact about the world that becomes false before you act — but your system continues
+            TOCTOU is like believing a fact about the world that becomes false before you act — but your system
+            continues
             believing the old truth.
         </div>
     </div>
@@ -171,11 +194,26 @@ Use result (still OK) ───► Compromised operation
         <p>Using the loyalty card analogy:</p>
 
         <table>
-            <tr><th>Analogy Element</th><th>System Equivalent</th></tr>
-            <tr><td>Checking stamp count</td><td>Business rule check (balance, quota, permissions)</td></tr>
-            <tr><td>Walking to counter</td><td>Latency / concurrency window</td></tr>
-            <tr><td>Someone else redeeming</td><td>Concurrent state mutation</td></tr>
-            <tr><td>Presenting your card</td><td>Acting on stale, invalidated assumptions</td></tr>
+            <tr>
+                <th>Analogy Element</th>
+                <th>System Equivalent</th>
+            </tr>
+            <tr>
+                <td>Checking stamp count</td>
+                <td>Business rule check (balance, quota, permissions)</td>
+            </tr>
+            <tr>
+                <td>Walking to counter</td>
+                <td>Latency / concurrency window</td>
+            </tr>
+            <tr>
+                <td>Someone else redeeming</td>
+                <td>Concurrent state mutation</td>
+            </tr>
+            <tr>
+                <td>Presenting your card</td>
+                <td>Acting on stale, invalidated assumptions</td>
+            </tr>
         </table>
 
         <pre>
@@ -186,26 +224,28 @@ Use:  "Redeem stamp" → inconsistent → vulnerability
 
         <div id="section-2-quiz"></div>
         <script>
-        AppSecWidgets.Quiz.create("section-2-quiz", {
-            title: "🗘️ Knowledge Check – Section 2",
-            mode: "step",
-            questions: [
-                {
-                    text: "In the analogy, what represents the TOCTOU gap?",
-                    options: [
-                        { value: "1", label: "Walking from check to counter", correct: true },
-                        { value: "2", label: "The cashier scanning the card", correct: false }
+            document.addEventListener("DOMContentLoaded", function () {
+                AppSecWidgets.Quiz.create("section-2-quiz", {
+                    title: "🗘️ Knowledge Check – Section 2",
+                    mode: "step",
+                    questions: [
+                        {
+                            text: "In the analogy, what represents the TOCTOU gap?",
+                            options: [
+                                { value: "1", label: "Walking from check to counter", correct: true },
+                                { value: "2", label: "The cashier scanning the card", correct: false }
+                            ]
+                        },
+                        {
+                            text: "What breaks the system's assumption in the analogy?",
+                            options: [
+                                { value: "1", label: "Another person redeeming the reward in between", correct: true },
+                                { value: "2", label: "The card design", correct: false }
+                            ]
+                        }
                     ]
-                },
-                {
-                    text: "What breaks the system's assumption in the analogy?",
-                    options: [
-                        { value: "1", label: "Another person redeeming the reward in between", correct: true },
-                        { value: "2", label: "The card design", correct: false }
-                    ]
-                }
-            ]
-        });
+                });
+            });
         </script>
     </div>
 </section>

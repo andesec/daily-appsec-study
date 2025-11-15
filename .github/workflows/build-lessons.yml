@@ -1,0 +1,46 @@
+name: Build Lesson HTML
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-lessons:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build lesson HTML files
+        run: |
+          python join_html_topics.py ./lessons
+
+      - name: Upload build results (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-builds
+          path: lessons/*.html
+
+      # Uncomment to auto-commit results back into the repository
+      # - name: Commit updated HTML
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add lessons/*.html
+      #     if ! git diff --cached --quiet; then
+      #       git commit -m "Auto-build lesson HTML"
+      #       git push
+      #     else
+      #       echo "No changes to commit."

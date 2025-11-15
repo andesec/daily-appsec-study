@@ -1,0 +1,285 @@
+<!-- ====================================== -->
+<!-- Section 5: Real-World Context & Interactions -->
+<!-- ====================================== -->
+<section class="card">
+  <div class="card-header">5. Real-World Context & Interactions 🌍</div>
+  <div class="card-body">
+    <p>
+      This section uses a realistic SaaS architecture involving a wallet-based billing system.  
+      The service exposes <strong>debitWallet()</strong> and <strong>reserveInventory()</strong> endpoints across microservices.
+      Under high load, multiple concurrent requests can collide between the check-then-use boundary.
+    </p>
+
+    <div class="callout callout-info-solid">
+      Real SaaS systems typically run on horizontally scaled services with shared databases, caches, message queues and async workers — perfect conditions for TOCTOU races.
+    </div>
+
+    <p>Architecture overview:</p>
+    <pre>
+                  ┌──────────────────────────┐
+                  │      API Gateway         │
+                  └─────────────┬────────────┘
+                                │
+                     ┌──────────▼──────────┐
+                     │   Billing Service   │
+                     │ (check + update)    │
+                     └──────────┬──────────┘
+                                │
+                ┌───────────────▼──────────────┐
+                │        PostgreSQL DB          │
+                │  (balance rows + inventory)   │
+                └───────────────┬──────────────┘
+                                │
+                     ┌──────────▼──────────┐
+                     │      Redis Cache    │
+                     │ (stale reads risk!) │
+                     └──────────────────────┘
+    </pre>
+
+    <p>
+      <strong>Happy Path (Single Request)</strong>  
+      The user buys one item. The system checks balance (e.g., $150 ≥ $100), debits $100, and updates the DB.
+    </p>
+
+    <p>
+      <strong>Attacker Path (Concurrency Flood)</strong>  
+      The attacker rapidly fires 10–20 parallel requests (HTTP/2, curl parallel, Burp Intruder). The check is computed multiple times on the same stale value before any update commits.
+    </p>
+
+    <div id="section5-flow"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.FlowVisualizer.create("section5-flow", [
+        { title: "Step 1 – Attacker sends parallel requests", description: "10–20 debit requests hit the Billing Service nearly simultaneously." },
+        { title: "Step 2 – All requests perform balance check", description: "Reads stale or cached balance = $150." },
+        { title: "Step 3 – Some succeed in committing updates", description: "Multiple commits overlap; database ends up with negative or inconsistent balance." },
+        { title: "Step 4 – Invariant broken", description: "System incorrectly allowed more debits than funds available." }
+      ]);
+    });
+    </script>
+
+    <p>
+      <strong>Inter-service interaction risks:</strong>
+    </p>
+    <ul>
+      <li>Redis caching delays may cause stale reads.</li>
+      <li>Kubernetes autoscaling spreads load across multiple pods → more concurrency → larger race window.</li>
+      <li>Background jobs (refunds, rollbacks, ledger sync) alter account state mid-flight.</li>
+      <li>Eventual-consistency NoSQL stores widen the gap substantially.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 5.1: Code Review Example -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">5.1 Code Review Example</div>
+  <div class="card-body">
+    <p>Below is a real-world API excerpt with an intentional TOCTOU flaw.</p>
+
+    <div id="section5-codereview"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.CodeReviewChecker.create("section5-codereview", {
+        title: "🔎 Security Code Review – Billing Race",
+        code: `
+async function debitWallet(userId, amount) {
+  const balance = await db.getBalance(userId);   // Time-of-Check
+  if (balance >= amount) {
+    await sleep(30); // latency widening the gap
+    return await db.updateBalance(userId, balance - amount); // Time-of-Use
+  }
+  throw new Error("Insufficient funds");
+}
+        `,
+        vulnerabilities: [
+          {
+            severity: "high",
+            title: "TOCTOU Race Condition",
+            description: "Balance is checked before update without locking or transactional isolation.",
+            line: 3,
+            recommendation: "Use SELECT FOR UPDATE or equivalent transactional locking."
+          },
+          {
+            severity: "medium",
+            title: "Artificial latency",
+            description: "The delay increases the attack window.",
+            line: 4,
+            recommendation: "Avoid unnecessary delays between check and write."
+          }
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 5.2: Quiz -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">5.2 Knowledge Check</div>
+  <div class="card-body">
+    <div id="section5-quiz"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section5-quiz", {
+        mode: "step",
+        title: "🗘️ Section 5 Quiz",
+        questions: [
+          {
+            text: "What enables an attacker to exploit TOCTOU in a wallet system?",
+            options: [
+              { value: "1", label: "Using HTTP/2 or parallel requests", correct: true },
+              { value: "2", label: "Performing slow single requests", correct: false }
+            ]
+          },
+          {
+            text: "Which component often widens the race gap?",
+            options: [
+              { value: "1", label: "Redis stale cache", correct: true },
+              { value: "2", label: "Static files CDN", correct: false }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>
+
+<!-- ====================================== -->
+<!-- Section 6: Common Weaknesses, Pitfalls & Attack Paths -->
+<!-- ====================================== -->
+<section class="card">
+  <div class="card-header">6. Common Weaknesses, Pitfalls & Attack Paths ⚠️</div>
+  <div class="card-body">
+    <p>
+      This section covers the most prevalent TOCTOU patterns, how attackers exploit them,  
+      and how defenders can detect and mitigate them.  
+      We will use realistic, pentest-style flows.
+    </p>
+
+    <div class="callout callout-warning">
+      Race conditions rarely show up in unit tests — attackers rely on concurrency floods, latency injection, and cache manipulation to win the race.
+    </div>
+
+    <p><strong>Primary attack patterns:</strong></p>
+    <ul>
+      <li>Double-spend through concurrent financial transactions</li>
+      <li>Privilege escalation via stale authorization checks</li>
+      <li>Inventory over-booking</li>
+      <li>Filesystem TOCTOU on temporary files and symlinks</li>
+      <li>Session state races (e.g., inconsistent login throttling)</li>
+    </ul>
+
+    <pre>
+Attack → Detect → Defend Model:
+• Attack: Exploit concurrency gap  
+• Detect: Logs show overlapping requests or negative balances  
+• Defend: Locking, transactions, idempotency, optimistic concurrency  
+    </pre>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 6.1: Attack Path – Double Spend -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">6.1 Attack Path – Double Spend</div>
+  <div class="card-body">
+    <p>The attacker floods the debit endpoint:</p>
+    <pre>
+for i in {1..20}; do
+  curl -X POST /debit --data '{ "amount":100 }' &
+done
+    </pre>
+
+    <div class="callout callout-danger">
+      <strong>Detect:</strong> Negative balances or multiple identical debits in logs.  
+      <strong>Defend:</strong> Row-level locking, SELECT FOR UPDATE, atomic DB operations.
+    </div>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 6.2: Attack Path – Inventory Race -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">6.2 Attack Path – Inventory Race</div>
+  <div class="card-body">
+    <p>
+      Many e-commerce systems compute availability using <em>read → modify → write</em>.  
+      Attackers exploit this through parallel reservation attempts.
+    </p>
+
+    <pre>
+check: "items_left = 1"
+gap:   5 requests try to reserve
+use:   multiple reservations succeed
+    </pre>
+
+    <div class="callout callout-warning">
+       <strong>Detect:</strong> Oversold items.  
+       <strong>Defend:</strong> DB constraints, version columns (optimistic locks), transaction blocks.
+    </div>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 6.3: Attack Path – Permission Race -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">6.3 Attack Path – Permission Race</div>
+  <div class="card-body">
+    <p>
+      Users whose roles change mid-request may perform actions they should no longer be allowed to.
+    </p>
+
+    <pre>
+Process A: check user.isAdmin == true
+Process B: revoke admin rights
+Process A: action executes as admin ← vulnerability
+    </pre>
+
+    <div class="callout callout-danger">
+      <strong>Detect:</strong> Audit log mismatches.  
+      <strong>Defend:</strong> Re-check authorization inside critical section.
+    </div>
+  </div>
+</section>
+
+<!-- ======================= -->
+<!-- Section 6.4: Knowledge Check -->
+<!-- ======================= -->
+<section class="card">
+  <div class="card-header">6.4 Knowledge Check</div>
+  <div class="card-body">
+    <div id="section6-quiz"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section6-quiz", {
+        mode: "step",
+        title: "🗘️ Section 6 Quiz",
+        questions: [
+          {
+            text: "Which attack path is a TOCTOU pattern?",
+            options: [
+              { value: "1", label: "Double-spend via concurrent debits", correct: true },
+              { value: "2", label: "Slow single thread purchase", correct: false }
+            ]
+          },
+          {
+            text: "What is a common detection signal?",
+            options: [
+              { value: "1", label: "Negative balances / oversold inventory", correct: true },
+              { value: "2", label: "High CPU load", correct: false }
+            ]
+          }
+        ]
+      });
+    });
+    </script>
+  </div>
+</section>

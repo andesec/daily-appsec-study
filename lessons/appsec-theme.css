@@ -182,6 +182,7 @@ pre code {
   display: grid;
   grid-template-columns: var(--line-number-width) 1fr;
   gap: 0.5rem;
+  margin: 02rem 0rem;
 }
 
 .line-numbers {
