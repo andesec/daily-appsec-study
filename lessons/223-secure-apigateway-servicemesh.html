@@ -10,12 +10,13 @@
 <script defer="" src="appsec-widgets.js"></script>
 </head>
 <body>
-<header>
-<div class="hero">
-<h1>Lesson 223: Securing API Gateway and Service Mesh Architecture</h1>
+<div class="container">
+<header class="card">
+<div class="card-header">Lesson 223: Securing API Gateway and Service Mesh Architecture</div>
+<div class="card-body">
 <p>This lesson explores how to harden API gateways and service meshes so microservices retain least privilege, traffic integrity, and observability even under adversarial conditions.</p>
-</div>
 <nav id="toc"></nav>
+</div>
 </header>
 <main>
 <div class="container">
@@ -41,7 +42,53 @@
 <!-- section-10 placeholder -->
 <!-- section-11 placeholder -->
 <!-- section-12 placeholder -->
-<section class="card" id="section-2">
+<section class="card" id="section-1">
+<div class="card-header">1. Foundations</div>
+<div class="card-body">
+<p>API gateways sit at the trust boundary as edge proxies that terminate TLS, normalize headers, and enforce authorization decisions before any microservice code executes. Modern guidance such as the <a href="https://owasp.org/API-Security/editions/2023/en/0x00-header/" rel="noopener" target="_blank">OWASP API Security Top 10 2023</a> stresses that gateways must validate tokens, broker OAuth/OIDC scopes, apply schema validation, and throttle abusive clients so backend services are insulated from volumetric, injection, and broken object-level attacks.</p>
+<p>Inside the mesh, the <a href="https://tag-security.cncf.io/whitepapers/service-mesh-security/" rel="noopener" target="_blank">CNCF Service Mesh Security Whitepaper</a> defines a layered architecture: sidecar proxies form the data plane enforcing policy per service instance, the control plane distributes configuration and certificates, and secure telemetry channels report posture back to SRE/SOC tooling. The synergy with the API gateway is deliberate—both share traffic intelligence and policy intent so east-west and north-south flows uphold least privilege.</p>
+<div class="callout callout-info">
+<strong>Prerequisites before rolling out the gateway + mesh stack:</strong>
+<ul>
+<li>Enterprise PKI that can mint short-lived service certificates for mTLS handshakes.</li>
+<li>Inventory of services, routes, and identity claims mapped to gateway policies.</li>
+<li>Automated configuration pipeline so control-plane pushes and gateway changes are versioned and observable.</li>
+</ul>
+</div>
+<p>With those prerequisites met, you can align responsibilities: the gateway deflects untrusted traffic and normalizes identity, while the mesh sidecars enforce service-level policies, distribute keys, and continuously attest posture back to the control plane. This pairing gives you defense-in-depth against credential replay, request spoofing, and east-west reconnaissance.</p>
+<div class="widget" id="section-1-checklist"></div>
+<div class="widget" id="section-1-quiz"></div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        AppSecWidgets.Checklist.create('section-1-checklist', {
+          title: 'Core Components & Responsibilities',
+          items: [
+            'API Gateway: Edge proxy enforcing TLS termination, request normalization, and token introspection.',
+            'API Gateway: Applies client throttling and schema validation to shield downstream services.',
+            'Service Mesh Control Plane: Issues policies and distributes mTLS certificates to proxies.',
+            'Sidecar/Data Plane: Enforces allowlists, captures telemetry, and ensures per-service encryption in transit.',
+            'Shared Observability: Stream gateway + mesh metrics to detect abuse and policy drift early.'
+          ]
+        });
+
+        AppSecWidgets.Quiz.create('section-1-quiz', {
+          title: 'Foundations Knowledge Check',
+          mode: 'classic',
+          questions: [
+            {
+              text: 'Which pairing best captures the division of responsibility between an API gateway and a service mesh as described above?',
+              options: [
+                { value: 'a', label: 'Gateway handles CI/CD and the mesh only logs traffic.', correct: false },
+                { value: 'b', label: 'Gateway enforces edge authorization/throttling while the mesh distributes mTLS identities and per-service policy.', correct: true },
+                { value: 'c', label: 'Both focus solely on rate limiting external users.', correct: false }
+              ]
+            }
+          ]
+        });
+      });
+    </script>
+</div>
+</section><section class="card" id="section-2">
 <div class="card-header">2. Intuitive Hook</div>
 <div class="card-body">
 <p>
@@ -88,5 +135,6 @@
 <footer>
 <p>© Daily AppSec Study — Advancing secure microservice design one lesson at a time.</p>
 </footer>
+</div>
 </body>
 </html>
