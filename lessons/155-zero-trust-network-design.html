@@ -1,257 +1,460 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <title>Zero Trust Network Design – Never Trust / Always Verify</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Theme + Widgets -->
-    <link rel="stylesheet" href="appsec-theme.css" />
-    <script src="appsec-theme.js" defer></script>
-    <script src="appsec-widgets.js" defer></script>
-</head>
-
-<body class="appsec-body">
-    <div class="appsec-page">
-        <header class="appsec-header">
-            <h1>Zero Trust Network Design</h1>
-            <p class="appsec-subtitle">
-                Topic 155 – Never trust / always verify, micro-segmentation, continuous verification
-            </p>
-            <div class="appsec-meta">
-                <span class="badge badge-pill badge-primary">Network & Cloud Security</span>
-                <span class="badge badge-soft">Multi-tenant SaaS</span>
-                <span class="badge-soft">Hands-on Oriented</span>
-            </div>
-        </header>
-
-        <main class="appsec-content">
-
-            <!-- 1. Foundation -->
-            <section id="section-1" class="appsec-section">
-                <h2>1. Foundation</h2>
-
-                <div class="appsec-callout info">
-                    <strong>Assumed prerequisites:</strong>
-                    <ul>
-                        <li>Basic understanding of TCP/IP networking (IP, ports, subnets, routing).</li>
-                        <li>Familiarity with traditional “perimeter” security (firewalls, VPNs, DMZs).</li>
-                        <li>High-level knowledge of authentication & authorization (OIDC/OAuth2, SSO, RBAC).</li>
-                        <li>Some exposure to cloud concepts (VPC/VNet, security groups, load balancers).</li>
-                    </ul>
-                </div>
-
-                <h3>1.1 Core Definitions</h3>
-                <ul>
-                    <li>
-                        <strong>Zero Trust</strong> – A security model that assumes no implicit trust based on
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   Zero Trust Network Design – Never Trust / Always Verify
+  </title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <!-- Theme + Widgets -->
+  <link href="appsec-theme.css" rel="stylesheet"/>
+  <script defer="" src="appsec-theme.js">
+  </script>
+  <script defer="" src="appsec-widgets.js">
+  </script>
+ </head>
+ <body>
+  <div class="container">
+   <header class="card">
+    <div class="card-header">
+     Lesson 155: Zero Trust Network Design
+    </div>
+    <div class="card-body">
+     <p>
+      Topic 155 – Never trust / always verify, micro-segmentation, continuous verification
+     </p>
+     <div class="grid grid-3">
+      <div class="callout callout-info">
+       Network &amp; Cloud Security
+      </div>
+      <div class="callout callout-info">
+       Multi-tenant SaaS
+      </div>
+      <div class="callout callout-info">
+       Hands-on Oriented
+      </div>
+     </div>
+     <nav id="toc">
+     </nav>
+    </div>
+   </header>
+   <section class="card" id="section-1">
+    <div class="card-header">
+     1. Foundation
+    </div>
+    <div class="card-body">
+     <div class="callout callout-info">
+      <strong>
+       Assumed prerequisites:
+      </strong>
+      <ul>
+       <li>
+        Basic understanding of TCP/IP networking (IP, ports, subnets, routing).
+       </li>
+       <li>
+        Familiarity with traditional “perimeter” security (firewalls, VPNs, DMZs).
+       </li>
+       <li>
+        High-level knowledge of authentication &amp; authorization (OIDC/OAuth2, SSO, RBAC).
+       </li>
+       <li>
+        Some exposure to cloud concepts (VPC/VNet, security groups, load balancers).
+       </li>
+      </ul>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-1-1">
+    <div class="card-header">
+     1.1 Core Definitions
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>
+       <strong>
+        Zero Trust
+       </strong>
+       – A security model that assumes no implicit trust based on
                         network location, device, or identity. Every access request is explicitly authenticated,
                         authorized, and continuously evaluated, regardless of where it originates.
-                    </li>
-                    <li>
-                        <strong>Never trust, always verify</strong> – Core principle of Zero Trust:
-                        <em>trust is not a starting state, it’s a temporary outcome of verification</em>.
-                    </li>
-                    <li>
-                        <strong>Micro-segmentation</strong> – Fine-grained isolation of workloads, services, or
+      </li>
+      <li>
+       <strong>
+        Never trust, always verify
+       </strong>
+       – Core principle of Zero Trust:
+       <em>
+        trust is not a starting state, it’s a temporary outcome of verification
+       </em>
+       .
+      </li>
+      <li>
+       <strong>
+        Micro-segmentation
+       </strong>
+       – Fine-grained isolation of workloads, services, or
                         data using logical segments (network, identity, app-level policies) so that compromise
                         of one segment has minimal blast radius.
-                    </li>
-                    <li>
-                        <strong>Continuous verification</strong> – Ongoing validation of identity, device state,
+      </li>
+      <li>
+       <strong>
+        Continuous verification
+       </strong>
+       – Ongoing validation of identity, device state,
                         context (location, risk signals), and behavior during a session, not just at login time.
-                    </li>
-                    <li>
-                        <strong>Control plane</strong> – Components that define and distribute policy
+      </li>
+      <li>
+       <strong>
+        Control plane
+       </strong>
+       – Components that define and distribute policy
                         (e.g., identity provider, policy engine, configuration management, IaC).
-                    </li>
-                    <li>
-                        <strong>Data plane</strong> – Components that actually handle traffic and enforce policy
+      </li>
+      <li>
+       <strong>
+        Data plane
+       </strong>
+       – Components that actually handle traffic and enforce policy
                         (proxies, API gateways, sidecars, service meshes, WAFs, host firewalls).
-                    </li>
-                    <li>
-                        <strong>Trust boundary</strong> – A point where data or control crosses between actors
+      </li>
+      <li>
+       <strong>
+        Trust boundary
+       </strong>
+       – A point where data or control crosses between actors
                         with different trust levels or responsibilities (user ↔ service, service ↔ DB,
                         tenant A ↔ tenant B, on-prem ↔ cloud).
-                    </li>
-                    <li>
-                        <strong>Identity-aware access</strong> – Access decisions are based primarily on strong
+      </li>
+      <li>
+       <strong>
+        Identity-aware access
+       </strong>
+       – Access decisions are based primarily on strong
                         identity signals (user, service account, workload identity), not IP addresses alone.
-                    </li>
-                </ul>
-
-                <h3>1.2 How These Components Relate in a Real System</h3>
-                <p>
-                    Imagine a multi-tenant SaaS platform with:
-                </p>
-                <ul>
-                    <li>A public SPA + mobile app.</li>
-                    <li>API gateway and multiple microservices.</li>
-                    <li>Worker queues, cron jobs, and webhooks to third parties.</li>
-                    <li>Cloud-hosted databases and object storage.</li>
-                </ul>
-                <p>
-                    In a Zero Trust design:
-                </p>
-                <ul>
-                    <li>
-                        Users authenticate via SSO/OIDC (IdP). The resulting tokens are verified by an API
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-1-2">
+    <div class="card-header">
+     1.2 How These Components Relate in a Real System
+    </div>
+    <div class="card-body">
+     <p>
+      Imagine a multi-tenant SaaS platform with:
+     </p>
+     <ul>
+      <li>
+       A public SPA + mobile app.
+      </li>
+      <li>
+       API gateway and multiple microservices.
+      </li>
+      <li>
+       Worker queues, cron jobs, and webhooks to third parties.
+      </li>
+      <li>
+       Cloud-hosted databases and object storage.
+      </li>
+     </ul>
+     <p>
+      In a Zero Trust design:
+     </p>
+     <ul>
+      <li>
+       Users authenticate via SSO/OIDC (IdP). The resulting tokens are verified by an API
                         gateway or identity-aware proxy at the edge.
-                    </li>
-                    <li>
-                        Every microservice <em>also</em> authenticates to other microservices using workload
+      </li>
+      <li>
+       Every microservice
+       <em>
+        also
+       </em>
+       authenticates to other microservices using workload
                         identities (e.g., mTLS with SPIFFE IDs, IAM roles, or service accounts).
-                    </li>
-                    <li>
-                        Network-level policies create <strong>micro-segments</strong>: e.g.,
-                        <code>api-gateway</code> can talk to <code>billing-service</code>,
-                        but <code>user-service</code> cannot talk directly to <code>db-billing</code>.
-                    </li>
-                    <li>
-                        Access decisions leverage context: user role, tenant, device posture, geolocation,
+      </li>
+      <li>
+       Network-level policies create
+       <strong>
+        micro-segments
+       </strong>
+       : e.g.,
+       <code>
+        api-gateway
+       </code>
+       can talk to
+       <code>
+        billing-service
+       </code>
+       ,
+                        but
+       <code>
+        user-service
+       </code>
+       cannot talk directly to
+       <code>
+        db-billing
+       </code>
+       .
+      </li>
+      <li>
+       Access decisions leverage context: user role, tenant, device posture, geolocation,
                         anomaly/risk scores.
-                    </li>
-                    <li>
-                        Policies are enforced <em>every time</em>:
+      </li>
+      <li>
+       Policies are enforced
+       <em>
+        every time
+       </em>
+       :
                         per request, per connection, per background job.
-                    </li>
-                </ul>
-
-                <h3>1.3 Essential Recap Before Going Deeper</h3>
-                <ul>
-                    <li>
-                        <strong>Traditional perimeter model:</strong> “hard outside, soft inside”.
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-1-3">
+    <div class="card-header">
+     1.3 Essential Recap Before Going Deeper
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>
+       <strong>
+        Traditional perimeter model:
+       </strong>
+       “hard outside, soft inside”.
                         Once inside the VPN/VPC, many systems implicitly trust you.
-                    </li>
-                    <li>
-                        <strong>Zero Trust model:</strong> no “safe inside”.
+      </li>
+      <li>
+       <strong>
+        Zero Trust model:
+       </strong>
+       no “safe inside”.
                         Every request is treated as if it came from an untrusted network.
-                    </li>
-                    <li>
-                        <strong>Micro-segmentation</strong> builds “internal perimeters” around sensitive
+      </li>
+      <li>
+       <strong>
+        Micro-segmentation
+       </strong>
+       builds “internal perimeters” around sensitive
                         components so that lateral movement is hard.
-                    </li>
-                    <li>
-                        <strong>Continuous verification</strong> prevents “once authenticated, forever trusted”
+      </li>
+      <li>
+       <strong>
+        Continuous verification
+       </strong>
+       prevents “once authenticated, forever trusted”
                         scenarios, particularly important for long-lived sessions and privileged users.
-                    </li>
-                </ul>
-
-                <div class="appsec-widget-card" data-widget="ThreatModel"
-                    data-threatmodel-title="Zero Trust – Core Assets & Trust Boundaries">
-                    <h4>Interactive Threat Modeling Prompt</h4>
-                    <p>
-                        Use your threat modeling widget here (if configured) to explore:
-                        <em>“What happens if an attacker gains a foothold inside one subnet or service?”</em>
-                    </p>
-                </div>
-            </section>
-
-            <!-- 2. Intuitive Hook -->
-            <section id="section-2" class="appsec-section">
-                <h2>2. Intuitive Hook</h2>
-
-                <h3>2.1 Analogy: Airport Security vs. Old Office Building</h3>
-                <p>
-                    Think of two buildings:
-                </p>
-                <ul>
-                    <li>
-                        <strong>Old office building (traditional perimeter)</strong> –
+      </li>
+     </ul>
+     <div class="callout callout-info" data-threatmodel-title="Zero Trust – Core Assets &amp; Trust Boundaries" data-widget="ThreatModel">
+      <h4>
+       Interactive Threat Modeling Prompt
+      </h4>
+      <p>
+       Use your threat modeling widget here (if configured) to explore:
+       <em>
+        “What happens if an attacker gains a foothold inside one subnet or service?”
+       </em>
+      </p>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-2">
+    <div class="card-header">
+     2. Intuitive Hook
+    </div>
+    <div class="card-body">
+     <p>
+      This section is expanded in the subsections below.
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-2-1">
+    <div class="card-header">
+     2.1 Analogy: Airport Security vs. Old Office Building
+    </div>
+    <div class="card-body">
+     <p>
+      Think of two buildings:
+     </p>
+     <ul>
+      <li>
+       <strong>
+        Old office building (traditional perimeter)
+       </strong>
+       –
                         Once you get past the receptionist, you can walk into almost any floor, office,
                         or meeting room without showing ID again. If someone tailgates or steals a badge,
                         they can roam freely.
-                    </li>
-                    <li>
-                        <strong>Modern airport (Zero Trust-ish)</strong> –
+      </li>
+      <li>
+       <strong>
+        Modern airport (Zero Trust-ish)
+       </strong>
+       –
                         You are continuously checked:
-                        <ul>
-                            <li>ID + boarding pass at check-in.</li>
-                            <li>Security checkpoint scans your luggage and your body.</li>
-                            <li>Sometimes additional screening at the gate.</li>
-                            <li>Restricted areas (cockpit, staff-only zones) require additional, role-specific
-                                credentials.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <p>
-                    <strong>Micro-segmentation</strong> is like having many different secured zones:
+       <ul>
+        <li>
+         ID + boarding pass at check-in.
+        </li>
+        <li>
+         Security checkpoint scans your luggage and your body.
+        </li>
+        <li>
+         Sometimes additional screening at the gate.
+        </li>
+        <li>
+         Restricted areas (cockpit, staff-only zones) require additional, role-specific
+                                credentials.
+        </li>
+       </ul>
+      </li>
+     </ul>
+     <p>
+      <strong>
+       Micro-segmentation
+      </strong>
+      is like having many different secured zones:
                     public area, departures hall, gates, staff corridors, cargo, cockpit. You might be allowed
                     into one gate area, but not into the cockpit or cargo zone.
-                </p>
-
-                <p>
-                    <strong>Continuous verification</strong> is all the ongoing checks:
-                </p>
-                <ul>
-                    <li>Boarding passes re-scanned at the gate.</li>
-                    <li>Random bag checks at boarding.</li>
-                    <li>Staff badges re-checked when entering secure corridors.</li>
-                </ul>
-
-                <div class="appsec-callout tip">
-                    <strong>Memory hook:</strong>
-                    When you think “Zero Trust”, remember: <em>“airports, not old office buildings”</em>.
+     </p>
+     <p>
+      <strong>
+       Continuous verification
+      </strong>
+      is all the ongoing checks:
+     </p>
+     <ul>
+      <li>
+       Boarding passes re-scanned at the gate.
+      </li>
+      <li>
+       Random bag checks at boarding.
+      </li>
+      <li>
+       Staff badges re-checked when entering secure corridors.
+      </li>
+     </ul>
+     <div class="callout callout-success">
+      <strong>
+       Memory hook:
+      </strong>
+      When you think “Zero Trust”, remember:
+      <em>
+       “airports, not old office buildings”
+      </em>
+      .
                     Lots of zones, lots of checks, and role-specific access everywhere.
-                </div>
-
-                <h3>2.2 Mapping Analogy → System Design</h3>
-                <ul>
-                    <li>Airport building → Your cloud/network environment.</li>
-                    <li>
-                        Boarding pass + ID → User tokens (OIDC ID token, access token, session, device posture).
-                    </li>
-                    <li>Gate scanners → API gateways, identity-aware proxies, service mesh sidecars.</li>
-                    <li>Restricted zones → Micro-segments (per-service, per-tenant, per-data-domain).</li>
-                    <li>Random checks → Continuous session checks, anomaly detection, just-in-time access.</li>
-                </ul>
-
-                <p>
-                    If you keep this analogy in mind, Zero Trust design choices become more intuitive:
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-2-2">
+    <div class="card-header">
+     2.2 Mapping Analogy → System Design
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>
+       Airport building → Your cloud/network environment.
+      </li>
+      <li>
+       Boarding pass + ID → User tokens (OIDC ID token, access token, session, device posture).
+      </li>
+      <li>
+       Gate scanners → API gateways, identity-aware proxies, service mesh sidecars.
+      </li>
+      <li>
+       Restricted zones → Micro-segments (per-service, per-tenant, per-data-domain).
+      </li>
+      <li>
+       Random checks → Continuous session checks, anomaly detection, just-in-time access.
+      </li>
+     </ul>
+     <p>
+      If you keep this analogy in mind, Zero Trust design choices become more intuitive:
                     every new “zone” or “role” needs its own access checks and segmentation.
-                </p>
-            </section>
-
-            <!-- 3. Mental Model — “Why → How → What-If” -->
-            <section id="section-3" class="appsec-section">
-                <h2>3. Mental Model — “Why → How → What-If”</h2>
-
-                <h3>3.1 Healthy Baseline: A Well-Designed Zero Trust SaaS</h3>
-                <p>Consider a B2B multi-tenant SaaS:</p>
-                <ul>
-                    <li>Tenants access via SPA/mobile → API gateway → microservices → DBs/queues.</li>
-                    <li>All user and service access is mediated by strong identity and policy.</li>
-                    <li>Network is segmented: only required east-west connections are allowed.</li>
-                    <li>Every request is authenticated and authorized close to the resource.</li>
-                    <li>Risk signals (impossible travel, abnormal API usage, device hygiene) adjust policies.</li>
-                </ul>
-
-                <p>Security goals:</p>
-                <ul>
-                    <li>
-                        <strong>Confidentiality</strong> – Data is only accessible to the right tenant, user,
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-3">
+    <div class="card-header">
+     3. Mental Model — “Why → How → What-If”
+    </div>
+    <div class="card-body">
+     <p>
+      This section is expanded in the subsections below.
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-3-1">
+    <div class="card-header">
+     3.1 Healthy Baseline: A Well-Designed Zero Trust SaaS
+    </div>
+    <div class="card-body">
+     <p>
+      Consider a B2B multi-tenant SaaS:
+     </p>
+     <ul>
+      <li>
+       Tenants access via SPA/mobile → API gateway → microservices → DBs/queues.
+      </li>
+      <li>
+       All user and service access is mediated by strong identity and policy.
+      </li>
+      <li>
+       Network is segmented: only required east-west connections are allowed.
+      </li>
+      <li>
+       Every request is authenticated and authorized close to the resource.
+      </li>
+      <li>
+       Risk signals (impossible travel, abnormal API usage, device hygiene) adjust policies.
+      </li>
+     </ul>
+     <p>
+      Security goals:
+     </p>
+     <ul>
+      <li>
+       <strong>
+        Confidentiality
+       </strong>
+       – Data is only accessible to the right tenant, user,
                         and service, even if part of the network is compromised.
-                    </li>
-                    <li>
-                        <strong>Integrity</strong> – Actions and changes are traceable to authenticated entities,
+      </li>
+      <li>
+       <strong>
+        Integrity
+       </strong>
+       – Actions and changes are traceable to authenticated entities,
                         and unauthorized tampering is blocked by policy at each hop.
-                    </li>
-                    <li>
-                        <strong>Availability</strong> – Segmentation limits blast radius of DDoS and abuse
+      </li>
+      <li>
+       <strong>
+        Availability
+       </strong>
+       – Segmentation limits blast radius of DDoS and abuse
                         (e.g., one noisy tenant or compromised service can’t easily take down the whole platform).
-                    </li>
-                    <li>
-                        <strong>Abuse prevention</strong> – Rate limits, behavioral analytics, and scoped access
+      </li>
+      <li>
+       <strong>
+        Abuse prevention
+       </strong>
+       – Rate limits, behavioral analytics, and scoped access
                         prevent bulk scraping, mass enumeration, or privilege escalation.
-                    </li>
-                </ul>
-
-                <h3>3.2 How It Fits into a Real Multi-Tenant System</h3>
-
-                <pre class="appsec-ascii">
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-3-2">
+    <div class="card-header">
+     3.2 How It Fits into a Real Multi-Tenant System
+    </div>
+    <div class="card-body">
+     <pre>
 +-----------+       +------------------+        +-------------------+
-|  Browser  |-----> |  Identity-Aware  | -----> |   Microservices   |
+|  Browser  |-----&gt; |  Identity-Aware  | -----&gt; |   Microservices   |
 |  / Mobile |       |  Edge (API GW)   |        | (user, billing,   |
 +-----------+       +------------------+        |  files, search)   |
                     ^        ^                 +---------+---------+
@@ -262,262 +465,499 @@
 |         IdP / SSO          |
 +----------------------------+
         </pre>
-
-                <ul>
-                    <li>
-                        The <strong>edge</strong> enforces user identity (tokens, device posture), tenant
+     <ul>
+      <li>
+       The
+       <strong>
+        edge
+       </strong>
+       enforces user identity (tokens, device posture), tenant
                         boundaries, and high-level policies.
-                    </li>
-                    <li>
-                        <strong>Service-to-service</strong> calls are authenticated (mTLS, workload identities)
+      </li>
+      <li>
+       <strong>
+        Service-to-service
+       </strong>
+       calls are authenticated (mTLS, workload identities)
                         and authorized (service-level policies, scopes).
-                    </li>
-                    <li>
-                        Network policies (SGs/NACLs, mesh policies) implement <strong>micro-segmentation</strong>.
-                    </li>
-                    <li>
-                        <strong>Continuous verification</strong> may revoke or tighten access mid-session based
+      </li>
+      <li>
+       Network policies (SGs/NACLs, mesh policies) implement
+       <strong>
+        micro-segmentation
+       </strong>
+       .
+      </li>
+      <li>
+       <strong>
+        Continuous verification
+       </strong>
+       may revoke or tighten access mid-session based
                         on risk – e.g., requiring re-auth for sensitive actions.
-                    </li>
-                </ul>
-
-                <h3>3.3 What-If It Fails or Is Ignored</h3>
-
-                <div class="appsec-grid two-columns">
-                    <div>
-                        <h4>No Micro-segmentation</h4>
-                        <ul>
-                            <li>Flat network: once inside, every service can talk to every other service.</li>
-                            <li>
-                                Attacker compromises a low-value service → pivots laterally into high-value targets
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-3-3">
+    <div class="card-header">
+     3.3 What-If It Fails or Is Ignored
+    </div>
+    <div class="card-body">
+     <div class="grid grid-2">
+      <div>
+       <h4>
+        No Micro-segmentation
+       </h4>
+       <ul>
+        <li>
+         Flat network: once inside, every service can talk to every other service.
+        </li>
+        <li>
+         Attacker compromises a low-value service → pivots laterally into high-value targets
                                 (billing DB, secrets store).
-                            </li>
-                            <li>
-                                Compromised VPN account can scan the entire VPC, brute-force credentials,
+        </li>
+        <li>
+         Compromised VPN account can scan the entire VPC, brute-force credentials,
                                 and exploit unpatched internal services.
-                            </li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4>No Continuous Verification</h4>
-                        <ul>
-                            <li>Long-lived access tokens or VPN sessions never re-evaluated.</li>
-                            <li>
-                                Stolen token/session cookie from an engineer laptop gives persistent access to
+        </li>
+       </ul>
+      </div>
+      <div>
+       <h4>
+        No Continuous Verification
+       </h4>
+       <ul>
+        <li>
+         Long-lived access tokens or VPN sessions never re-evaluated.
+        </li>
+        <li>
+         Stolen token/session cookie from an engineer laptop gives persistent access to
                                 prod services.
-                            </li>
-                            <li>
-                                Account compromise goes undetected because there’s no behavioral or risk-based checks.
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <h4>Realistic Blast Radius Without Zero Trust</h4>
-                <ul>
-                    <li>
-                        Single phished VPN account ⇒ attacker can:
-                        <ul>
-                            <li>Access internal admin panels.</li>
-                            <li>Read internal wikis and logs with customer data.</li>
-                            <li>Scan internal services for RCE or deserialization bugs.</li>
-                            <li>Move laterally to CI/CD, secrets, or database management consoles.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        Single compromised microservice ⇒ attacker can:
-                        <ul>
-                            <li>Call all other services (no per-service auth).</li>
-                            <li>Query all databases from an internal IP.</li>
-                            <li>Abuse background jobs and webhooks to exfiltrate data.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <div class="appsec-callout danger">
-                    <strong>Attacker chain:</strong>
-                    No Zero Trust →
+        </li>
+        <li>
+         Account compromise goes undetected because there’s no behavioral or risk-based checks.
+        </li>
+       </ul>
+      </div>
+     </div>
+     <h4>
+      Realistic Blast Radius Without Zero Trust
+     </h4>
+     <ul>
+      <li>
+       Single phished VPN account ⇒ attacker can:
+       <ul>
+        <li>
+         Access internal admin panels.
+        </li>
+        <li>
+         Read internal wikis and logs with customer data.
+        </li>
+        <li>
+         Scan internal services for RCE or deserialization bugs.
+        </li>
+        <li>
+         Move laterally to CI/CD, secrets, or database management consoles.
+        </li>
+       </ul>
+      </li>
+      <li>
+       Single compromised microservice ⇒ attacker can:
+       <ul>
+        <li>
+         Call all other services (no per-service auth).
+        </li>
+        <li>
+         Query all databases from an internal IP.
+        </li>
+        <li>
+         Abuse background jobs and webhooks to exfiltrate data.
+        </li>
+       </ul>
+      </li>
+     </ul>
+     <div class="callout callout-danger">
+      <strong>
+       Attacker chain:
+      </strong>
+      No Zero Trust →
                     compromised endpoint →
                     flat internal network →
                     lateral movement →
                     data exfiltration →
                     persistent backdoors.
-                </div>
-            </section>
-
-            <!-- 4. Deep Explanation (Step-by-Step) -->
-            <section id="section-4" class="appsec-section">
-                <h2>4. Deep Explanation (Step-by-Step)</h2>
-
-                <h3>4.1 The Core Loop of Zero Trust</h3>
-                <p>
-                    At its heart, Zero Trust is a repeated decision loop that runs for
-                    <em>every</em> access attempt:
-                </p>
-
-                <ol>
-                    <li><strong>Identify</strong> – Who/what is making the request?</li>
-                    <li><strong>Validate</strong> – Is the identity genuine and current?</li>
-                    <li><strong>Evaluate context</strong> – Where from? Which device? What risk level?</li>
-                    <li><strong>Authorize</strong> – What exactly is allowed, for how long, under what conditions?</li>
-                    <li><strong>Enforce</strong> – Apply the decision at the closest enforcement point.</li>
-                    <li><strong>Monitor</strong> – Log, inspect, and feed behavior to analytics/risk engine.</li>
-                    <li><strong>Re-evaluate</strong> – Adjust decisions as context changes (risk ↑, config change,
-                        incident).</li>
-                </ol>
-
-                <p>
-                    This loop applies to:
-                </p>
-                <ul>
-                    <li>User → App (e.g., browser to API).</li>
-                    <li>Service → Service (microservice calls).</li>
-                    <li>Job → Resource (background workers, schedulers, webhooks).</li>
-                </ul>
-
-                <h3>4.2 Types of Micro-Segmentation</h3>
-                <p>
-                    Micro-segmentation can be implemented at several layers, often in combination:
-                </p>
-
-                <ul>
-                    <li>
-                        <strong>Network-based segmentation</strong> (L3/L4):
-                        <ul>
-                            <li>Separate VPC subnets or VNets for frontend, backend, data, admin.</li>
-                            <li>Security groups/NACLs that allow only specific ports between segments.</li>
-                            <li>Host firewalls (e.g., <code>iptables</code>, cloud firewall rules).</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Identity-based segmentation</strong> (L7, identity-aware):
-                        <ul>
-                            <li>Policies based on service identities (SPIFFE IDs, IAM roles, service accounts).</li>
-                            <li>mTLS between services with mutual certificate verification.</li>
-                            <li>Service mesh authorization policies (e.g., allow only <code>payment-svc</code> to call
-                                <code>card-vault-svc</code>).</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Application-level segmentation</strong>:
-                        <ul>
-                            <li>Tenant isolation in application logic (tenant IDs, row-level security).</li>
-                            <li>Separate schemas or databases per tenant tier.</li>
-                            <li>Dedicated workers/queues per tenant or per risk class.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Data-level segmentation</strong>:
-                        <ul>
-                            <li>Access control at the storage layer (KMS keys per environment/tenant).</li>
-                            <li>Bucket/object policies binding identity to specific data prefixes.</li>
-                            <li>Attribute-based access control (ABAC) on sensitive fields.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <div class="appsec-callout note">
-                    <strong>Key idea:</strong> Zero Trust is strongest when multiple segmentation layers
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-4">
+    <div class="card-header">
+     4. Deep Explanation (Step-by-Step)
+    </div>
+    <div class="card-body">
+     <p>
+      This section is expanded in the subsections below.
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-4-1">
+    <div class="card-header">
+     4.1 The Core Loop of Zero Trust
+    </div>
+    <div class="card-body">
+     <p>
+      At its heart, Zero Trust is a repeated decision loop that runs for
+      <em>
+       every
+      </em>
+      access attempt:
+     </p>
+     <ol>
+      <li>
+       <strong>
+        Identify
+       </strong>
+       – Who/what is making the request?
+      </li>
+      <li>
+       <strong>
+        Validate
+       </strong>
+       – Is the identity genuine and current?
+      </li>
+      <li>
+       <strong>
+        Evaluate context
+       </strong>
+       – Where from? Which device? What risk level?
+      </li>
+      <li>
+       <strong>
+        Authorize
+       </strong>
+       – What exactly is allowed, for how long, under what conditions?
+      </li>
+      <li>
+       <strong>
+        Enforce
+       </strong>
+       – Apply the decision at the closest enforcement point.
+      </li>
+      <li>
+       <strong>
+        Monitor
+       </strong>
+       – Log, inspect, and feed behavior to analytics/risk engine.
+      </li>
+      <li>
+       <strong>
+        Re-evaluate
+       </strong>
+       – Adjust decisions as context changes (risk ↑, config change,
+                        incident).
+      </li>
+     </ol>
+     <p>
+      This loop applies to:
+     </p>
+     <ul>
+      <li>
+       User → App (e.g., browser to API).
+      </li>
+      <li>
+       Service → Service (microservice calls).
+      </li>
+      <li>
+       Job → Resource (background workers, schedulers, webhooks).
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-4-2">
+    <div class="card-header">
+     4.2 Types of Micro-Segmentation
+    </div>
+    <div class="card-body">
+     <p>
+      Micro-segmentation can be implemented at several layers, often in combination:
+     </p>
+     <ul>
+      <li>
+       <strong>
+        Network-based segmentation
+       </strong>
+       (L3/L4):
+       <ul>
+        <li>
+         Separate VPC subnets or VNets for frontend, backend, data, admin.
+        </li>
+        <li>
+         Security groups/NACLs that allow only specific ports between segments.
+        </li>
+        <li>
+         Host firewalls (e.g.,
+         <code>
+          iptables
+         </code>
+         , cloud firewall rules).
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Identity-based segmentation
+       </strong>
+       (L7, identity-aware):
+       <ul>
+        <li>
+         Policies based on service identities (SPIFFE IDs, IAM roles, service accounts).
+        </li>
+        <li>
+         mTLS between services with mutual certificate verification.
+        </li>
+        <li>
+         Service mesh authorization policies (e.g., allow only
+         <code>
+          payment-svc
+         </code>
+         to call
+         <code>
+          card-vault-svc
+         </code>
+         ).
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Application-level segmentation
+       </strong>
+       :
+       <ul>
+        <li>
+         Tenant isolation in application logic (tenant IDs, row-level security).
+        </li>
+        <li>
+         Separate schemas or databases per tenant tier.
+        </li>
+        <li>
+         Dedicated workers/queues per tenant or per risk class.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Data-level segmentation
+       </strong>
+       :
+       <ul>
+        <li>
+         Access control at the storage layer (KMS keys per environment/tenant).
+        </li>
+        <li>
+         Bucket/object policies binding identity to specific data prefixes.
+        </li>
+        <li>
+         Attribute-based access control (ABAC) on sensitive fields.
+        </li>
+       </ul>
+      </li>
+     </ul>
+     <div class="callout callout-info">
+      <strong>
+       Key idea:
+      </strong>
+      Zero Trust is strongest when multiple segmentation layers
                     align: network, identity, application, and data all point towards the same isolation
                     boundaries.
-                </div>
-
-                <h3>4.3 Continuous Verification in Practice</h3>
-                <p>Continuous verification is not just “re-auth once in a while”. It includes:</p>
-                <ul>
-                    <li>
-                        <strong>Session risk scoring</strong> – Evaluate ongoing behavior:
-                        <ul>
-                            <li>Volume anomalies (sudden spike of export/download actions).</li>
-                            <li>Geolocation anomalies (impossible travel).</li>
-                            <li>Time-of-day anomalies (admin actions at unusual times).</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Device posture checks</strong> (where applicable):
-                        <ul>
-                            <li>Is the device managed?</li>
-                            <li>Is disk encryption enabled?</li>
-                            <li>Is OS up to date?</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Step-up authentication</strong>:
-                        <ul>
-                            <li>Requiring MFA for high-risk actions (e.g., changing billing owner, generating access
-                                tokens).</li>
-                            <li>Re-evaluating access scopes when risk increases.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Revocation & policy change propagation</strong>:
-                        <ul>
-                            <li>Quick revocation of tokens when an account is compromised or offboarded.</li>
-                            <li>Near real-time propagation of new policies to proxies/sidecars.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3>4.4 Subtle Edge Cases & Confusing Behaviors</h3>
-                <ul>
-                    <li>
-                        <strong>“Internal = trusted” assumptions</strong> –
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-4-3">
+    <div class="card-header">
+     4.3 Continuous Verification in Practice
+    </div>
+    <div class="card-body">
+     <p>
+      Continuous verification is not just “re-auth once in a while”. It includes:
+     </p>
+     <ul>
+      <li>
+       <strong>
+        Session risk scoring
+       </strong>
+       – Evaluate ongoing behavior:
+       <ul>
+        <li>
+         Volume anomalies (sudden spike of export/download actions).
+        </li>
+        <li>
+         Geolocation anomalies (impossible travel).
+        </li>
+        <li>
+         Time-of-day anomalies (admin actions at unusual times).
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Device posture checks
+       </strong>
+       (where applicable):
+       <ul>
+        <li>
+         Is the device managed?
+        </li>
+        <li>
+         Is disk encryption enabled?
+        </li>
+        <li>
+         Is OS up to date?
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Step-up authentication
+       </strong>
+       :
+       <ul>
+        <li>
+         Requiring MFA for high-risk actions (e.g., changing billing owner, generating access
+                                tokens).
+        </li>
+        <li>
+         Re-evaluating access scopes when risk increases.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Revocation &amp; policy change propagation
+       </strong>
+       :
+       <ul>
+        <li>
+         Quick revocation of tokens when an account is compromised or offboarded.
+        </li>
+        <li>
+         Near real-time propagation of new policies to proxies/sidecars.
+        </li>
+       </ul>
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-4-4">
+    <div class="card-header">
+     4.4 Subtle Edge Cases &amp; Confusing Behaviors
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>
+       <strong>
+        “Internal = trusted” assumptions
+       </strong>
+       –
                         Engineers may still mentally treat anything inside the VPC as safe:
                         they skip auth on internal admin endpoints or allow broad DB access
-                        “because it’s only reachable from the VPN”. In Zero Trust, internal traffic is <em>not</em>
-                        automatically trusted.
-                    </li>
-                    <li>
-                        <strong>Bypass via management planes</strong> –
+                        “because it’s only reachable from the VPN”. In Zero Trust, internal traffic is
+       <em>
+        not
+       </em>
+       automatically trusted.
+      </li>
+      <li>
+       <strong>
+        Bypass via management planes
+       </strong>
+       –
                         Even when service-to-service traffic is locked down, cloud management endpoints
                         (e.g., DB consoles, container registries, CI/CD) may bypass Zero Trust if not integrated
-                        with the same identity & policy controls.
-                    </li>
-                    <li>
-                        <strong>Break-glass accounts</strong> –
+                        with the same identity &amp; policy controls.
+      </li>
+      <li>
+       <strong>
+        Break-glass accounts
+       </strong>
+       –
                         Emergency accounts sometimes bypass normal controls but then stay in use or
                         get reused for convenience, eroding Zero Trust posture.
-                    </li>
-                    <li>
-                        <strong>Token sprawl</strong> –
+      </li>
+      <li>
+       <strong>
+        Token sprawl
+       </strong>
+       –
                         Introducing Zero Trust without proper token/scopes design can push teams to
                         issue very broad tokens (“admin all the things”) because it’s easier.
                         This technically “fits” the model but defeats the point.
-                    </li>
-                    <li>
-                        <strong>Service discovery vs. segmentation</strong> –
+      </li>
+      <li>
+       <strong>
+        Service discovery vs. segmentation
+       </strong>
+       –
                         Service mesh or discovery tools may auto-register services:
                         if not paired with strict policies, new services may be reachable by default
                         and only locked down later (if at all).
-                    </li>
-                </ul>
-
-                <h3>4.5 Putting It All Together</h3>
-                <p>
-                    The “theory” of Zero Trust becomes concrete when you always ask three questions
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-4-5">
+    <div class="card-header">
+     4.5 Putting It All Together
+    </div>
+    <div class="card-body">
+     <p>
+      The “theory” of Zero Trust becomes concrete when you always ask three questions
                     for every interaction in your system:
-                </p>
-                <ol>
-                    <li><strong>Who/what is this?</strong> (identity)</li>
-                    <li><strong>What are they allowed to do?</strong> (authorization)</li>
-                    <li><strong>Should they still be allowed right now?</strong> (context + continuous verification)
-                    </li>
-                </ol>
-                <p>
-                    If your architecture cannot reliably answer all three for each critical interaction,
+     </p>
+     <ol>
+      <li>
+       <strong>
+        Who/what is this?
+       </strong>
+       (identity)
+      </li>
+      <li>
+       <strong>
+        What are they allowed to do?
+       </strong>
+       (authorization)
+      </li>
+      <li>
+       <strong>
+        Should they still be allowed right now?
+       </strong>
+       (context + continuous verification)
+      </li>
+     </ol>
+     <p>
+      If your architecture cannot reliably answer all three for each critical interaction,
                     you have places where Zero Trust is not yet implemented (and likely where attackers will aim).
-                </p>
-
-            </section>
-
-            <!-- 5. Real-World Context & Interactions -->
-            <section id="section-5" class="appsec-section">
-                <h2>5. Real-World Context & Interactions</h2>
-
-                <h3>5.1 Scenario: Multi-Tenant SaaS with Microservices</h3>
-                <p>We’ll use this reference architecture:</p>
-
-                <pre class="appsec-ascii">
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-5">
+    <div class="card-header">
+     5. Real-World Context &amp; Interactions
+    </div>
+    <div class="card-body">
+     <p>
+      This section is expanded in the subsections below.
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-5-1">
+    <div class="card-header">
+     5.1 Scenario: Multi-Tenant SaaS with Microservices
+    </div>
+    <div class="card-body">
+     <p>
+      We’ll use this reference architecture:
+     </p>
+     <pre>
           Internet
              |
       [ SPA / Mobile ]
@@ -539,162 +979,315 @@
    +---------+   +----------+  | storage   |
                                +-----------+
         </pre>
-
-                <p>
-                    <strong>Zero Trust controls</strong> are applied at:
-                </p>
-                <ul>
-                    <li>API gateway (user authN/Z, tenant isolation, rate limiting).</li>
-                    <li>Service mesh (mTLS, service-to-service authZ policies).</li>
-                    <li>Network policies (segmented subnets per service tier).</li>
-                    <li>Database/storage ACLs (only specific services can access specific DBs/buckets).</li>
-                    <li>Monitoring & analytics (behavioral detection, continuous verification).</li>
-                </ul>
-
-                <h3>5.2 Happy Path: Legitimate Tenant Access</h3>
-                <ol>
-                    <li>
-                        <strong>User login</strong>:
-                        <ul>
-                            <li>User signs in via IdP (OIDC). IdP issues ID token + access token with tenant, roles, and
-                                claims.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>SPA → API Gateway</strong>:
-                        <ul>
-                            <li>SPA includes access token in Authorization header.</li>
-                            <li>API gateway verifies token signature, audience, expiry, and tenant claim.</li>
-                            <li>Gateway applies basic per-tenant rate limiting and scopes (e.g., read vs. write).</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Gateway → user-svc</strong>:
-                        <ul>
-                            <li>Gateway calls <code>user-svc</code> over mTLS with its own workload identity.</li>
-                            <li>Service mesh checks mTLS cert and verifies that “api-gateway” is allowed to call
-                                “user-svc”.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>user-svc → db-users</strong>:
-                        <ul>
-                            <li><code>user-svc</code> uses its DB credentials (or IAM role) to query only its own DB.
-                            </li>
-                            <li>Tenant filters/row-level security ensure tenant A can’t see tenant B’s users.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Continuous checks</strong>:
-                        <ul>
-                            <li>API gateway logs correlate API usage per user and tenant.</li>
-                            <li>Anomaly detection flags unusual volume or access patterns.</li>
-                            <li>If risk rises (e.g., new device + suspicious IP), some requests require step-up auth.
-                            </li>
-                        </ul>
-                    </li>
-                </ol>
-
-                <div class="appsec-callout success">
-                    <strong>Result:</strong> User sees only their own tenant’s data, from a restricted path of
+     <p>
+      <strong>
+       Zero Trust controls
+      </strong>
+      are applied at:
+     </p>
+     <ul>
+      <li>
+       API gateway (user authN/Z, tenant isolation, rate limiting).
+      </li>
+      <li>
+       Service mesh (mTLS, service-to-service authZ policies).
+      </li>
+      <li>
+       Network policies (segmented subnets per service tier).
+      </li>
+      <li>
+       Database/storage ACLs (only specific services can access specific DBs/buckets).
+      </li>
+      <li>
+       Monitoring &amp; analytics (behavioral detection, continuous verification).
+      </li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-5-2">
+    <div class="card-header">
+     5.2 Happy Path: Legitimate Tenant Access
+    </div>
+    <div class="card-body">
+     <ol>
+      <li>
+       <strong>
+        User login
+       </strong>
+       :
+       <ul>
+        <li>
+         User signs in via IdP (OIDC). IdP issues ID token + access token with tenant, roles, and
+                                claims.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        SPA → API Gateway
+       </strong>
+       :
+       <ul>
+        <li>
+         SPA includes access token in Authorization header.
+        </li>
+        <li>
+         API gateway verifies token signature, audience, expiry, and tenant claim.
+        </li>
+        <li>
+         Gateway applies basic per-tenant rate limiting and scopes (e.g., read vs. write).
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Gateway → user-svc
+       </strong>
+       :
+       <ul>
+        <li>
+         Gateway calls
+         <code>
+          user-svc
+         </code>
+         over mTLS with its own workload identity.
+        </li>
+        <li>
+         Service mesh checks mTLS cert and verifies that “api-gateway” is allowed to call
+                                “user-svc”.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        user-svc → db-users
+       </strong>
+       :
+       <ul>
+        <li>
+         <code>
+          user-svc
+         </code>
+         uses its DB credentials (or IAM role) to query only its own DB.
+        </li>
+        <li>
+         Tenant filters/row-level security ensure tenant A can’t see tenant B’s users.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Continuous checks
+       </strong>
+       :
+       <ul>
+        <li>
+         API gateway logs correlate API usage per user and tenant.
+        </li>
+        <li>
+         Anomaly detection flags unusual volume or access patterns.
+        </li>
+        <li>
+         If risk rises (e.g., new device + suspicious IP), some requests require step-up auth.
+        </li>
+       </ul>
+      </li>
+     </ol>
+     <div class="callout callout-success">
+      <strong>
+       Result:
+      </strong>
+      User sees only their own tenant’s data, from a restricted path of
                     services, each hop governed by identity-aware policies and network micro-segmentation.
-                </div>
-
-                <h3>5.3 Attacker Path: Compromised Low-Privilege Service</h3>
-                <p>
-                    Now walk the same architecture from an attacker’s perspective.
-                </p>
-
-                <ol>
-                    <li>
-                        <strong>Initial breach</strong>:
-                        <ul>
-                            <li>Attacker finds an RCE bug in <code>file-svc</code> (e.g., vulnerable image library).
-                            </li>
-                            <li>They gain a shell on the <code>file-svc</code> pod/VM.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>What would happen in a flat network?</strong>
-                        <ul>
-                            <li>The attacker could scan the cluster/VPC.</li>
-                            <li>Directly connect to <code>db-billing</code>, <code>db-users</code>, and internal admin
-                                panels.</li>
-                            <li>Steal secrets, move to CI/CD runners, or—worst-case—gain full prod control.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>What happens under Zero Trust + micro-segmentation?</strong>
-                        <ul>
-                            <li>Network policies allow <code>file-svc</code> only to:
-                                <ul>
-                                    <li>Talk to <code>object-storage</code>.</li>
-                                    <li>Call a limited list of services (e.g., <code>user-svc</code> for metadata), via
-                                        mesh.</li>
-                                </ul>
-                            </li>
-                            <li>Service mesh enforces mTLS: the attacker cannot impersonate another service without its
-                                identity cert.</li>
-                            <li><code>file-svc</code> has no DB credentials; its service account has limited
-                                permissions.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Continuous verification catches anomalies</strong>:
-                        <ul>
-                            <li>Unusual outbound traffic from <code>file-svc</code> is detected by anomaly detection.
-                            </li>
-                            <li>New connections to disallowed destinations are blocked by policy and logged.</li>
-                            <li>On detection, security can quarantine the service or workload via orchestrator.</li>
-                        </ul>
-                    </li>
-                </ol>
-
-                <div class="appsec-callout danger">
-                    <strong>Attacker experience under Zero Trust:</strong>
-                    They compromise one service and find themselves in a small, locked room instead of a
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-5-3">
+    <div class="card-header">
+     5.3 Attacker Path: Compromised Low-Privilege Service
+    </div>
+    <div class="card-body">
+     <p>
+      Now walk the same architecture from an attacker’s perspective.
+     </p>
+     <ol>
+      <li>
+       <strong>
+        Initial breach
+       </strong>
+       :
+       <ul>
+        <li>
+         Attacker finds an RCE bug in
+         <code>
+          file-svc
+         </code>
+         (e.g., vulnerable image library).
+        </li>
+        <li>
+         They gain a shell on the
+         <code>
+          file-svc
+         </code>
+         pod/VM.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        What would happen in a flat network?
+       </strong>
+       <ul>
+        <li>
+         The attacker could scan the cluster/VPC.
+        </li>
+        <li>
+         Directly connect to
+         <code>
+          db-billing
+         </code>
+         ,
+         <code>
+          db-users
+         </code>
+         , and internal admin
+                                panels.
+        </li>
+        <li>
+         Steal secrets, move to CI/CD runners, or—worst-case—gain full prod control.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        What happens under Zero Trust + micro-segmentation?
+       </strong>
+       <ul>
+        <li>
+         Network policies allow
+         <code>
+          file-svc
+         </code>
+         only to:
+         <ul>
+          <li>
+           Talk to
+           <code>
+            object-storage
+           </code>
+           .
+          </li>
+          <li>
+           Call a limited list of services (e.g.,
+           <code>
+            user-svc
+           </code>
+           for metadata), via
+                                        mesh.
+          </li>
+         </ul>
+        </li>
+        <li>
+         Service mesh enforces mTLS: the attacker cannot impersonate another service without its
+                                identity cert.
+        </li>
+        <li>
+         <code>
+          file-svc
+         </code>
+         has no DB credentials; its service account has limited
+                                permissions.
+        </li>
+       </ul>
+      </li>
+      <li>
+       <strong>
+        Continuous verification catches anomalies
+       </strong>
+       :
+       <ul>
+        <li>
+         Unusual outbound traffic from
+         <code>
+          file-svc
+         </code>
+         is detected by anomaly detection.
+        </li>
+        <li>
+         New connections to disallowed destinations are blocked by policy and logged.
+        </li>
+        <li>
+         On detection, security can quarantine the service or workload via orchestrator.
+        </li>
+       </ul>
+      </li>
+     </ol>
+     <div class="callout callout-danger">
+      <strong>
+       Attacker experience under Zero Trust:
+      </strong>
+      They compromise one service and find themselves in a small, locked room instead of a
                     giant hallway of unlocked doors.
-                </div>
-
-                <h3>5.4 Interactions with Other Security Controls</h3>
-                <ul>
-                    <li>
-                        <strong>CI/CD</strong> – Pipelines deploy network policies, mesh policies, and service
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-5-4">
+    <div class="card-header">
+     5.4 Interactions with Other Security Controls
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>
+       <strong>
+        CI/CD
+       </strong>
+       – Pipelines deploy network policies, mesh policies, and service
                         identities
                         alongside application code. Misconfigurations here can weaken Zero Trust or break apps.
-                    </li>
-                    <li>
-                        <strong>Secrets management</strong> – Service identities often fetch short-lived secrets or
+      </li>
+      <li>
+       <strong>
+        Secrets management
+       </strong>
+       – Service identities often fetch short-lived secrets or
                         tokens;
                         Zero Trust expects that secrets are not statically baked into images or configs.
-                    </li>
-                    <li>
-                        <strong>Logging & observability</strong> – To be effective, continuous verification needs
+      </li>
+      <li>
+       <strong>
+        Logging &amp; observability
+       </strong>
+       – To be effective, continuous verification needs
                         high-quality logs (per request, per identity, per tenant) and good correlation across layers.
-                    </li>
-                    <li>
-                        <strong>Incident response</strong> – Zero Trust micro-segmentation simplifies containment:
+      </li>
+      <li>
+       <strong>
+        Incident response
+       </strong>
+       – Zero Trust micro-segmentation simplifies containment:
                         you can restrict or shut down one segment without killing the entire platform.
-                    </li>
-                </ul>
-
-                <div class="appsec-widget-card" data-widget="WhatIfExplorer"
-                    data-whatif-title="What If Micro-Segmentation Fails?">
-                    <h4>Interactive “What-If” Exploration</h4>
-                    <p>
-                        Use your what-if widget (if available) to explore scenarios like:
-                        <em>“What if billing-svc could talk directly to db-users?”</em> or
-                        <em>“What if the API gateway doesn’t verify tenant claims?”</em>
-                    </p>
-                </div>
-            </section>
-
-        </main>
-
-        <footer class="appsec-footer">
-            <p>Zero Trust Network Design – Sections 1–3 (Foundation, Intuitive Hook, Mental Model)</p>
-        </footer>
+      </li>
+     </ul>
+     <div class="callout callout-info" data-whatif-title="What If Micro-Segmentation Fails?" data-widget="WhatIfExplorer">
+      <h4>
+       Interactive “What-If” Exploration
+      </h4>
+      <p>
+       Use your what-if widget (if available) to explore scenarios like:
+       <em>
+        “What if billing-svc could talk directly to db-users?”
+       </em>
+       or
+       <em>
+        “What if the API gateway doesn’t verify tenant claims?”
+       </em>
+      </p>
+     </div>
     </div>
-</body>
-
+   </section>
+   <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+    Daily AppSec Study · Zero Trust Network Design
+   </footer>
+  </div>
+ </body>
 </html>
