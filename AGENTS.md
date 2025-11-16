@@ -26,6 +26,9 @@ These instructions apply to the entire repository unless a more specific `AGENTS
 - Reference widgets by inserting a `<div id="..." class="widget"></div>` placeholder and call `AppSecWidgets.*` via `<script>` blocks within the card body when needed.
 - Prefer semantic HTML inside bodies (tables for comparisons, lists for steps, `<pre><code>` for code) and keep typography consistent with the theme.
 - Include emojis or glyphs where they improve scannability, but keep the tone professional.
+- Use the lesson template name `lessons/[TOPIC_NUMBER]-[TOPIC_NAME]/[TOPIC_NUMBER]-template.html`; do not introduce alternate filename schemes.
+- Leave that template as a shell that only loads the shared header/footer/theme assets—the GitHub workflow and `python join_html_topics.py` handle fragment merging automatically.
+- Ensure every numbered subsection (e.g., 1.1, 3.4, 5.2) is represented by its own `section.card` immediately after its parent section card (1, 2, 3, etc.) so the reader experiences the correct progression.
 
 ## Content Requirements (from `contract.md`)
 - Cover all eleven sections in order: Foundations, Intuitive Hook, Mental Model, Deep Explanation, Real-World Context, Common Weaknesses, Hands-On Implementation, Defense & Mitigation, Incident Case Study, Threat Model, Compliance Mapping.
@@ -36,8 +39,8 @@ These instructions apply to the entire repository unless a more specific `AGENTS
 - Only include code/config when it clarifies security logic; annotate with reviewer insights, logging expectations, and attacker perspectives.
 
 ## Threat Modeling & Compliance Notes
-- Incident case studies must describe the company/system, attack path, ASCII architecture diagram, remediation, and external reference links.
-- Threat model sections should include an ASCII diagram plus STRIDE analysis, ideally aided by the ThreatModel widget for interactive exploration.
+- Incident case studies must describe the real company/software/system, attack path, ASCII architecture diagram, remediation, and external reference links.
+- Threat model sections should include a detailed ASCII diagram plus STRIDE analysis, ideally aided by the ThreatModel widget for interactive exploration.
 - Compliance mappings must mention ISO 27001, NIST 800-53, PCI DSS, HIPAA, GDPR, and SOC 2. If a framework is irrelevant, explicitly say so with a one-line justification.
 
 ## Widgets & Utilities
@@ -54,11 +57,5 @@ These instructions apply to the entire repository unless a more specific `AGENTS
 Before telling the user a lesson is ready:
 1. Verify every contract section exists as a card and has its paired quiz.
 2. Ensure references/links are present per section and widgets render (config objects populated).
-3. Confirm `python join_html_topics.py` runs cleanly and updates the aggregated lesson file.
+3. Confirm `python join_html_topics.py` runs cleanly and updates the aggregated lesson file. But ultimately delete the aggregated file.
 4. Summarize what changed and note that you are ready for the next Markdown batch.
-
-## Lesson 13 – AWS Service Roles Guardrails
-- Keep the lesson template named exactly `lessons/13-aws-service-roles/13-template.html`; do not introduce alternate filenames.
-- Leave that template as a shell that only loads the shared header/footer/theme assets—the GitHub workflow and `python join_html_topics.py` handle fragment merging automatically.
-- Ensure every numbered subsection (e.g., 1.1, 3.4, 5.2) is represented by its own `section.card` immediately after its parent section card (1, 2, 3, etc.) so the reader experiences the correct progression.
-- After completing work, always commit your changes and push the branch so the remote stays current.

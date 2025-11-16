@@ -231,14 +231,14 @@ const NavFloating = {
     this.nav.className = "floating-nav";
 
     // Navigation buttons
-    this.prevBtn = this.make("⬆ Previous", () => this.scrollToPrev());
-    this.topBtn = this.make("⇧ Top", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-    this.nextBtn = this.make("Next ⬇", () => this.scrollToNext());
-    this.bottomBtn = this.make("Bottom ⇩", () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+    this.prevBtn = this.make("⬅️ Pre.", () => this.scrollToPrev());
+    this.topBtn = this.make("⬆️ Top", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    this.nextBtn = this.make("➡️ Next", () => this.scrollToNext());
+    this.bottomBtn = this.make("⬇️ Bot.", () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
 
     // Collapse / Expand all
-    this.collapseAllBtn = this.make("– Collapse All", () => this.collapseAll());
-    this.expandAllBtn = this.make("+ Expand All", () => this.expandAll());
+    this.collapseAllBtn = this.make("▼ Col.", () => this.collapseAll());
+    this.expandAllBtn = this.make("▶ Exp.", () => this.expandAll());
 
     this.nav.appendChild(this.topBtn);
     this.nav.appendChild(this.prevBtn);
@@ -452,6 +452,35 @@ function applyStaticMarkdown(rootSelector) {
     textNode.replaceWith(span);
   });
 }
+
+// =====================================================
+// Code Wrap Toggle for <pre><code> blocks (header above each pre block)
+// =====================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const blocks = document.querySelectorAll("div.code-with-lines");
+
+  blocks.forEach(block => {
+    // Create header container
+    const header = document.createElement("div");
+    header.className = "code-wrap-header";
+
+    // Create the toggle button
+    const button = document.createElement("button");
+    button.className = "code-wrap-toggle";
+    button.textContent = "↩ Wrap";
+
+    button.addEventListener("click", () => {
+      block.classList.toggle("code-wrapped");
+      button.textContent = block.classList.contains("code-wrapped")
+        ? "↪ No-Wrap"
+        : "↩ Wrap";
+    });
+
+    // Insert header BEFORE the code block
+    block.parentElement.insertBefore(header, block);
+    header.appendChild(button);
+  });
+});
 
 document.addEventListener("DOMContentLoaded", applyStaticMarkdown());
 

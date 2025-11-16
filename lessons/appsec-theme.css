@@ -815,7 +815,7 @@ ol {
 .floating-nav {
   position: fixed;
   right: 1rem;
-  bottom: 5rem;
+  bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -830,7 +830,7 @@ ol {
   border-radius: 8px;
   font-size: 0.85rem;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.2;
   transition: all 0.15s ease;
   backdrop-filter: blur(6px);
 }
@@ -931,19 +931,69 @@ section.card.collapsed .card-header {
 }
 
 /* Make autolinked URLs responsive & nice */
-.appsec-autolink {
-    word-break: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    display: inline-block;
-    max-width: 100%;
-    text-decoration: underline;
-    color: var(--color-primary);
+.appsec-autolink,
+a {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  display: inline-block;
+  max-width: 100%;
+  text-decoration: underline;
+  color: var(--color-primary);
 }
 
 /* OPTIONAL: visually nicer truncation */
-.appsec-autolink {
-    text-overflow: ellipsis;
-    overflow: hidden;
-    vertical-align: middle;
+.appsec-autolink,
+a {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+code {
+  overflow-x: auto;
+  white-space: pre;
+}
+
+@media (max-width: 640px) {
+  code {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+/* Wrap toggle button */
+/* Wrapper above each code block */
+.code-wrap-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.35rem;
+}
+
+/* Theme-aware button */
+.code-wrap-toggle {
+  font-size: 0.8rem;
+  background: var(--bg-color);
+  /* auto changes with light/dark */
+  color: var(--text-color);
+  /* auto changes */
+  border: 1px solid var(--border-color);
+  /* auto changes */
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.95;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.code-wrap-toggle:hover {
+  opacity: 1;
+  background: var(--button-hover-bg, var(--bg-color));
+}
+
+/* Wrapped state */
+.code-wrapped .code-content pre,
+.code-wrapped .code-content code {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
