@@ -723,6 +723,198 @@ Attacker with backup of old key → Uses it until certificate expiry.
             These insights are essential for design reviews, pentests, and threat modeling.
         </div>
 </div>
+</section><section class="card" id="section-7">
+<div class="card-header">7. Practical Simulation (Hands-On)</div>
+<div class="card-body">
+<p>
+            This section provides **hands-on, scenario-driven practice**.  
+            You will simulate how mTLS behaves in a real microservice architecture by walking through a controlled example:
+            generating certificates, configuring services, and testing good vs. broken trust relationships.
+        </p>
+<h3>7.1 Scenario Setup — Two Services Communicating via mTLS</h3>
+<p>
+            We simulate two internal services:
+        </p>
+<ul>
+<li><strong>Service A → Orders API</strong></li>
+<li><strong>Service B → Billing API</strong></li>
+</ul>
+<p>
+            Both are deployed in a cluster or VM environment with a shared private CA.
+        </p>
+<pre>
+           ┌───────────────────────────────┐
+           │   Internal Private CA         │
+           └───────────┬──────────────────┘
+                       │ issues certs
+           ┌───────────▼──────────┐       ┌───────────────▼────────────┐
+           │  Service A (Orders)   │ mTLS  │   Service B (Billing)       │
+           │  A.crt + A.key        │ &lt;====&gt;│   B.crt + B.key             │
+           └───────────────────────┘       └────────────────────────────┘
+        </pre>
+<div class="callout callout-info">
+            💡 **Goal of the simulation:**  
+            Perform real certificate validation, diagnose handshake failures, and verify identity mapping.
+        </div>
+<h3>7.2 Step 1 — Generate a Root CA &amp; Issue Certificates</h3>
+<p><strong>1. Generate the Root CA:</strong></p>
+<pre>
+openssl genrsa -out root.key 4096
+openssl req -x509 -new -nodes -key root.key -sha256 -days 3650 \
+   -subj "/CN=internal-root-ca" -out root.crt
+        </pre>
+<p><strong>2. Generate CSRs for both services:</strong></p>
+<pre>
+openssl genrsa -out serviceA.key 2048
+openssl req -new -key serviceA.key -subj "/CN=orders.internal" -out serviceA.csr
+
+openssl genrsa -out serviceB.key 2048
+openssl req -new -key serviceB.key -subj "/CN=billing.internal" -out serviceB.csr
+        </pre>
+<p><strong>3. Sign both certificates:</strong></p>
+<pre>
+openssl x509 -req -in serviceA.csr -CA root.crt -CAkey root.key \
+   -CAcreateserial -out serviceA.crt -days 365 -sha256
+
+openssl x509 -req -in serviceB.csr -CA root.crt -CAkey root.key \
+   -CAcreateserial -out serviceB.crt -days 365 -sha256
+        </pre>
+<h3>7.3 Step 2 — Run two local services using mTLS</h3>
+<p>
+            Example: NGINX for the server (Billing), cURL for the client (Orders):
+        </p>
+<pre>
+# Billing Service (server)
+ssl_certificate      serviceB.crt;
+ssl_certificate_key  serviceB.key;
+ssl_client_certificate root.crt;
+ssl_verify_client on;
+
+# Orders Service (client)
+curl --cert serviceA.crt --key serviceA.key \
+     --cacert root.crt https://billing.internal
+        </pre>
+<div class="callout callout-warning">
+            ⚠️ If either certificate is invalid or not issued by <strong>root.crt</strong>,  
+            the handshake will fail before HTTP starts.
+        </div>
+<h3>7.4 Step 3 — Break the trust &amp; analyze failures</h3>
+<p>Try these realistic failure scenarios:</p>
+<ul>
+<li>Delete <code>serviceA.key</code> → authentication fails.</li>
+<li>Modify SAN to an untrusted identity → server rejects connection.</li>
+<li>Use the wrong CA to sign serviceA → trust-store mismatch.</li>
+<li>Expire serviceB.crt → server rejects connection immediately.</li>
+</ul>
+<pre>
+curl: (60) server certificate verification failed
+        </pre>
+<h3>7.5 Interactive: Try the mTLS handshake sequence</h3>
+<div id="sequence-hands-on"></div>
+<script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Sequence) {
+                AppSecWidgets.Sequence.create("sequence-hands-on", {
+                    title: "🧪 mTLS Handshake – Hands-On Walkthrough",
+                    steps: [
+                        "Client sends ClientHello",
+                        "Server returns ServerHello + Certificate",
+                        "Client validates server certificate via CA",
+                        "Client sends its Certificate + Proof",
+                        "Server validates client certificate",
+                        "Session keys established",
+                        "Secure application data begins"
+                    ]
+                });
+            }
+        });
+        </script>
+<div class="callout callout-success">
+            🎉 After completing this simulation, you can troubleshoot mTLS in the real world with high confidence.
+        </div>
+</div>
+</section><section class="card" id="section-8">
+<div class="card-header">8. Good Design Principles, Defense &amp; Mitigation</div>
+<div class="card-body">
+<p>
+            This section presents **battle-tested architectural principles** for implementing mTLS securely in
+            high-scale distributed systems.
+        </p>
+<h3>8.1 Principle 1 — Use short-lived certificates</h3>
+<p>
+            Short lifetimes (<strong>6–24 hours</strong>) reduce reliance on CRLs and shrink the impact of key compromise.
+        </p>
+<pre>
+If serviceA.key leaks:
+  Long-lived cert → attacker impersonates A for months
+  Short-lived cert → attacker loses access in hours
+        </pre>
+<h3>8.2 Principle 2 — Automate everything (no manual cert handling)</h3>
+<ul>
+<li>Use Vault Agent, cert-manager, or Istio SDS for automated issuance.</li>
+<li>Enable hot-reload for TLS contexts.</li>
+<li>Avoid mounting certificates manually.</li>
+</ul>
+<div class="callout callout-info">
+            💡 Human-handled certificates almost always lead to outages and trust errors.
+        </div>
+<h3>8.3 Principle 3 — Identity → Authorization mapping must be explicit</h3>
+<p>mTLS authenticates the caller, but you must define what it is allowed to do.</p>
+<pre>
+Billing Service:
+  allow: orders.internal → /charge, /refund
+  deny:  reporting.internal → /charge
+        </pre>
+<h3>8.4 Principle 4 — SAN-based identity only</h3>
+<ul>
+<li>Use SAN for DNS-based, SPIFFE-based, or workload-identity-based mappings.</li>
+<li>Reject CN-only certificates.</li>
+</ul>
+<h3>8.5 Principle 5 — Enforce sidecar routing (no escape paths)</h3>
+<p>
+            All traffic must go through the mesh/sidecar so mTLS can be consistently enforced.
+        </p>
+<pre>
+iptables → redirect ALL traffic → sidecar proxy
+        </pre>
+<h3>8.6 Principle 6 — Secure the CA with layered protection</h3>
+<ul>
+<li>Root CA offline or HSM-backed.</li>
+<li>Intermediates in Vault or cloud-native private CA.</li>
+<li>CSR policies enforced.</li>
+<li>Key storage in KMS/HSM whenever possible.</li>
+</ul>
+<h3>8.7 Principle 7 — Consistent trust-store distribution</h3>
+<p>
+            All workloads must trust the same root and intermediate CAs.
+        </p>
+<pre>
+CI/CD → push CA bundle → ConfigMap/Secret → All pods reload
+        </pre>
+<h3>8.8 Interactive: Best-Practices Checklist Viewer</h3>
+<div id="checklist-mtls"></div>
+<script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+                AppSecWidgets.Checklist.create("checklist-mtls", {
+                    title: "🧰 mTLS Design & Defense Checklist",
+                    items: [
+                        "Use short-lived certs (≤24h)",
+                        "Automate issuance and rotation",
+                        "Enforce SAN identity",
+                        "Bind identity to authorization",
+                        "Ensure CA hardening",
+                        "Prevent sidecar bypass",
+                        "Maintain synchronized trust stores"
+                    ]
+                });
+            }
+        });
+        </script>
+<div class="callout callout-success">
+            🎉 By following these principles, your mTLS deployment will be secure, maintainable, and aligned with zero-trust architecture design.
+        </div>
+</div>
 </section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
             Daily AppSec Study · Master mTLS for Service-to-Service – Client Certificate Authentication &amp; Certificate Management
         </footer>
