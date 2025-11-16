@@ -1,0 +1,94 @@
+<section class="card" id="section-2">
+  <div class="card-header">2. Intuitive Hook</div>
+  <div class="card-body">
+    <p>
+      Imagine zero-trust traffic management as an airport where every passenger and aircraft is continuously verified: the API gateway is the security
+      checkpoint that inspects people and baggage at the perimeter, while the service mesh is the air-traffic control system that supervises each runway,
+      taxiway, and flight path inside the airport. The combination keeps untrusted actors from boarding and ensures approved flights never collide or
+      deviate from their assigned corridors, exactly how BeyondCorp policies require identity-aware ingress and Istio enforces encrypted, policy-driven
+      service-to-service hops.
+    </p>
+    <div class="callout callout-success">
+      <strong>Analogy → Responsibility Map:</strong>
+      <ul>
+        <li><strong>Security checkpoint (API gateway):</strong> validates badge, luggage, and destination context before a traveler steps past the terminal boundary, mirroring BeyondCorp-style continuous verification of user + device posture before allowing any API call into the mesh perimeter.</li>
+        <li><strong>Air-traffic control (service mesh):</strong> tracks every authorized aircraft, issues per-runway clearances, and reacts instantly to anomalies, just like Istio sidecars that enforce mutual TLS, rate limits, and circuit-breaking for every intra-mesh hop.</li>
+        <li><strong>Shared flight manifest (gateway + mesh telemetry):</strong> lets airport ops reconstruct the entire journey, analogous to propagating trace headers and policy decisions from the gateway to the mesh for deep observability.</li>
+      </ul>
+    </div>
+    <p>
+      Use the flow below to narrate the sequence from the first badge swipe at the gateway to how the mesh steers the call safely between services.
+    </p>
+    <div id="section-2-flow" class="widget"></div>
+    <p>
+      Key takeaways:
+    </p>
+    <ol>
+      <li>The gateway filters intent at the edge, normalizes metadata, and ensures requests meet BeyondCorp-style contextual policies before they touch microservices.</li>
+      <li>The mesh keeps enforcing inside the trust boundary—mutual TLS, retries, traffic splitting—akin to how controllers guide every aircraft minute-by-minute.</li>
+      <li>Telemetry stitched across both layers is what proves compliance and fuels rapid incident response.</li>
+    </ol>
+    <div class="reference-list">
+      <strong>References:</strong>
+      <ul>
+        <li><a href="https://cloud.google.com/beyondcorp" target="_blank" rel="noopener">Google BeyondCorp Enterprise overview</a> — identity-aware access control at the edge.</li>
+        <li><a href="https://istio.io/latest/docs/concepts/security/" target="_blank" rel="noopener">Istio Security Concepts</a> — fine-grained service-to-service enforcement.</li>
+      </ul>
+    </div>
+    <div id="section-2-quiz" class="widget"></div>
+  </div>
+</section>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+      AppSecWidgets.FlowVisualizer.create('section-2-flow', {
+        title: 'From checkpoint to clear runway',
+        steps: [
+          {
+            title: '1. Edge badge scan',
+            description:
+              'The API gateway validates identity, device posture, and request context (BeyondCorp model) before issuing a signed pass plus trace headers.'
+          },
+          {
+            title: '2. Policy escort into the mesh',
+            description:
+              'Approved traffic is wrapped in mutual TLS, enriched with routing labels, and handed off to the service mesh entry point.'
+          },
+          {
+            title: '3. Service-to-service clearances',
+            description:
+              'Istio sidecars check the signed pass, enforce authorization policies, and apply reliability controls (rate limit, retries, circuit breakers).'
+          },
+          {
+            title: '4. Continuous telemetry & recall',
+            description:
+              'Gateway logs + mesh traces merge into a shared manifest so responders can audit every hop the way airport ops replay flight paths.'
+          }
+        ]
+      });
+    }
+
+    if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+      AppSecWidgets.Quiz.create('section-2-quiz', {
+        title: '🧠 Intuitive Hook Check',
+        intro: 'Match the airport analogy to the zero-trust components.',
+        mode: 'step',
+        questions: [
+          {
+            text: 'In the airport analogy, what is the service mesh responsible for?',
+            options: [
+              { value: 'a', label: 'Screening unvetted travelers before they enter the terminal', correct: false },
+              {
+                value: 'b',
+                label: 'Coordinating every authorized flight path and reacting to anomalies between services',
+                correct: true
+              },
+              { value: 'c', label: 'Selling tickets and baggage allowances', correct: false },
+              { value: 'd', label: 'Handling lost-and-found for customer items', correct: false }
+            ]
+          }
+        ]
+      });
+    }
+  });
+</script>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lesson 223: Securing API Gateway and Service Mesh Architecture</title>
+<link href="appsec-theme.css" rel="stylesheet"/>
+<script defer="" src="appsec-theme.js"></script>
+<script defer="" src="appsec-widgets.js"></script>
+</head>
+<body>
+<header>
+<div class="hero">
+<h1>Lesson 223: Securing API Gateway and Service Mesh Architecture</h1>
+<p>This lesson explores how to harden API gateways and service meshes so microservices retain least privilege, traffic integrity, and observability even under adversarial conditions.</p>
+</div>
+<nav id="toc"></nav>
+</header>
+<main>
+<div class="container">
+<header class="card">
+<div class="card-header">Lesson 223 Overview</div>
+<div class="card-body">
+<p>
+            This container holds the contract-driven sections for "Securing API Gateway and Service Mesh Architecture" and feeds the
+            Table of Contents plus any shared framing notes.
+          </p>
+<nav id="toc"></nav>
+</div>
+</header>
+<!-- section-1 placeholder -->
+<!-- section-2 placeholder -->
+<!-- section-3 placeholder -->
+<!-- section-4 placeholder -->
+<!-- section-5 placeholder -->
+<!-- section-6 placeholder -->
+<!-- section-7 placeholder -->
+<!-- section-8 placeholder -->
+<!-- section-9 placeholder -->
+<!-- section-10 placeholder -->
+<!-- section-11 placeholder -->
+<!-- section-12 placeholder -->
+<section class="card" id="section-2">
+<div class="card-header">2. Intuitive Hook</div>
+<div class="card-body">
+<p>
+      Imagine zero-trust traffic management as an airport where every passenger and aircraft is continuously verified: the API gateway is the security
+      checkpoint that inspects people and baggage at the perimeter, while the service mesh is the air-traffic control system that supervises each runway,
+      taxiway, and flight path inside the airport. The combination keeps untrusted actors from boarding and ensures approved flights never collide or
+      deviate from their assigned corridors, exactly how BeyondCorp policies require identity-aware ingress and Istio enforces encrypted, policy-driven
+      service-to-service hops.
+    </p>
+<div class="callout callout-success">
+<strong>Analogy → Responsibility Map:</strong>
+<ul>
+<li><strong>Security checkpoint (API gateway):</strong> validates badge, luggage, and destination context before a traveler steps past the terminal boundary, mirroring BeyondCorp-style continuous verification of user + device posture before allowing any API call into the mesh perimeter.</li>
+<li><strong>Air-traffic control (service mesh):</strong> tracks every authorized aircraft, issues per-runway clearances, and reacts instantly to anomalies, just like Istio sidecars that enforce mutual TLS, rate limits, and circuit-breaking for every intra-mesh hop.</li>
+<li><strong>Shared flight manifest (gateway + mesh telemetry):</strong> lets airport ops reconstruct the entire journey, analogous to propagating trace headers and policy decisions from the gateway to the mesh for deep observability.</li>
+</ul>
+</div>
+<p>
+      Use the flow below to narrate the sequence from the first badge swipe at the gateway to how the mesh steers the call safely between services.
+    </p>
+<div class="widget" id="section-2-flow"></div>
+<p>
+      Key takeaways:
+    </p>
+<ol>
+<li>The gateway filters intent at the edge, normalizes metadata, and ensures requests meet BeyondCorp-style contextual policies before they touch microservices.</li>
+<li>The mesh keeps enforcing inside the trust boundary—mutual TLS, retries, traffic splitting—akin to how controllers guide every aircraft minute-by-minute.</li>
+<li>Telemetry stitched across both layers is what proves compliance and fuels rapid incident response.</li>
+</ol>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://cloud.google.com/beyondcorp" rel="noopener" target="_blank">Google BeyondCorp Enterprise overview</a> — identity-aware access control at the edge.</li>
+<li><a href="https://istio.io/latest/docs/concepts/security/" rel="noopener" target="_blank">Istio Security Concepts</a> — fine-grained service-to-service enforcement.</li>
+</ul>
+</div>
+<div class="widget" id="section-2-quiz"></div>
+</div>
+</section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+        Daily AppSec Study · Lesson 223
+      </footer>
+</div>
+</main>
+<footer>
+<p>© Daily AppSec Study — Advancing secure microservice design one lesson at a time.</p>
+</footer>
+</body>
+</html>
