@@ -2,8 +2,7 @@ name: Build Lessons & Generate Homepage
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: [*]
 
 permissions:
   contents: write
