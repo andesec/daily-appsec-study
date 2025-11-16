@@ -56,3 +56,9 @@ Before telling the user a lesson is ready:
 2. Ensure references/links are present per section and widgets render (config objects populated).
 3. Confirm `python join_html_topics.py` runs cleanly and updates the aggregated lesson file.
 4. Summarize what changed and note that you are ready for the next Markdown batch.
+
+## Lesson 13 – AWS Service Roles Guardrails
+- Keep the lesson template named exactly `lessons/13-aws-service-roles/13-template.html`; do not introduce alternate filenames.
+- Leave that template as a shell that only loads the shared header/footer/theme assets—the GitHub workflow and `python join_html_topics.py` handle fragment merging automatically.
+- Ensure every numbered subsection (e.g., 1.1, 3.4, 5.2) is represented by its own `section.card` immediately after its parent section card (1, 2, 3, etc.) so the reader experiences the correct progression.
+- After completing work, always commit your changes and push the branch so the remote stays current.
