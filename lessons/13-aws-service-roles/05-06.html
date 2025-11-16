@@ -1,0 +1,302 @@
+<section class="card" id="section-5">
+    <div class="card-header">5. Real-World Context &amp; Interactions</div>
+    <div class="card-body">
+        <p>
+            Consider a multi-account SaaS pipeline that ingests data via Lambda, processes it on EC2, and centralizes logging in
+            a security account. Every hop depends on well-scoped service roles. The subsections break down the architecture,
+            trust boundaries, flows, and validation tools.
+        </p>
+    </div>
+</section>
+
+<section class="card" id="section-5-1">
+    <div class="card-header">5.1 Scenario: Event-Driven Data Processing Pipeline</div>
+    <div class="card-body">
+        <p>Accounts and responsibilities:</p>
+        <ul>
+            <li><strong>Account A (Edge)</strong> – API Gateway and ingestion Lambdas.</li>
+            <li><strong>Account B (Core)</strong> – EC2 processing fleet reacting to S3 events.</li>
+            <li><strong>Account C (Security)</strong> – Central logging, SIEM, IAM Access Analyzer.</li>
+        </ul>
+        <pre>
+[API Gateway]
+      |
+      v
+[Ingestion Lambda] --(stores files)--> [S3 Bucket]
+      |
+      v
+[SNS Topic] ------------------------------+
+                                          |
+                                          v
+                               [EC2 Processing Cluster]
+                                          |
+                                          +--> [DynamoDB]
+                                          |
+                                          +--> [Central Logging / SIEM]
+        </pre>
+        <table>
+            <thead>
+                <tr><th>Component</th><th>Role</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Lambda Ingestor</td><td>LambdaExecutionRole</td><td>Write logs, put S3 objects, publish SNS messages</td></tr>
+                <tr><td>EC2 Processor</td><td>EC2InstanceRole</td><td>Read S3, write DynamoDB, fetch one secret</td></tr>
+                <tr><td>Security Services</td><td>SecurityRole</td><td>Ingest logs, run Access Analyzer, operate GuardDuty</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card" id="section-5-2">
+    <div class="card-header">5.2 Identity and Trust Boundaries</div>
+    <div class="card-body">
+        <ul>
+            <li><strong>Lambda:</strong> trust policy principal <code>lambda.amazonaws.com</code>, permissions limited to specific S3 bucket and SNS topics.</li>
+            <li><strong>EC2:</strong> trust policy principal <code>ec2.amazonaws.com</code>, permissions for bucket reads, DynamoDB writes, and <em>one</em> secret.</li>
+            <li><strong>S3 bucket policy:</strong>
+                <pre><code class="language-json">{
+  "Effect": "Allow",
+  "Principal": {"AWS": "arn:aws:iam::B:role/EC2ProcessorRole"},
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::inbound-data/*"
+}</code></pre>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<section class="card" id="section-5-3">
+    <div class="card-header">5.3 Interaction Diagram</div>
+    <div class="card-body">
+        <pre>
+[Lambda] --AssumeRole--> [STS] --TempCreds--> [Lambda Runtime]
+    |                                      |
+    +------> S3:PutObject ------------------+
+
+[EC2 Node] --IMDSv2--> [Role Creds] --> [SDK Calls]
+    |                                 |
+    +--> S3:GetObject ----------------+
+    +--> DynamoDB:PutItem ------------+
+        </pre>
+    </div>
+</section>
+
+<section class="card" id="section-5-4">
+    <div class="card-header">5.4 Flow Visualizer</div>
+    <div class="card-body">
+        <div id="flow-aws-service-roles" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+                AppSecWidgets.FlowVisualizer.create("flow-aws-service-roles", {
+                    title: "🔄 Identity Flow Across Accounts",
+                    steps: [
+                        { title: "Lambda Triggered", description: "API Gateway event triggers ingestion Lambda in Account A." },
+                        { title: "STS Assumption", description: "Lambda service assumes LambdaExecutionRole via STS." },
+                        { title: "S3 Fan-out", description: "Lambda writes to S3 and publishes SNS notifications scoped by its policy." },
+                        { title: "EC2 Credential Retrieval", description: "EC2 instances obtain IMDSv2 tokens and role creds in Account B." },
+                        { title: "Processing & Logging", description: "EC2 writes to DynamoDB and forwards logs to the security account." }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-5-5">
+    <div class="card-header">5.5 Widget-Ready Data</div>
+    <div class="card-body">
+        <p>Use ConfigDiff to highlight unscoped vs scoped policies, CodeReviewChecker for JSON analysis, and APITester to simulate least privilege requirements when building custom labs.</p>
+    </div>
+</section>
+
+<section class="card" id="section-5-6">
+    <div class="card-header">5.6 Knowledge Check</div>
+    <div class="card-body">
+        <div id="quiz-aws-roles-context" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-aws-roles-context", {
+                    title: "🏗️ Architecture Quiz",
+                    questions: [
+                        {
+                            text: "Why does the EC2 role limit Secrets Manager access to one secret?",
+                            options: [
+                                { value: "a", label: "To stay under IAM quota limits", correct: false },
+                                { value: "b", label: "To enforce least privilege if EC2 is compromised", correct: true },
+                                { value: "c", label: "Because EC2 cannot read Secrets Manager", correct: false },
+                                { value: "d", label: "Because Lambda already reads secrets", correct: false }
+                            ]
+                        },
+                        {
+                            text: "What ensures Account C can read logs across accounts?",
+                            options: [
+                                { value: "a", label: "A bucket policy that lists the SecurityRole ARN", correct: true },
+                                { value: "b", label: "Disabling GuardDuty", correct: false },
+                                { value: "c", label: "Creating IAM users with static keys", correct: false },
+                                { value: "d", label: "Allowing Principal '*''", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-6">
+    <div class="card-header">6. Common Weaknesses, Pitfalls &amp; Attack Paths</div>
+    <div class="card-body">
+        <p>Focus on the weaknesses AppSec teams repeatedly uncover in AWS role reviews.</p>
+    </div>
+</section>
+
+<section class="card" id="section-6-1">
+    <div class="card-header">6.1 Weakness — Over-Privileged Permissions</div>
+    <div class="card-body">
+        <p>Policies with <code>Action": "*"</code> or <code>Resource": "*"</code> grant attackers broad power once code execution occurs. Mitigation: enforce least privilege and scope ARNs.</p>
+    </div>
+</section>
+
+<section class="card" id="section-6-2">
+    <div class="card-header">6.2 Weakness — Broad Trust Policies</div>
+    <div class="card-body">
+        <p>Trust policies such as <code>"Principal": "*"</code> allow any AWS principal to assume the role. Detect via CloudTrail <code>AssumeRole</code> from unknown accounts and GuardDuty findings like <code>UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration</code>. Require <code>aws:SourceAccount</code> and <code>aws:SourceArn</code>.</p>
+    </div>
+</section>
+
+<section class="card" id="section-6-3">
+    <div class="card-header">6.3 Weakness — IMDSv1 Exposure (Capital One Pattern)</div>
+    <div class="card-body">
+        <pre>
+Attacker → SSRF → http://169.254.169.254/latest/meta-data/iam/
+                           |
+                           +--> Temporary STS credentials
+        </pre>
+        <p>Enforce IMDSv2 with:</p>
+        <pre><code class="language-bash">aws ec2 modify-instance-metadata-options \
+  --instance-id i-123456 \
+  --http-endpoint enabled \
+  --http-tokens required</code></pre>
+        <div id="configdiff-imds" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
+                AppSecWidgets.ConfigDiff.create(
+                    "configdiff-imds",
+                    "🆚 IMDSv1 vs IMDSv2",
+                    `aws ec2 modify-instance-metadata-options \
+  --instance-id i-123456 \
+  --http-endpoint enabled \
+  --http-tokens optional`,
+                    `aws ec2 modify-instance-metadata-options \
+  --instance-id i-123456 \
+  --http-endpoint enabled \
+  --http-tokens required`
+                );
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-6-4">
+    <div class="card-header">6.4 Weakness — Missing ExternalId</div>
+    <div class="card-body">
+        <p>Third-party roles without <code>sts:ExternalId</code> let any AWS account impersonate the vendor. Always require a unique identifier per customer.</p>
+    </div>
+</section>
+
+<section class="card" id="section-6-5">
+    <div class="card-header">6.5 Weakness — Excessive KMS Privileges</div>
+    <div class="card-body">
+        <p>Granting <code>"kms:*"</code> allows key deletion, tampering, and decryption of sensitive data. Scope KMS actions to explicit keys and operations.</p>
+    </div>
+</section>
+
+<section class="card" id="section-6-6">
+    <div class="card-header">6.6 Attack Sandbox</div>
+    <div class="card-body">
+        <div id="sandbox-aws-metadata" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.AttackSandbox) {
+                AppSecWidgets.AttackSandbox.create("sandbox-aws-metadata", {
+                    title: "🎯 SSRF to Metadata Attack",
+                    scenarios: [
+                        {
+                            name: "SSRF Metadata Theft",
+                            description: "Simulate an attacker abusing SSRF to query IMDSv1 and steal credentials.",
+                            payload: "GET /latest/meta-data/iam/security-credentials/",
+                            response: "HTTP/200 Temporary STS credentials leaked",
+                            notifyType: "danger",
+                            notifyMessage: "Metadata credentials exposed!",
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-6-7">
+    <div class="card-header">6.7 Log Analyzer</div>
+    <div class="card-body">
+        <div id="logs-aws-roles" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.LogAnalyzer) {
+                AppSecWidgets.LogAnalyzer.create("logs-aws-roles", {
+                    title: "🔍 Detection Signals",
+                    columns: ["Time", "Event", "Principal", "IP", "Severity"],
+                    logs: [
+                        { time: "2024-05-01T12:08Z", event: "AssumeRole from 333333333333", principal: "arn:aws:iam::111111111111:role/AppLambda", ip: "203.0.113.8", severity: "danger" },
+                        { time: "2024-05-01T12:10Z", event: "GuardDuty UnauthorizedAccess:EC2/MetadataCredentials", principal: "i-0abc123", ip: "198.51.100.45", severity: "warning" },
+                        { time: "2024-05-01T12:15Z", event: "IAM Access Analyzer finding: Public role trust", principal: "arn:aws:iam::111111111111:role/EC2Processor", ip: "-", severity: "warning" }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-6-8">
+    <div class="card-header">6.8 Knowledge Check</div>
+    <div class="card-body">
+        <div id="quiz-aws-roles-weaknesses" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-aws-roles-weaknesses", {
+                    title: "🚨 Weakness Quiz",
+                    questions: [
+                        {
+                            text: "Which GuardDuty finding indicates metadata credential theft?",
+                            options: [
+                                { value: "a", label: "PenTest:IAMUser/Kali", correct: false },
+                                { value: "b", label: "UnauthorizedAccess:EC2/MetadataCredentials", correct: true },
+                                { value: "c", label: "Stealth:IAMUser/CloudTrailDisabled", correct: false },
+                                { value: "d", label: "CryptoCurrency:EC2/BitcoinTool", correct: false }
+                            ]
+                        },
+                        {
+                            text: "How do you prevent a confused deputy attack for vendor roles?",
+                            options: [
+                                { value: "a", label: "Enable IMDSv2", correct: false },
+                                { value: "b", label: "Require sts:ExternalId in the trust policy", correct: true },
+                                { value: "c", label: "Attach AdministratorAccess", correct: false },
+                                { value: "d", label: "Use IAM users with MFA", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
