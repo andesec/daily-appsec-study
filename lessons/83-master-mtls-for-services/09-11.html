@@ -1,0 +1,589 @@
+<!-- ========================= -->
+<!-- SECTION 9 — Incident Case Study and Analysis -->
+<!-- ========================= -->
+
+<section class="card" id="section-9">
+    <div class="card-header">9. Incident Case Study and Analysis</div>
+    <div class="card-body">
+        <p>
+            This case study examines a **real-world failure** where improper mTLS implementation weakened the trust boundary 
+            between internal services. We analyze the root cause, attack path, detection gaps, and lessons.
+        </p>
+
+        <p>
+            The selected case involves **Netflix — 2019 internal certificate validation weakness**, described publicly 
+            on their security engineering blog and in multiple conference talks.
+        </p>
+
+        <ul>
+            <li>Original reference:  
+                <a href="https://netflixtechblog.com/a-bug-in-plain-sight-ebf2c1f1d1c5">Netflix Tech Blog: “A Bug in Plain Sight”</a>
+            </li>
+            <li>Talk reference:  
+                <a href="https://www.youtube.com/watch?v=jdf2x2q4cj0&t=2330s">AppSec Cali: “A Bug in Plain Sight — Netflix”</a>
+            </li>
+        </ul>
+
+        <div class="callout callout-warning">
+            ⚠️ Although not exclusively an mTLS issue, it demonstrates a **critical pattern**:
+            <strong>improper certificate validation can silently break a zero-trust service-to-service design</strong>.
+        </div>
+
+        <!-- 9.1 -->
+        <div class="subsection card" id="section-9-1">
+            <div class="card-header">9.1 Summary of the Real Incident</div>
+            <div class="card-body">
+                <p>
+                    Netflix discovered that one of their internal services incorrectly validated TLS certificates.  
+                    Specifically:
+                </p>
+                <ul>
+                    <li>Certificate validation logic ignored the certificate’s **Subject Alternative Name (SAN)**.</li>
+                    <li>The system trusted certificates based solely on the **Common Name (CN)**.</li>
+                    <li>An attacker or compromised workload could craft a certificate with a trusted CN but a malicious SAN.</li>
+                </ul>
+
+                <p>
+                    In a large-scale microservices environment, this meant:
+                </p>
+                <ul>
+                    <li>Workloads could impersonate other workloads.</li>
+                    <li>Internal “identity → permission” checks were bypassable.</li>
+                    <li>Zero-trust assumptions broke down silently.</li>
+                </ul>
+
+                <div class="callout callout-danger">
+                    ❌ **CN-only validation allowed multiple internal identities to appear legitimate**.
+                </div>
+            </div>
+        </div>
+
+        <!-- 9.2 -->
+        <div class="subsection card" id="section-9-2">
+            <div class="card-header">9.2 Attack Path Reconstruction</div>
+            <div class="card-body">
+                <p>The simplified attacker path looked like this:</p>
+
+                <pre>
+Attacker-controlled workload
+       |
+       v
+Generates new CSR with:
+   CN = trusted-service.production.internal
+   SAN = attacker.controlled.internal
+       |
+       v
+CA signs CSR (old config trusted CN)
+       |
+       v
+Attacker gains valid identity of trusted-service
+       |
+       v
+Calls downstream services → access granted
+                </pre>
+
+                <p>Result:</p>
+                <ul>
+                    <li>Impersonation of protected services.</li>
+                    <li>Unauthorized lateral movement.</li>
+                    <li>Ability to invoke internal APIs normally restricted to specific workloads.</li>
+                </ul>
+
+                <div class="callout callout-warning">
+                    ⚠️ If SAN is ignored, the attacker controls identity.  
+                    mTLS becomes ineffective even though it’s “enabled.”
+                </div>
+            </div>
+        </div>
+
+        <!-- 9.3 -->
+        <div class="subsection card" id="section-9-3">
+            <div class="card-header">9.3 Detection Failures</div>
+            <div class="card-body">
+                <ul>
+                    <li>No monitoring on certificate issuance volume per workload.</li>
+                    <li>No anomaly detection on identity relationships (service A should not request service B’s identity).</li>
+                    <li>Lack of testing pipelines enforcing SAN validation.</li>
+                    <li>No defensive logging showing mismatched SAN vs expected DNS.</li>
+                </ul>
+
+                <div class="callout callout-info">
+                    💡 Logging on “failed SAN checks” is a powerful detection signal that many systems ignore.
+                </div>
+            </div>
+        </div>
+
+        <!-- 9.4 -->
+        <div class="subsection card" id="section-9-4">
+            <div class="card-header">9.4 Lessons Learned</div>
+            <div class="card-body">
+                <ul>
+                    <li>Always validate SAN — CN is deprecated and unsafe.</li>
+                    <li>Never assume internal CA-issued certificates are “correct.”</li>
+                    <li>Test certificate validation paths in CI pipelines.</li>
+                    <li>Monitor certificate issuance for anomalies.</li>
+                    <li>Use short-lived certificates to reduce risk windows.</li>
+                </ul>
+
+                <div class="callout callout-success">
+                    ✔️ The incident demonstrates an essential truth:  
+                    <strong>mTLS is only as strong as your certificate validation logic.</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- ========================= -->
+<!-- SECTION 10 — Threat Model -->
+<!-- ========================= -->
+
+<section class="card" id="section-10">
+    <div class="card-header">10. Threat Model</div>
+    <div class="card-body">
+        <p>
+            Here we build a detailed threat model for mTLS in service-to-service communication,
+            framed around attacker capabilities, trust boundaries, and misuse cases.
+        </p>
+
+        <!-- 10.1 -->
+        <div class="subsection card" id="section-10-1">
+            <div class="card-header">10.1 Assets</div>
+            <div class="card-body">
+                <ul>
+                    <li>Root CA key material</li>
+                    <li>Intermediate CA private keys</li>
+                    <li>Service private keys</li>
+                    <li>Certificates + identity metadata (SAN/SPIFFE)</li>
+                    <li>Sidecar / proxy identity enforcement logic</li>
+                    <li>Trust stores and CA bundles</li>
+                    <li>Authorization policies tied to certificate identity</li>
+                </ul>
+                <div class="callout callout-info">💡 Protect the CA → protect the whole system.</div>
+            </div>
+        </div>
+
+        <!-- 10.2 -->
+        <div class="subsection card" id="section-10-2">
+            <div class="card-header">10.2 Trust Boundaries</div>
+            <div class="card-body">
+                <pre>
+[External Boundary]
+    |
+    +-- TLS termination (gateway)
+            |
+            v
+     [Internal Service Mesh]
+            |
+            +-- mTLS connections between workloads
+            |
+            +-- CA / PKI trust boundary (highest sensitivity)
+                </pre>
+
+                <ul>
+                    <li>Workloads must prove identity at each hop.</li>
+                    <li>CA infrastructure forms a separate, higher-sensitivity boundary.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 10.3 -->
+        <div class="subsection card" id="section-10-3">
+            <div class="card-header">10.3 Attacker Profile</div>
+            <div class="card-body">
+                <ul>
+                    <li>A compromised workload or container.</li>
+                    <li>A malicious insider with limited access.</li>
+                    <li>An attacker who stole IAM role tokens.</li>
+                    <li>An attacker who exfiltrated old certificates or keys.</li>
+                    <li>A supply-chain attacker modifying service binary or image.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 10.4 -->
+        <div class="subsection card" id="section-10-4">
+            <div class="card-header">10.4 Attack Vectors</div>
+            <div class="card-body">
+                <ul>
+                    <li>Fake certificate issuance via compromised CA</li>
+                    <li>Replay of old certificates with long expiration</li>
+                    <li>Bypassing sidecar to send plaintext traffic</li>
+                    <li>Trust-store drift (CA mismatch)</li>
+                    <li>SAN spoofing or incorrect validation</li>
+                    <li>Forged CSR from stolen node identity</li>
+                </ul>
+                <div class="callout callout-danger">❌ Many attacks do not target TLS directly — they attack **identity issuance**.</div>
+            </div>
+        </div>
+
+        <!-- 10.5 -->
+        <div class="subsection card" id="section-10-5">
+            <div class="card-header">10.5 Attack → Detect → Defend Lifecycle</div>
+            <div class="card-body">
+                <pre>
+[Attack]
+    |
+    +-- Stolen key → Impersonation
+    +-- Sidecar bypass → direct connection
+    +-- Misconfigured SAN validation → spoofed identity
+    |
+[Detect]
+    |
+    +-- mTLS handshake failures in logs
+    +-- Certificate issuance anomalies
+    +-- Identity mismatches
+    +-- Unauthorized service-service calls
+    |
+[Defend]
+    |
+    +-- Short-lived certs
+    +-- Enforce SAN validation
+    +-- Sidecar mandatory routing
+    +-- Harden CA + CSR approval
+                </pre>
+
+                <div class="callout callout-success">
+                    ✔️ The lifecycle emphasizes that mTLS security depends on validation + issuance + routing.
+                </div>
+            </div>
+        </div>
+
+        <!-- 10.6 Quiz -->
+        <div class="subsection card" id="section-10-6">
+            <div class="card-header">10.6 Quick Threat Model Quiz</div>
+            <div class="card-body">
+
+                <div id="quiz-threat-model"></div>
+
+                <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                        AppSecWidgets.Quiz.create("quiz-threat-model", {
+                            title: "🧪 Threat Model Check",
+                            mode: "classic",
+                            questions: [
+                                {
+                                    text: "Which asset is the highest sensitivity in mTLS?",
+                                    options: [
+                                        { label: "Service Private Keys", correct: false },
+                                        { label: "Root CA Private Key", correct: true },
+                                        { label: "Ingress Gateway Certificate", correct: false }
+                                    ]
+                                },
+                                {
+                                    text: "Which is the most realistic attack in a mesh environment?",
+                                    options: [
+                                        { label: "Man-in-the-middle from the public internet", correct: false },
+                                        { label: "Sidecar bypass", correct: true },
+                                        { label: "DNS rebinding attack", correct: false }
+                                    ]
+                                }
+                            ]
+                        });
+                    }
+                });
+                </script>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+
+
+<!-- ========================= -->
+<!-- SECTION 11 — Compliance Mapping -->
+<!-- ========================= -->
+
+<section class="card" id="section-11">
+    <div class="card-header">11. Compliance Mapping</div>
+    <div class="card-body">
+
+        <p>
+            mTLS helps organizations satisfy multiple regulatory and industry-standard requirements around encryption,
+            workload identity, key management, and secure communications.  
+        </p>
+
+        <!-- 11.1 -->
+        <div class="subsection card" id="section-11-1">
+            <div class="card-header">11.1 PCI-DSS</div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>PCI-DSS 4.2:</strong> Encrypt cardholder data over open/public networks  
+                        → mTLS ensures encryption + endpoint identity.</li>
+                    <li><strong>PCI-DSS 7.x:</strong> Restrict access to card systems  
+                        → Identity-based service authorization via certs.</li>
+                    <li><strong>PCI-DSS 10.x:</strong> Logging & monitoring  
+                        → mTLS handshake failures provide signals.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 11.2 -->
+        <div class="subsection card" id="section-11-2">
+            <div class="card-header">11.2 SOC 2</div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>Security (CC6.1, CC6.6):</strong> Enforce logical access controls</li>
+                    <li><strong>Confidentiality (CC6.7):</strong> Encryption of data in transit</li>
+                    <li><strong>Availability:</strong> Automated rotation & robust PKI reduce outages</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 11.3 -->
+        <div class="subsection card" id="section-11-3">
+            <div class="card-header">11.3 HIPAA</div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>§164.312(e)(1):</strong> Implement encryption for PHI in transit</li>
+                    <li><strong>§164.308(a)(4):</strong> Access control and user/service authentication</li>
+                    <li><strong>§164.312(d):</strong> Person or entity authentication  
+                        → mTLS provides strong machine authentication.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 11.4 -->
+        <div class="subsection card" id="section-11-4">
+            <div class="card-header">11.4 ISO 27001</div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>A.10.1:</strong> Cryptographic controls for data in transit</li>
+                    <li><strong>A.9.x:</strong> Access control via service identity</li>
+                    <li><strong>A.12.6:</strong> Technical vulnerability management  
+                        → Certificate rotation + CA hardening</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="callout callout-success">
+            ✔️ By enforcing confidentiality, integrity, and cryptographic identity,  
+            <strong>mTLS satisfies key requirements across PCI, SOC 2, HIPAA, and ISO 27001 frameworks.</strong>
+        </div>
+
+    </div>
+</section>
+
+<!-- ========================= -->
+<!-- SECTION 11.5 — Comprehensive mTLS Compliance & Knowledge Quiz -->
+<!-- ========================= -->
+
+<section class="card" id="section-11-5">
+    <div class="card-header">11.5 Comprehensive mTLS Mastery Quiz (20 Questions)</div>
+    <div class="card-body">
+
+        <p>
+            This extended quiz evaluates your understanding of mTLS across design, implementation,
+            troubleshooting, threat modeling, and compliance domains.  
+            It includes scenario-based questions, code-analysis questions, and real-world architecture challenges.
+        </p>
+
+        <div id="quiz-mtls-master"></div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-mtls-master", {
+                    title: "🧪 mTLS Senior-Level Mastery Quiz",
+                    mode: "classic",
+                    questions: [
+                        /* 1 */
+                        {
+                            text: "A service mesh logs: 'Client certificate missing SAN entry. Rejecting connection.' What is the MOST likely root cause?",
+                            options: [
+                                { label: "The certificate uses only a Common Name", correct: true },
+                                { label: "The certificate is expired", correct: false },
+                                { label: "The CA is untrusted", correct: false }
+                            ]
+                        },
+                        /* 2 */
+                        {
+                            text: "Which component in PKI must remain offline or HSM-protected?",
+                            options: [
+                                { label: "Intermediate CA", correct: false },
+                                { label: "Root CA", correct: true },
+                                { label: "Leaf certificate", correct: false }
+                            ]
+                        },
+                        /* 3 */
+                        {
+                            text: "Which failure mode MOST strongly indicates 'trust-store drift'?",
+                            options: [
+                                { label: "Client reports: unknown CA", correct: true },
+                                { label: "Certificate expired", correct: false },
+                                { label: "Handshake timeout", correct: false }
+                            ]
+                        },
+                        /* 4 */
+                        {
+                            text: "In Kubernetes service meshes, where does mTLS typically terminate?",
+                            options: [
+                                { label: "Inside the application container", correct: false },
+                                { label: "At the Envoy/sidecar proxy", correct: true },
+                                { label: "At kube-proxy", correct: false }
+                            ]
+                        },
+                        /* 5 */
+                        {
+                            text: "Which certificate field should be used for service identity?",
+                            options: [
+                                { label: "Common Name (CN)", correct: false },
+                                { label: "Subject Alternative Name (SAN)", correct: true },
+                                { label: "Issuer DN", correct: false }
+                            ]
+                        },
+                        /* 6 — scenario */
+                        {
+                            text: "Service A calls Service B successfully over mTLS, but Service B is NOT supposed to allow this action. What is MOST likely missing?",
+                            options: [
+                                { label: "Proper TLS ciphers", correct: false },
+                                { label: "Authorization rules tied to certificate identity", correct: true },
+                                { label: "A dedicated gateway", correct: false }
+                            ]
+                        },
+                        /* 7 */
+                        {
+                            text: "Which measure MOST reduces the blast radius of a leaked private key?",
+                            options: [
+                                { label: "Using long-lived certificates", correct: false },
+                                { label: "Short-lived certificates with automated rotation", correct: true },
+                                { label: "Verbose logs", correct: false }
+                            ]
+                        },
+                        /* 8 — code analysis */
+                        {
+                            text: "Given the NGINX config: `ssl_verify_client optional;` What is the security risk?",
+                            options: [
+                                { label: "Server does not authenticate the client", correct: true },
+                                { label: "Server certificate becomes invalid", correct: false },
+                                { label: "Only TLS 1.0 is used", correct: false }
+                            ]
+                        },
+                        /* 9 */
+                        {
+                            text: "Which attack is MOST feasible in a misconfigured mTLS mesh?",
+                            options: [
+                                { label: "Sidecar bypass", correct: true },
+                                { label: "Public MITM", correct: false },
+                                { label: "DNS rebinding", correct: false }
+                            ]
+                        },
+                        /* 10 */
+                        {
+                            text: "What is the BEST way to detect fraudulent certificate issuance?",
+                            options: [
+                                { label: "Track certificate issuance frequency per workload", correct: true },
+                                { label: "Monitor HTTP response times", correct: false },
+                                { label: "Scan for open ports", correct: false }
+                            ]
+                        },
+                        /* 11 — scenario */
+                        {
+                            text: "A compromised node uses its IAM role to request new workload certificates. What defense prevents this?",
+                            options: [
+                                { label: "Short-lived certificates", correct: false },
+                                { label: "Node attestation (SPIRE/SPIFFE)", correct: true },
+                                { label: "TLS 1.3 only mode", correct: false }
+                            ]
+                        },
+                        /* 12 */
+                        {
+                            text: "Which PKI artifact is MOST sensitive?",
+                            options: [
+                                { label: "Leaf certificate", correct: false },
+                                { label: "Root CA key", correct: true },
+                                { label: "CSR file", correct: false }
+                            ]
+                        },
+                        /* 13 */
+                        {
+                            text: "Which log entry indicates SAN spoofing?",
+                            options: [
+                                { label: "'CN=serviceA, SAN empty'", correct: true },
+                                { label: "'Certificate expired'", correct: false },
+                                { label: "'Cipher mismatch'", correct: false }
+                            ]
+                        },
+                        /* 14 — code analysis */
+                        {
+                            text: "Given this Envoy config: `require_client_certificate: false` — what breaks?",
+                            options: [
+                                { label: "Server authentication", correct: false },
+                                { label: "Client authentication", correct: true },
+                                { label: "TLS encryption", correct: false }
+                            ]
+                        },
+                        /* 15 */
+                        {
+                            text: "What feature of mTLS enables mapping workload identity to authorization rules?",
+                            options: [
+                                { label: "TLS version negotiation", correct: false },
+                                { label: "SAN-based identity", correct: true },
+                                { label: "Cipher selection", correct: false }
+                            ]
+                        },
+                        /* 16 — scenario */
+                        {
+                            text: "Service B reports: 'Handshake failed: unknown CA'. Service A works fine. What is the MOST likely cause?",
+                            options: [
+                                { label: "Trust-store drift between services", correct: true },
+                                { label: "Expired cipher suite", correct: false },
+                                { label: "Clock skew", correct: false }
+                            ]
+                        },
+                        /* 17 */
+                        {
+                            text: "Which misconfiguration will allow impersonation inside a mesh?",
+                            options: [
+                                { label: "Only verifying CN", correct: true },
+                                { label: "TLS 1.2 enforcement", correct: false },
+                                { label: "SAN-critical flag", correct: false }
+                            ]
+                        },
+                        /* 18 — scenario */
+                        {
+                            text: "A developer mounts certificates manually into pods from GitHub secrets. What is the primary risk?",
+                            options: [
+                                { label: "High memory usage", correct: false },
+                                { label: "Certificate leakage & long-term compromise", correct: true },
+                                { label: "TLS renegotiation errors", correct: false }
+                            ]
+                        },
+                        /* 19 */
+                        {
+                            text: "Which component enforces mTLS in a service mesh?",
+                            options: [
+                                { label: "API Gateway", correct: false },
+                                { label: "Sidecar Proxy (Envoy)", correct: true },
+                                { label: "Kubelet", correct: false }
+                            ]
+                        },
+                        /* 20 — scenario */
+                        {
+                            text: "A malicious pod tries to connect to Service B directly without going through the sidecar. What defense prevents this attack?",
+                            options: [
+                                { label: "iptables redirection rules forcing all traffic via the sidecar", correct: true },
+                                { label: "TLS 1.3 handshake", correct: false },
+                                { label: "Container liveness probes", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+
+        <div class="callout callout-success">
+            🎉 <strong>You’ve reached senior-level mastery if you score 17+ out of 20.</strong><br>
+            This quiz evaluates full-stack mTLS knowledge — identity, PKI, mesh behavior, CA risks, detection, code, 
+            configuration, and operational pitfalls.
+        </div>
+
+    </div>
+</section>
