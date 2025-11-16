@@ -87,6 +87,7 @@
      </ul>
      <div class="widget" id="section-1-quiz"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("section-1-quiz", {
         title: "Foundation Pulse Check",
         mode: "classic",
@@ -116,6 +117,7 @@
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -349,6 +351,7 @@
     </ul>
     <div class="widget" id="section-2-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-2-quiz", {
        title: "Analogy Comprehension Quiz",
        questions: [
@@ -377,6 +380,7 @@
          ]
         }
        ]
+     });
      });
     </script>
    </div>
@@ -521,6 +525,7 @@
     </ul>
     <div class="widget" id="section-3-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-3-quiz", {
        title: "Mental Model Quiz",
        questions: [
@@ -549,6 +554,7 @@
          ]
         }
        ]
+     });
      });
     </script>
    </div>
@@ -788,6 +794,7 @@
     </ul>
     <div class="widget" id="section-4-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-4-quiz", {
        title: "Deep Dive Knowledge Check",
        questions: [
@@ -816,6 +823,7 @@
          ]
         }
        ]
+     });
      });
     </script>
    </div>
@@ -1193,6 +1201,7 @@
     </ul>
     <div class="widget" id="section-5-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-5-quiz", {
        title: "Real-World Context Quiz",
        questions: [
@@ -1221,6 +1230,7 @@
          ]
         }
        ]
+     });
      });
     </script>
    </div>
@@ -1575,6 +1585,7 @@
      </p>
      <div class="widget" id="attack-sandbox-6"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.AttackSandbox.create("attack-sandbox-6", {
         title: "🎯 Zero Trust Breaker Lab",
         scenarios: [
@@ -1589,12 +1600,13 @@
           {
             name: "Shadow API to Object Storage",
             description: "An undocumented admin API shares the storage network plane and exposes raw bucket paths.",
-            payload: "POST /ops/debug/export {"bucket":"tenant-a","path":"../../tenant-b"}",
+            payload: 'POST /ops/debug/export {"bucket":"tenant-a","path":"../../tenant-b"}',
             response: "If input validation fails, AppSecWidgets shows the exfiltrated object list.",
             notifyType: "danger",
             notifyMessage: "Shadow APIs often bypass zero trust gates when not registered with the mesh."
           }
         ]
+      });
       });
      </script>
     <h4>
@@ -1622,6 +1634,7 @@
     </ul>
     <div class="widget" id="section-6-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-6-quiz", {
       title: "Weakness Spotter",
       questions: [
@@ -1650,6 +1663,7 @@
         ]
        }
       ]
+     });
      });
     </script>
    </div>
@@ -1818,6 +1832,7 @@
     <div class="card-body">
      <div class="widget" id="quiz-6"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-6", {
         title: "Attack Surface Sanity Quiz",
         mode: "classic",
@@ -1839,6 +1854,7 @@
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -1876,6 +1892,7 @@
     </ul>
     <div class="widget" id="section-7-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-7-quiz", {
       title: "Hands-On Review Quiz",
       questions: [
@@ -1905,6 +1922,7 @@
        }
       ]
      });
+     });
     </script>
    </div>
   </section>
@@ -1917,6 +1935,7 @@
       Reviewers compare insecure vs. hardened policies before approving a release. The secure variant mirrors NIST SP 800-207 guidance by pairing workload labels with mTLS identities.</p>
      <div class="widget" id="config-diff-7-1"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.ConfigDiff.create("config-diff-7-1", "🔐 Tenant Scoped NetworkPolicy", `apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -1961,6 +1980,7 @@ spec:
     - port: 5432
       protocol: TCP
 `);
+      });
      </script>
      <p>
       Reviewer checklist:</p>
@@ -1980,6 +2000,7 @@ spec:
       Log-based detection is the fastest feedback loop for SaaS abuse. Feed API gateway, service mesh, and database logs into one schema to spot mismatched tenants.</p>
      <div class="widget" id="log-analyzer-7-2"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.LogAnalyzer.create("log-analyzer-7-2", {
         title: "🔍 Zero Trust Log Triage",
         columns: ["Time", "Component", "Identity", "Event", "Status"],
@@ -1989,6 +2010,7 @@ spec:
           { time: "10:22:17", component: "ledger-db", identity: "svc:billing-green", event: "Tenant mismatch: claims=tenant-a row=tenant-b", status: "blocked", severity: "warning" },
           { time: "10:22:18", component: "mesh-control", identity: "ci-runner", event: "Cert issuance denied (no attestation)", status: "blocked", severity: "danger" }
         ]
+      });
       });
      </script>
      <p>
@@ -2021,6 +2043,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="quiz-7"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-7", {
         intro: "Validate your implementation instincts.",
         questions: [
@@ -2039,6 +2062,7 @@ spec:
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -2075,6 +2099,7 @@ spec:
     </ul>
     <div class="widget" id="section-8-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-8-quiz", {
       title: "Design Principle Drill",
       questions: [
@@ -2103,6 +2128,7 @@ spec:
         ]
        }
       ]
+     });
      });
     </script>
    </div>
@@ -2159,6 +2185,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="quiz-8"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-8", {
         questions: [
           {
@@ -2176,6 +2203,7 @@ spec:
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -2213,6 +2241,7 @@ spec:
      </ul>
      <div class="widget" id="section-9-quiz"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("section-9-quiz", {
         title: "Incident Comprehension",
         questions: [
@@ -2242,6 +2271,7 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -2268,6 +2298,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="timeline-9"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.TimelineVerticalView.create("timeline-9", {
         title: "🕒 Okta Support Incident Timeline",
         events: [
@@ -2276,6 +2307,7 @@ spec:
           { date: "2023-10-17", title: "Customer reports anomalies", description: "Several SaaS tenants notice admin MFA resets." },
           { date: "2023-10-19", title: "Containment", description: "Okta revokes session tokens, enforces device attestation, and isolates support environment." }
         ]
+      });
       });
      </script>
      <p>
@@ -2301,6 +2333,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="quiz-9"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-9", {
         questions: [
           {
@@ -2318,6 +2351,7 @@ spec:
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -2354,6 +2388,7 @@ spec:
     </ul>
     <div class="widget" id="section-10-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-10-quiz", {
       title: "Threat Model Quiz",
       questions: [
@@ -2379,6 +2414,7 @@ spec:
         ]
        }
       ]
+     });
      });
     </script>
    </div>
@@ -2460,6 +2496,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="threatmodel-10"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.ThreatModel.create("threatmodel-10", {
         system: {
           name: "Zero Trust SaaS Mesh",
@@ -2478,6 +2515,7 @@ spec:
           elevation: "Apply just-in-time admin approval and time-bound roles."
         }
       }, { title: "🎯 STRIDE Canvas" });
+      });
      </script>
     </div>
    </section>
@@ -2488,6 +2526,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="quiz-10"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-10", {
         questions: [
           {
@@ -2505,6 +2544,7 @@ spec:
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -2541,6 +2581,7 @@ spec:
     </ul>
     <div class="widget" id="section-11-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-11-quiz", {
       title: "Compliance Mapping Quiz",
       questions: [
@@ -2566,6 +2607,7 @@ spec:
         ]
        }
       ]
+     });
      });
     </script>
    </div>
@@ -2639,6 +2681,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="quiz-11"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-11", {
         questions: [
           {
@@ -2656,6 +2699,7 @@ spec:
             ]
           }
         ]
+      });
       });
      </script>
     </div>
@@ -2694,6 +2738,7 @@ spec:
     </ul>
     <div class="widget" id="section-12-quiz"></div>
     <script>
+     document.addEventListener("DOMContentLoaded", function () {
      AppSecWidgets.Quiz.create("section-12-quiz", {
       title: "25-Question Mastery Check",
       mode: "classic",
@@ -2899,6 +2944,7 @@ spec:
         ]
        }
       ]
+     });
      });
     </script>
    </div>
