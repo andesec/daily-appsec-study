@@ -17,7 +17,7 @@ Teach the topic from the ground up using the following structure below.
 
 ---
 
-## Required Structure (Headings 1–11)
+## Required Structure (Headings 1–12)
 1. **Foundations**
     - Define all core terms and components.
     - Explain and show how components interact in real systems.
@@ -89,6 +89,11 @@ Teach the topic from the ground up using the following structure below.
     - Include exact control IDs and some notes on how to be compliant with them
     - Skip irrelevant frameworks with a one-line justification.
     - Widget Suggestions: Callout, Tables, FlowVisualizer
+
+12. **Capstone Quiz & Final Assessment**
+    - Provide a 25-question quiz that blends reasoning, coding/config diffs, detection, and compliance scenarios.
+    - Questions should cover production-scale decision-making (e.g., IAM, KMS, Secrets Manager, incident response).
+    - Widget Suggestions: Quiz (AppSecWidgets.Quiz), Callout for instructions.
 
 ---
 
