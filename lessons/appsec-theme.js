@@ -368,6 +368,78 @@ function applyTableScroll() {
 
 document.addEventListener("DOMContentLoaded", applyTableScroll);
 
+window.AppSec.convertTextNodeContent = function (text) {
+    if (typeof text !== "string") return text;
+
+    // Inline code
+    text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+    // Bold
+    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+    // Italic
+    text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+    // URLs → clickable links
+    const urlRegex = /\bhttps?:\/\/[^\s<]+/gi;
+
+    text = text.replace(urlRegex, (url) => {
+        const safeUrl = url.replace(/"/g, "&quot;");
+        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
+    });
+
+    return text;
+};
+
+window.AppSec.applyMarkdownToDOM = function () {
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode(node) {
+                const parent = node.parentNode;
+
+                // Skip script/style widgets
+                if (!parent) return NodeFilter.FILTER_REJECT;
+                const tag = parent.nodeName.toLowerCase();
+                if (["script", "style", "noscript"].includes(tag)) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+
+                // Skip already-processed nodes
+                if (node.nodeValue.trim() === "") return NodeFilter.FILTER_REJECT;
+
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
+    );
+
+    const toTransform = [];
+
+    let node;
+    while ((node = walker.nextNode())) {
+        toTransform.push(node);
+    }
+
+    toTransform.forEach(textNode => {
+        const original = textNode.nodeValue;
+        const transformed = window.AppSec.convertTextNodeContent(original);
+
+        if (original !== transformed) {
+            const span = document.createElement("span");
+            span.innerHTML = transformed;
+            textNode.replaceWith(span);
+        }
+    });
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+    window.AppSec.applyMarkdownToDOM();
+});
+
+
+
+
 // Export for use in other modules
 window.AppSec = {
   ThemeManager,
