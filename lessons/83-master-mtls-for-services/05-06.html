@@ -1,0 +1,291 @@
+<!-- ========================= -->
+<!-- SECTION 5 — Real-World Context & Interactions -->
+<!-- ========================= -->
+
+<section class="card" id="section-5">
+    <div class="card-header">5. Real-World Context & Interactions</div>
+    <div class="card-body">
+
+        <p>
+            Mutual TLS plays a foundational role in <strong>enterprise microservices</strong>, <strong>service meshes</strong>,
+            <strong>multi-tenant SaaS platforms</strong>, and <strong>zero-trust architectures</strong>.  
+            To apply mTLS effectively, you must understand where it fits into the larger ecosystem of identity,
+            networking, gateways, and runtime security.
+        </p>
+
+        <h3>5.1 Where mTLS shows up in production architectures</h3>
+
+        <pre>
+[External Client] --TLS--> [API Gateway] --mTLS--> [Service A] --mTLS--> [Service B] --mTLS--> [DB Proxy]
+                                                                    |
+                                                                    +--> [Background Worker] --mTLS--> [Audit Service]
+        </pre>
+
+        <ul>
+            <li><strong>API Gateway → Services:</strong> mTLS secures east–west traffic after initial external authentication.</li>
+            <li><strong>Service → Service:</strong> mTLS enforces workload identity across microservices.</li>
+            <li><strong>Service → Database proxy:</strong> mTLS validates the service identity before access.</li>
+            <li><strong>Service → Background job runners:</strong> Both sides authenticate before exchanging internal data.</li>
+        </ul>
+
+        <h3>5.2 Interaction with the Service Mesh</h3>
+        <p>
+            Most Kubernetes-based companies rely on a <strong>service mesh</strong> (Istio, Linkerd, Kuma) to provide:
+        </p>
+        <ul>
+            <li>Automatic mTLS between all workloads.</li>
+            <li>Certificate issuance via a local CA or external CA (Vault, ACM PCA).</li>
+            <li>Policy enforcement (which service may call which service).</li>
+            <li>Sidecar termination and initiation of mTLS.</li>
+        </ul>
+
+        <pre>
+        +---------------------+            +----------------------+
+        |  Service A Pod      |            |   Service B Pod      |
+        |  +---------------+  |  mTLS      |  +---------------+   |
+        |  |  Envoy Sidecar |<============>|  | Envoy Sidecar |   |
+        |  +---------------+  |            |  +---------------+   |
+        +---------------------+            +----------------------+
+        </pre>
+
+        <div class="callout callout-info">
+            💡 In meshes, <strong>applications never touch certificates directly</strong>.  
+            The sidecar handles mTLS, identity extraction, and rotation.
+        </div>
+
+        <h3>5.3 Interaction with API Gateways & Load Balancers</h3>
+        <p>
+            Gateways often terminate external TLS but forward requests to internal services using mTLS:
+        </p>
+
+        <pre>
+Client → HTTPS → API Gateway → mTLS → Internal Services
+        </pre>
+
+        <p>Gateways enforce:</p>
+        <ul>
+            <li><strong>External authentication</strong> (OAuth, OIDC, API keys, JWT verification)</li>
+            <li><strong>Certificate validation for internal targets</strong></li>
+            <li><strong>Routing rules based on SAN identity</strong></li>
+        </ul>
+
+        <div class="callout callout-warning">
+            ⚠️ mTLS is not a replacement for user authentication.  
+            mTLS authenticates <em>services</em>, not <em>users</em>.
+        </div>
+
+        <h3>5.4 Interaction with Zero-Trust Networks</h3>
+        <p>
+            Zero-trust networks (ZTNA) depend heavily on:
+        </p>
+        <ul>
+            <li>Strong identity at every hop</li>
+            <li>Continuous re-verification</li>
+            <li>Cryptographic proof of workload identity</li>
+        </ul>
+
+        <p>
+            mTLS provides the <strong>transport identity layer</strong> that ZTNA requires.
+        </p>
+
+        <h3>5.5 Interactive: Diagram Viewer (correct widget)</h3>
+        <p>
+            Use the viewer below to explore how a request travels from the gateway through multiple mTLS hops in a mesh.
+        </p>
+
+        <div id="diagram-5-mtls"></div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Diagram) {
+                AppSecWidgets.Diagram.create("diagram-5-mtls", {
+                    title: "🌐 Traffic Flow with mTLS (Gateway → Mesh → Services)",
+                    ascii: `
+Client
+  |
+  v
+[ API Gateway ]
+       |
+       |  mTLS
+       v
++-----------------+        mTLS        +-----------------+
+|  Service A Pod  | <===============>  |  Service B Pod  |
+|  (Sidecar)      |                    |  (Sidecar)      |
++-----------------+                    +-----------------+
+                    `
+                });
+            }
+        });
+        </script>
+
+        <div class="callout callout-success">
+            🎉 By now you can visualize exactly where mTLS sits in a real distributed system and how it interacts with gateways, service meshes, and zero-trust controls.
+        </div>
+
+    </div>
+</section>
+
+
+
+
+<!-- ========================= -->
+<!-- SECTION 6 — Common Weaknesses, Pitfalls & Attack Paths -->
+<!-- ========================= -->
+
+<section class="card" id="section-6">
+    <div class="card-header">6. Common Weaknesses, Pitfalls & Attack Paths</div>
+    <div class="card-body">
+
+        <p>
+            Even though mTLS is cryptographically strong, systems frequently fail due to <strong>misconfiguration</strong>,
+            <strong>certificate lifecycle issues</strong>, or <strong>identity design errors</strong>.  
+            Here we enumerate realistic attack paths AppSec engineers must look for.
+        </p>
+
+        <h3>6.1 Weakness: Long-lived certificates</h3>
+        <p>
+            Long-lived certificates increase the blast radius of key compromise.
+        </p>
+        <pre>
+Attacker steals private key → Can impersonate workload for months/years.
+        </pre>
+
+        <div class="callout callout-danger">
+            ❌ Best practice: Use short-lived certificates (6–24 hours).
+        </div>
+
+        <h3>6.2 Weakness: Certificate reuse across multiple workloads</h3>
+        <p>
+            A single certificate used across many pods/VMs prevents identity attribution.
+        </p>
+
+        <pre>
+orders-service-prod-1
+orders-service-prod-2
+orders-service-staging
+   → All share the same client certificate (BAD)
+        </pre>
+
+        <p>Attack path: attacker compromises one pod → impersonates all environments.</p>
+
+        <h3>6.3 Weakness: CN-based identity instead of SAN-based identity</h3>
+        <p>
+            CN fields are deprecated for identity. Attackers can generate misleading CN values.
+        </p>
+
+        <div class="callout callout-warning">
+            ⚠️ Always perform identity checks against SAN entries only.
+        </div>
+
+        <h3>6.4 Weakness: Missing authorization after authentication</h3>
+        <p>
+            mTLS proves “who you are,” but if authorization is missing, internal calls are overly trusted.
+        </p>
+
+        <pre>
+billing-service can call card-service simply because mTLS succeeded → WRONG.
+        </pre>
+
+        <h3>6.5 Weakness: Trust-store drift</h3>
+        <p>
+            If different workloads trust different CA bundles → unpredictable outages or unexpected access.
+        </p>
+
+        <pre>
+Service A trusts CA1 + CA2
+Service B trusts only CA1
+→ B rejects A’s certificate but A accepts B’s
+        </pre>
+
+        <div class="callout callout-info">
+            💡 Keep trust stores synchronized through CI/CD + configuration management.
+        </div>
+
+        <h3>6.6 Attack Path: Stolen node IAM credentials → fraudulent certificate issuance</h3>
+        <p>
+            If a compromised node can generate CSRs using stolen bootstrap identity, attackers can issue their own certs.
+        </p>
+
+        <pre>
+Attacker steals AWS role of a node → Issues rogue workload certificates
+→ Moves laterally across cluster
+        </pre>
+
+        <div class="callout callout-danger">
+            ❌ Mitigate via node attestation + SPIRE/SPIFFE + strict CSR policies.
+        </div>
+
+        <h3>6.7 Attack Path: Sidecar bypass</h3>
+        <p>
+            If an application can bypass the sidecar and make direct network calls, it defeats the mesh’s mTLS guarantees.
+        </p>
+
+        <pre>
+App → Direct connection → Service B  (mTLS skipped!)
+        </pre>
+
+        <div class="callout callout-warning">
+            ⚠️ Enforce iptables redirection so <em>all</em> traffic flows through the sidecar.
+        </div>
+
+        <h3>6.8 Attack Path: Reuse of old certificates after rotation</h3>
+        <p>
+            If certificate rotation is not atomic, old certificates can remain valid longer than intended.
+        </p>
+
+        <pre>
+Attacker with backup of old key → Uses it until certificate expiry.
+        </pre>
+
+        <div class="callout callout-info">
+            💡 Short-lived certificates dramatically reduce this risk.
+        </div>
+
+        <h3>6.9 Quiz — Identify the risk</h3>
+
+        <div id="quiz-mtls-weaknesses"></div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-mtls-weaknesses", {
+                    title: "🧪 mTLS Weaknesses Quiz",
+                    mode: "classic",
+                    questions: [
+                        {
+                            text: "Which issue MOST increases the blast radius of a key compromise?",
+                            options: [
+                                { value: "a", label: "Short-lived certificates", correct: false },
+                                { value: "b", label: "Long-lived certificates", correct: true },
+                                { value: "c", label: "Sidecar termination", correct: false }
+                            ]
+                        },
+                        {
+                            text: "Which scenario indicates trust-store drift?",
+                            options: [
+                                { value: "a", label: "Both services trust the same CA bundle", correct: false },
+                                { value: "b", label: "Only one service trusts CA2", correct: true },
+                                { value: "c", label: "All SANs are validated", correct: false }
+                            ]
+                        },
+                        {
+                            text: "Which is a valid attack path against an mTLS mesh?",
+                            options: [
+                                { value: "a", label: "Sidecar bypass", correct: true },
+                                { value: "b", label: "Expired certificate", correct: false },
+                                { value: "c", label: "SAN validation", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+
+        <div class="callout callout-success">
+            🎉 You now understand the most common real-world mTLS weaknesses and how attackers exploit them.
+            These insights are essential for design reviews, pentests, and threat modeling.
+        </div>
+
+    </div>
+</section>
