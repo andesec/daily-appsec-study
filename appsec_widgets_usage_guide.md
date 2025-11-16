@@ -249,33 +249,78 @@ AppSecWidgets.CodeReviewChecker.create(containerId, config?)
 
 ---
 
-## 9. VulnerabilityTimeline
+## 9. TimelineVerticalView
 
-**What it does**  
-Visual timeline of vulnerabilities, with severity coloring and optional external links.
+## What it does
+A vertical, step-by-step timeline widget with optional tags, external links, and navigation.
 
-**API**
-
+## API
 ```js
-AppSecWidgets.VulnerabilityTimeline.create(containerId, config?)
+AppSecWidgets.TimelineVerticalView.create(containerId, config)
 ```
 
-**Parameters**
+## Parameters
+### `containerId` (string)
+ID of the DOM element the widget will render into.
 
-- `containerId` (string)
-- `config` (object, optional)
-  - `title` (string, optional)  
-    Default: `"📅 Vulnerability Timeline"`.
-  - `vulnerabilities` (array of objects, optional)
-    - Each vulnerability:
-      - `id` (string, optional) – e.g. `"CVE-2025-1234"`
-      - `date` (string)
-      - `title` (string)
-      - `description` (string)
-      - `severity` (string, optional) – `"Critical"`, `"High"`, `"Medium"`, `"Low"`
-      - `link` (string, optional) – URL to external details
-  - `placeholder` (string, optional)  
-    Shown when list is empty.
+### `config` (object)
+Optional configuration.
+
+#### Properties
+- **title** (string, optional)
+  Default: no title.
+
+- **events** (array of objects)
+  Each event supports:
+  - `id` (string, optional)
+  - `date` (string)
+  - `title` (string)
+  - `description` (string)
+  - `tags` (array of strings, optional)
+  - `severity` (string, optional) – used only if you want to convert it to a tag
+  - `link` (string, optional) – external reference URL
+
+- **placeholder** (string, optional)
+  Not currently used but reserved for compatibility.
+
+---
+
+## Example Usage
+```js
+AppSecWidgets.TimelineVerticalView.create("section9-timeline", {
+  title: "📅 Incident Timeline – Wallet Race Condition",
+  events: [
+    {
+      id: "RACE-2025-001",
+      date: "2025-03-10",
+      title: "Bug introduced",
+      description: "Refactor moved debit logic out of transaction, introducing TOCTOU race.",
+      tags: ["Bug", "TOCTOU", "Refactor"]
+    },
+    {
+      id: "RACE-2025-002",
+      date: "2025-06-01",
+      title: "First anomalous negative balances",
+      description: "Monitoring flagged sporadic negative balances under peak load.",
+      tags: ["High", "Monitoring", "Anomalies"]
+    },
+    {
+      id: "RACE-2025-003",
+      date: "2025-07-15",
+      title: "Abuse by attacker",
+      description: "Attacker amplifies race, obtaining thousands of dollars of goods with $100 deposit.",
+      tags: ["Critical", "Exploit", "Race Condition", "Fraud"]
+    },
+    {
+      id: "RACE-2025-004",
+      date: "2025-08-01",
+      title: "Fix deployed",
+      description: "Introduced DB transaction with row-level locking and removed cache-based balance checks.",
+      tags: ["High", "Fix", "Database", "Locking"]
+    }
+  ]
+});
+```
 
 ---
 

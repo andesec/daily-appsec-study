@@ -1433,7 +1433,7 @@ AppSecWidgets.ThreatModel = {
         <!-- Architecture / Context Section -->
         <div class="grid grid-2 threat-architecture mb-1">
           <div>
-            <h4>📦 System Overview</h4>
+            <h5>📦 System Overview</h5>
             <label class="mt-0-5">System / Feature Name</label>
             <input type="text" id="${containerId}-system-name" placeholder="e.g., Payments API, Login service">
             
@@ -1452,7 +1452,7 @@ AppSecWidgets.ThreatModel = {
             <textarea id="${containerId}-actors" rows="3" placeholder="Users, admins, services, third parties..."></textarea>
           </div>
           <div>
-            <h4>🧩 Assets, Data & Boundaries</h4>
+            <h5>🧩 Assets, Data & Boundaries</h5>
             <label class="mt-0-5">Critical Assets</label>
             <textarea id="${containerId}-assets" rows="3" placeholder="What are we protecting? (money, PII, secrets, IP, availability)"></textarea>
 
@@ -1472,6 +1472,9 @@ AppSecWidgets.ThreatModel = {
         </div>
 
         <div class="mt-1" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="AppSecWidgets.ThreatModel.importModel('${containerId}')">
+            📥 Import JSON
+          </button>
           <button class="btn btn-primary" onclick="AppSecWidgets.ThreatModel.exportModel('${containerId}')">
             💽 Export JSON
           </button>
@@ -1756,6 +1759,73 @@ AppSecWidgets.ThreatModel = {
     }
   },
 
+  importModel(containerId) {
+    const raw = prompt("Paste the exported JSON here:");
+
+    if (!raw || !raw.trim()) return;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      alert("Invalid JSON. Please paste the exact Export JSON.");
+      return;
+    }
+
+    if (!parsed.system || !parsed.stride) {
+      alert("This JSON is missing required fields (system, stride).");
+      return;
+    }
+
+    const assign = (key, value) => {
+      const el = document.getElementById(`${containerId}-${key}`);
+      if (el) el.value = value || "";
+    };
+
+    // --- Replace system values ---
+    assign("system-name", parsed.system.name);
+    assign("system-type", parsed.system.type);
+    assign("actors", parsed.system.actors);
+    assign("assets", parsed.system.assets);
+    assign("entrypoints", parsed.system.entryPoints);
+    assign("boundaries", parsed.system.boundaries);
+
+    // --- Replace STRIDE threats ---
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
+    const categories = [
+      "spoofing",
+      "tampering",
+      "repudiation",
+      "information",
+      "dos",
+      "elevation"
+    ];
+
+    categories.forEach(cat => {
+      let text = parsed.stride[cat] || "";
+      const items = text
+        .split("\n")
+        .map(t => t.replace(/^[-*•]\s*/, "").trim())
+        .filter(Boolean);
+
+      state.threats[cat] = items;
+
+      const hidden = document.getElementById(`${containerId}-${cat}`);
+      if (hidden) {
+        hidden.value = items.length ? items.map(i => `- ${i}`).join("\n") : "";
+      }
+    });
+
+    // Re-render UI threat cards
+    categories.forEach(cat => {
+      this.renderThreatList(containerId, cat);
+    });
+
+    alert("Threat Model imported successfully.");
+  },
+
   exportMarkdown(containerId) {
     const getVal = (id) => {
       const el = document.getElementById(id);
@@ -2027,7 +2097,7 @@ AppSecWidgets.Checklist = {
 };
 
 // =============================================================
-//  AppSecWidgets.PatternLibrary
+//  15. PatternLibrary
 //  A reusable pattern library viewer
 // =============================================================
 AppSecWidgets.PatternLibrary = {
@@ -2101,6 +2171,81 @@ AppSecWidgets.PatternLibrary = {
       card.appendChild(cardBody);
       body.appendChild(card);
     });
+  }
+};
+
+// =============================================================
+//  16. Step Timeline Widget
+//  A step-by-step timeline with navigation
+// =============================================================
+AppSecWidgets.TimelineVerticalView = {
+  create: function (id, config) {
+    const container = document.getElementById(id);
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="vtw">
+        <div class="vtw-header">
+            <span class="vtw-title">${config.title}</span>
+        </div>
+
+        <div class="vtw-events"></div>
+
+        <div class="vtw-controls">
+            <button class="vtw-btn" data-action="next">Next</button>
+        </div>
+      </div>
+    `;
+
+    const events = config.events;
+    let index = 0;
+
+    const eventsEl = container.querySelector(".vtw-events");
+    const btnNext = container.querySelector("[data-action='next']");
+
+    function addEvent(i) {
+      const ev = events[i];
+
+      const row = document.createElement("div");
+      row.className = "vtw-event-row slide-up";
+
+      const tagsHtml = ev.tags
+        ? `<div class="vtw-tags">${ev.tags.map(t => `<span class="vtw-tag">${t}</span>`).join("")}</div>`
+        : "";
+
+      const linkHtml = ev.link
+        ? `<div class="vtw-card-link">
+          <a href="${ev.link}" target="_blank" rel="noopener noreferrer">Learn more →</a>
+       </div>`
+        : "";
+
+      row.innerHTML = `
+    <div class="vtw-marker">
+        <div class="dot"></div>
+    </div>
+    <div class="vtw-card fade-in">
+        <div class="vtw-card-date">${ev.date}</div>
+        <div class="vtw-card-title">${ev.title}</div>
+        <div class="vtw-card-desc">${ev.description}</div>
+        ${linkHtml}
+        ${tagsHtml}
+    </div>
+  `;
+
+      eventsEl.appendChild(row);
+    }
+
+    btnNext.addEventListener("click", () => {
+      if (index < events.length) {
+        addEvent(index);
+        index++;
+        if (index === events.length) btnNext.disabled = true;
+      }
+    });
+
+    // Load first event
+    addEvent(index);
+    index++;
   }
 };
 

@@ -2549,34 +2549,29 @@ except Exception:
                     ]);
                 }
 
-                if (window.AppSecWidgets && AppSecWidgets.VulnerabilityTimeline) {
-                    AppSecWidgets.VulnerabilityTimeline.create('jwt-incident-timeline', {
-                        title: 'JWT Algorithm Confusion – Example Timeline',
-                        vulnerabilities: [
-                            {
-                                id: 'research-disclosure',
-                                date: '2015-03-01',
-                                title: 'Security research highlights alg=none and alg confusion issues',
-                                description: 'Researchers publish PoCs showing that several JWT libraries accept alg=none or allow RS→HS confusion.',
-                                severity: 'High'
-                            },
-                            {
-                                id: 'vendor-patches',
-                                date: '2015-06-15',
-                                title: 'Vendors release patches & guidance',
-                                description: 'Library maintainers ship versions that enforce algorithms or add configuration flags.',
-                                severity: 'Medium'
-                            },
-                            {
-                                id: 'secure-guidance',
-                                date: '2016-01-10',
-                                title: 'Best-practice guidance spreads',
-                                description: 'OWASP and major IdPs publish best practices for JWT algorithm handling and verification.',
-                                severity: 'Low'
-                            }
-                        ]
-                    });
-                }
+                AppSecWidgets.TimelineVerticalView.create("jwt-incident-timeline", {
+                    title: "JWT Algorithm Confusion – Example Timeline",
+                    events: [
+                        {
+                            date: "2015-03-01",
+                            title: "Security research highlights alg=none and alg confusion issues",
+                            description: "Researchers publish PoCs showing that several JWT libraries accept alg=none or allow RS→HS confusion.",
+                            tags: ["JWT", "Research", "Algorithm Confusion"]
+                        },
+                        {
+                            date: "2015-06-15",
+                            title: "Vendors release patches & guidance",
+                            description: "Library maintainers ship versions that enforce algorithms or add configuration flags.",
+                            tags: ["Patches", "Vendors", "Security Update"]
+                        },
+                        {
+                            date: "2016-01-10",
+                            title: "Best-practice guidance spreads",
+                            description: "OWASP and major IdPs publish best practices for JWT algorithm handling and verification.",
+                            tags: ["OWASP", "Guidance", "Best Practices"]
+                        }
+                    ]
+                });
 
                 if (window.AppSecWidgets && AppSecWidgets.LogAnalyzer) {
                     AppSecWidgets.LogAnalyzer.create('jwt-incident-logs', {

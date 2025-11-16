@@ -604,7 +604,8 @@ payload = {
                                     <ul>
                                         <li>Ignore <code>exp</code>, <code>nbf</code>, <code>aud</code>,
                                             <code>iss</code>
-                                            checks.</li>
+                                            checks.
+                                        </li>
                                         <li>Trust <code>role</code> or <code>tenant_id</code> blindly inside the
                                             token.</li>
                                     </ul>
@@ -875,7 +876,8 @@ request|                 |                    | (5) Verify Sig w/  |
                         <p class="text-secondary">Pen-test style steps for abusing weak JWT verification.</p>
                         <ol>
                             <li>Find an endpoint that accepts a Bearer JWT (e.g. <code>/admin/*</code> or
-                                <code>/api/v1/*</code>).</li>
+                                <code>/api/v1/*</code>).
+                            </li>
                             <li>Capture a legitimate token in Burp/ZAP:
                                 <pre><code>
 eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0yMDI1LTAxIn0.
@@ -1009,7 +1011,8 @@ if claims["role"] == "admin":
                             <li>Find endpoints that rely solely on <code>role</code> / <code>is_admin</code> claim.</li>
                             <li>Get any valid token (low-priv user).</li>
                             <li>See if you can register a self-controlled OAuth client that gets tokens with arbitrary
-                                <code>role</code> values or use a compromised IdP.</li>
+                                <code>role</code> values or use a compromised IdP.
+                            </li>
                             <li>If the verifier trusts any issuer / audience combination, you can supply a correctly
                                 signed token from your tenant to access someone else’s tenant.</li>
                         </ol>
@@ -1062,7 +1065,8 @@ if claims["role"] == "admin":
                             <ul>
                                 <li>Monitor key-store/KMS usage spikes.</li>
                                 <li>Alert on strange claim combos (e.g. regular users with
-                                    <code>role=superadmin</code>).</li>
+                                    <code>role=superadmin</code>).
+                                </li>
                                 <li>Correlate webhook volume with upstream provider logs.</li>
                             </ul>
                         </div>
@@ -1233,7 +1237,8 @@ openssl dgst -sha256 -verify pk_demo.pem -signature message.sig message.txt
                             <li>Enforce claim validation:
                                 <ul>
                                     <li><code>iss</code>, <code>aud</code>, <code>exp</code>, <code>nbf</code>,
-                                        <code>iat</code></li>
+                                        <code>iat</code>
+                                    </li>
                                     <li>Tenant binding (e.g. <code>tenant_id</code> in token must match request’s tenant
                                         context).</li>
                                 </ul>
@@ -1427,43 +1432,38 @@ openssl dgst -sha256 -verify pk_demo.pem -signature message.sig message.txt
             }
 
             // Vulnerability timeline
-            if (window.AppSecWidgets && window.AppSecWidgets.VulnerabilityTimeline) {
-                AppSecWidgets.VulnerabilityTimeline.create('timeline-dsig-deep', {
-                    title: '📅 Digital Signature Misuse – Vulnerability Lifecycle',
-                    vulnerabilities: [
-                        {
-                            id: '1',
-                            date: '2025-01-10',
-                            severity: 'medium',
-                            title: 'JWT alg header not restricted',
-                            description: 'Gateway trusts any JWT alg value; alg=none and HS256/RS256 confusion possible.',
-                            link: 'https://portswigger.net/web-security/jwt'
-                        },
-                        {
-                            id: '2',
-                            date: '2025-02-01',
-                            severity: 'high',
-                            title: 'Forged admin JWT exploited in production',
-                            description: 'Attacker crafts token with alg=none and escalates to superadmin.',
-                            link: 'https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/10-Testing_JSON_Web_Tokens'
-                        },
-                        {
-                            id: '3',
-                            date: '2025-02-03',
-                            severity: 'high',
-                            title: 'Emergency fix and key rotation',
-                            description: 'Code updated to pin algorithms and enforce claim validation, auth keys rotated.'
-                        },
-                        {
-                            id: '4',
-                            date: '2025-02-10',
-                            severity: 'medium',
-                            title: 'Monitoring & hardening',
-                            description: 'KMS/HSM logs integrated, anomaly detection on admin operations, regression tests for signature verification.'
-                        }
-                    ]
-                });
-            }
+            AppSecWidgets.TimelineVerticalView.create("timeline-dsig-deep", {
+                title: "📅 Digital Signature Misuse – Vulnerability Lifecycle",
+                events: [
+                    {
+                        date: "2025-01-10",
+                        title: "JWT alg header not restricted",
+                        description: "Gateway trusts any JWT alg value; alg=none and HS256/RS256 confusion possible.",
+                        tags: ["JWT", "Algorithm Confusion", "Auth Bypass"],
+                        link: "https://portswigger.net/web-security/jwt"
+                    },
+                    {
+                        date: "2025-02-01",
+                        title: "Forged admin JWT exploited in production",
+                        description: "Attacker crafts token with alg=none and escalates to superadmin.",
+                        tags: ["Exploit", "JWT Abuse", "Privilege Escalation"],
+                        link: "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/10-Testing_JSON_Web_Tokens"
+                    },
+                    {
+                        date: "2025-02-03",
+                        title: "Emergency fix and key rotation",
+                        description: "Code updated to pin algorithms and enforce claim validation, auth keys rotated.",
+                        tags: ["Key Rotation", "Hotfix", "Hardening"]
+                    },
+                    {
+                        date: "2025-02-10",
+                        title: "Monitoring & hardening",
+                        description: "KMS/HSM logs integrated, anomaly detection on admin operations, regression tests for signature verification.",
+                        tags: ["KMS", "Detection", "Defense-in-Depth"]
+                    }
+                ]
+            });
+
 
             // HTTPSimulator for playing with a signed vs tampered JWT request
             if (window.AppSecWidgets && window.AppSecWidgets.HTTPSimulator) {
@@ -1503,7 +1503,7 @@ Content-Type: application/json
                             name: 'JWT alg=none bypass',
                             description: 'Try crafting a JWT header/payload where alg is set to "none" and reason about what a misconfigured server would do.',
                             samplePayload:
-`HEADER:
+                                `HEADER:
 {"alg": "none", "kid": "test"}
 
 PAYLOAD:
@@ -1518,7 +1518,7 @@ PAYLOAD:
                             name: 'Signed webhook replay',
                             description: 'Replay a valid signed webhook multiple times and think about what should prevent it.',
                             samplePayload:
-`POST /webhooks/payments HTTP/1.1
+                                `POST /webhooks/payments HTTP/1.1
 X-Signature: <valid-sig>
 X-Timestamp: 2025-11-15T06:00:00Z
 
@@ -1535,7 +1535,7 @@ X-Timestamp: 2025-11-15T06:00:00Z
             // ConfigDiff for secure vs insecure JWT verification
             if (window.AppSecWidgets && window.AppSecWidgets.ConfigDiff) {
                 const insecure =
-`// ❌ Insecure verification (Node/Express style pseudocode)
+                    `// ❌ Insecure verification (Node/Express style pseudocode)
 function verifyToken(req, res, next) {
   const token = getToken(req);
   if (!token) return next();
@@ -1557,7 +1557,7 @@ function verifyToken(req, res, next) {
 }`;
 
                 const secure =
-`// ✅ Secure verification
+                    `// ✅ Secure verification
 function verifyToken(req, res, next) {
   const token = getToken(req);
   if (!token) return res.status(401).json({ error: 'Missing token' });

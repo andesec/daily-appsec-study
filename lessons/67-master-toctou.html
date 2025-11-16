@@ -1,378 +1,406 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
 <head>
-<meta charset="utf-8"/>
-<title>Lesson 67 – Master TOCTOU Race Conditions</title>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Includes -->
-<link href="appsec-theme.css" rel="stylesheet"/>
+  <meta charset="utf-8" />
+  <title>Lesson 67 – Master TOCTOU Race Conditions</title>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <!-- Includes -->
+  <link href="appsec-theme.css" rel="stylesheet" />
 </head>
+
 <body>
-<div class="container">
-<!-- Header -->
-<header class="card">
-<div class="card-header">
-                Lesson 67: Master TOCTOU Race Conditions – Check-Then-Use Gap, Concurrent Requests, Mitigation with Locks
-            </div>
-<div class="card-body">
-<p>
-                    This lesson explores Time-of-Check to Time-of-Use (TOCTOU) race conditions in modern SaaS and microservice architectures.
-                    We will study how check-then-use gaps are introduced, how concurrent requests exploit them, and how to design and implement
-                    robust mitigations using locking, idempotency, and transactional patterns.
-                </p>
-<nav id="toc"></nav>
-</div>
-</header>
-<!-- Section 1: Foundations -->
-
-<!-- Section 2: Intuitive Hook -->
-
-<!-- Section 3: Mental Model -->
-
-<!-- Section 4: Deep Explanation -->
-
-<!-- Section 5: Real-World Context & Interactions -->
-
-<!-- Section 6: Common Weaknesses, Pitfalls & Attack Paths -->
-
-<!-- Section 7: Practical Implementation and Review -->
-
-<!-- Section 8: Good Design Principles, Defense & Mitigation -->
-
-<!-- Section 9: Incident Case Study and Analysis -->
-
-<!-- Section 10: Threat Model and Analysis -->
-
-<!-- Section 11: Compliance Mapping -->
-
-<!-- Footer -->
-<section class="card">
-<div class="card-header">1. Foundations 🧱 – What Are TOCTOU</div>
-<div class="card-body">
-<p>
-            TOCTOU (“Time-of-Check to Time-of-Use”) race conditions occur when an application checks a condition and
-            then,
-            before the result is used, the underlying state changes. This makes the check invalid and opens the door to
-            double-spend, privilege escalation, over-withdrawal, and data corruption. These failures are common in
-            multi-threaded, asynchronous, and microservice architectures.
+  <div class="container">
+    <!-- Header -->
+    <header class="card">
+      <div class="card-header">
+        Lesson 67: Master TOCTOU Race Conditions – Check-Then-Use Gap, Concurrent Requests, Mitigation with Locks
+      </div>
+      <div class="card-body">
+        <p>
+          This lesson explores Time-of-Check to Time-of-Use (TOCTOU) race conditions in modern SaaS and microservice
+          architectures.
+          We will study how check-then-use gaps are introduced, how concurrent requests exploit them, and how to design
+          and implement
+          robust mitigations using locking, idempotency, and transactional patterns.
         </p>
-<div class="callout callout-info-solid">
-            TOCTOU is fundamentally a **consistency problem** disguised as a **security flaw**.
-            It emerges anywhere a check and the action based on that check are not **atomic**.
+        <nav id="toc"></nav>
+      </div>
+    </header>
+    <!-- Section 1: Foundations -->
+
+    <!-- Section 2: Intuitive Hook -->
+
+    <!-- Section 3: Mental Model -->
+
+    <!-- Section 4: Deep Explanation -->
+
+    <!-- Section 5: Real-World Context & Interactions -->
+
+    <!-- Section 6: Common Weaknesses, Pitfalls & Attack Paths -->
+
+    <!-- Section 7: Practical Implementation and Review -->
+
+    <!-- Section 8: Good Design Principles, Defense & Mitigation -->
+
+    <!-- Section 9: Incident Case Study and Analysis -->
+
+    <!-- Section 10: Threat Model and Analysis -->
+
+    <!-- Section 11: Compliance Mapping -->
+
+    <!-- Footer -->
+    <section class="card">
+      <div class="card-header">1. Foundations 🧱 – What Are TOCTOU</div>
+      <div class="card-body">
+        <p>
+          TOCTOU (“Time-of-Check to Time-of-Use”) race conditions occur when an application checks a condition and
+          then,
+          before the result is used, the underlying state changes. This makes the check invalid and opens the door to
+          double-spend, privilege escalation, over-withdrawal, and data corruption. These failures are common in
+          multi-threaded, asynchronous, and microservice architectures.
+        </p>
+        <div class="callout callout-info-solid">
+          TOCTOU is fundamentally a **consistency problem** disguised as a **security flaw**.
+          It emerges anywhere a check and the action based on that check are not **atomic**.
         </div>
-<p>Core prerequisites:</p>
-<ul>
-<li>Basic understanding of concurrency (threads, async jobs, transactions)</li>
-<li>Understanding of shared state (DB rows, caches, files, queues)</li>
-<li>Familiarity with atomicity and isolation levels in databases</li>
-</ul>
-<p>ASCII overview:</p>
-<pre>
+        <p>Core prerequisites:</p>
+        <ul>
+          <li>Basic understanding of concurrency (threads, async jobs, transactions)</li>
+          <li>Understanding of shared state (DB rows, caches, files, queues)</li>
+          <li>Familiarity with atomicity and isolation levels in databases</li>
+        </ul>
+        <p>ASCII overview:</p>
+        <pre>
 User Request  ──►  Check balance (A=100)
                      │
                      │   &lt;── another request reduces A to 0
                      ▼
                   Use balance (still assuming 100) ───► Vulnerable outcome
     </pre>
-</div>
-</section><section class="card">
-<div class="card-header">1.1 Core Concepts</div>
-<div class="card-body">
-<p>
-            TOCTOU arises because state can mutate between operations. In distributed systems, the “gap” is not merely
-            milliseconds — it may be seconds due to network latency, retries, caching, or queue delays.
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">1.1 Core Concepts</div>
+      <div class="card-body">
+        <p>
+          TOCTOU arises because state can mutate between operations. In distributed systems, the “gap” is not merely
+          milliseconds — it may be seconds due to network latency, retries, caching, or queue delays.
         </p>
-<div class="callout callout-warning">
-            **The danger:** Attackers exploit this gap by sending concurrent requests strategically to desynchronize the
-            system’s expectations from reality.
+        <div class="callout callout-warning">
+          **The danger:** Attackers exploit this gap by sending concurrent requests strategically to desynchronize the
+          system’s expectations from reality.
         </div>
-<table>
-<tr>
-<th>Term</th>
-<th>Meaning</th>
-</tr>
-<tr>
-<td>Time-of-Check</td>
-<td>The moment the system validates a condition</td>
-</tr>
-<tr>
-<td>Time-of-Use</td>
-<td>The moment the system uses the result of the check</td>
-</tr>
-<tr>
-<td>Critical Section</td>
-<td>Region where state must not change</td>
-</tr>
-<tr>
-<td>Atomicity</td>
-<td>Check and use occur as one indivisible action</td>
-</tr>
-</table>
-<p>Authoritative sources:</p>
-<ul>
-<li>OWASP Race Conditions: https://owasp.org/www-community/attacks/Time_of_check_time_of_use</li>
-<li>CERT Oracle Coding Standard, Concurrency: https://wiki.sei.cmu.edu/confluence</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">1.2 Where TOCTOU Happens</div>
-<div class="card-body">
-<p>Common scenarios where TOCTOU is typically found:</p>
-<ul>
-<li>Balance checks before withdrawal (double-spend)</li>
-<li>Inventory validation before reservation confirmation</li>
-<li>Permission checks before updating shared records</li>
-<li>Filesystem checks for symlinks or temporary files</li>
-<li>Cache vs database inconsistency during high load</li>
-</ul>
-<div class="callout callout-danger">
-            **Looks safe but isn’t:**
-            <code>if (balance &gt;= price) { charge(); }</code>
-            This is a classic TOCTOU vulnerability without transaction locking.
+        <table>
+          <tr>
+            <th>Term</th>
+            <th>Meaning</th>
+          </tr>
+          <tr>
+            <td>Time-of-Check</td>
+            <td>The moment the system validates a condition</td>
+          </tr>
+          <tr>
+            <td>Time-of-Use</td>
+            <td>The moment the system uses the result of the check</td>
+          </tr>
+          <tr>
+            <td>Critical Section</td>
+            <td>Region where state must not change</td>
+          </tr>
+          <tr>
+            <td>Atomicity</td>
+            <td>Check and use occur as one indivisible action</td>
+          </tr>
+        </table>
+        <p>Authoritative sources:</p>
+        <ul>
+          <li>OWASP Race Conditions: https://owasp.org/www-community/attacks/Time_of_check_time_of_use</li>
+          <li>CERT Oracle Coding Standard, Concurrency: https://wiki.sei.cmu.edu/confluence</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">1.2 Where TOCTOU Happens</div>
+      <div class="card-body">
+        <p>Common scenarios where TOCTOU is typically found:</p>
+        <ul>
+          <li>Balance checks before withdrawal (double-spend)</li>
+          <li>Inventory validation before reservation confirmation</li>
+          <li>Permission checks before updating shared records</li>
+          <li>Filesystem checks for symlinks or temporary files</li>
+          <li>Cache vs database inconsistency during high load</li>
+        </ul>
+        <div class="callout callout-danger">
+          **Looks safe but isn’t:**
+          <code>if (balance &gt;= price) { charge(); }</code>
+          This is a classic TOCTOU vulnerability without transaction locking.
         </div>
-</div>
-</section><section class="card">
-<div class="card-header">1.3 Why It Matters</div>
-<div class="card-body">
-<p>
-            Race conditions are difficult to detect through manual testing. Attackers rely on concurrency, automation,
-            and latency manipulation to force inconsistent states.
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">1.3 Why It Matters</div>
+      <div class="card-body">
+        <p>
+          Race conditions are difficult to detect through manual testing. Attackers rely on concurrency, automation,
+          and latency manipulation to force inconsistent states.
         </p>
-<p>Why it’s severe:</p>
-<ul>
-<li>Enables financial fraud (double spending, over-withdrawal)</li>
-<li>Enables privilege escalation (permissions changing mid-flight)</li>
-<li>Corrupts shared records in multi-tenant SaaS platforms</li>
-<li>Breaks invariants guaranteed by business logic</li>
-</ul>
-<p>ASCII illustration of attackers racing requests:</p>
-<pre>
+        <p>Why it’s severe:</p>
+        <ul>
+          <li>Enables financial fraud (double spending, over-withdrawal)</li>
+          <li>Enables privilege escalation (permissions changing mid-flight)</li>
+          <li>Corrupts shared records in multi-tenant SaaS platforms</li>
+          <li>Breaks invariants guaranteed by business logic</li>
+        </ul>
+        <p>ASCII illustration of attackers racing requests:</p>
+        <pre>
 Request A ──► Check OK ────┐
                            │  Gap
 Request B ──► Mutate state ┘
                            ▼
 Use result (still OK) ───► Compromised operation
         </pre>
-<div id="section-1-quiz"></div>
-<script>
-            document.addEventListener("DOMContentLoaded", function () {
-                AppSecWidgets.Quiz.create("section-1-quiz", {
-                    title: "🗘️ Knowledge Check – Section 1",
-                    mode: "step",
-                    questions: [
-                        {
-                            text: "What makes TOCTOU possible?",
-                            options: [
-                                { value: "1", label: "A gap between check and use", correct: true },
-                                { value: "2", label: "Slow networks only", correct: false },
-                                { value: "3", label: "Outdated libraries", correct: false }
-                            ]
-                        },
-                        {
-                            text: "Which is a common real-world TOCTOU scenario?",
-                            options: [
-                                { value: "1", label: "Checking balance before withdrawal", correct: true },
-                                { value: "2", label: "Rendering UI components", correct: false }
-                            ]
-                        }
-                    ]
-                });
+        <div id="section-1-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section-1-quiz", {
+              title: "🗘️ Knowledge Check – Section 1",
+              mode: "step",
+              questions: [
+                {
+                  text: "What makes TOCTOU possible?",
+                  options: [
+                    { value: "1", label: "A gap between check and use", correct: true },
+                    { value: "2", label: "Slow networks only", correct: false },
+                    { value: "3", label: "Outdated libraries", correct: false }
+                  ]
+                },
+                {
+                  text: "Which is a common real-world TOCTOU scenario?",
+                  options: [
+                    { value: "1", label: "Checking balance before withdrawal", correct: true },
+                    { value: "2", label: "Rendering UI components", correct: false }
+                  ]
+                }
+              ]
             });
+          });
         </script>
-</div>
-</section><section class="card">
-<div class="card-header">2. Intuitive Hook</div>
-<div class="card-body">
-<p>
-            Imagine a **coffee shop loyalty card**: you check that you have 1 free drink stamp left, and while you walk
-            toward the counter, someone else uses the same physical card to redeem it. You present your card
-            confidently,
-            unaware the state has changed.
-            That gap equals TOCTOU.
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">2. Intuitive Hook</div>
+      <div class="card-body">
+        <p>
+          Imagine a **coffee shop loyalty card**: you check that you have 1 free drink stamp left, and while you walk
+          toward the counter, someone else uses the same physical card to redeem it. You present your card
+          confidently,
+          unaware the state has changed.
+          That gap equals TOCTOU.
         </p>
-<div class="callout callout-info-solid">
-            TOCTOU is like believing a fact about the world that becomes false before you act — but your system
-            continues
-            believing the old truth.
+        <div class="callout callout-info-solid">
+          TOCTOU is like believing a fact about the world that becomes false before you act — but your system
+          continues
+          believing the old truth.
         </div>
-</div>
-</section><section class="card">
-<div class="card-header">2.1 Analogy Breakdown</div>
-<div class="card-body">
-<p>Using the loyalty card analogy:</p>
-<table>
-<tr>
-<th>Analogy Element</th>
-<th>System Equivalent</th>
-</tr>
-<tr>
-<td>Checking stamp count</td>
-<td>Business rule check (balance, quota, permissions)</td>
-</tr>
-<tr>
-<td>Walking to counter</td>
-<td>Latency / concurrency window</td>
-</tr>
-<tr>
-<td>Someone else redeeming</td>
-<td>Concurrent state mutation</td>
-</tr>
-<tr>
-<td>Presenting your card</td>
-<td>Acting on stale, invalidated assumptions</td>
-</tr>
-</table>
-<pre>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">2.1 Analogy Breakdown</div>
+      <div class="card-body">
+        <p>Using the loyalty card analogy:</p>
+        <table>
+          <tr>
+            <th>Analogy Element</th>
+            <th>System Equivalent</th>
+          </tr>
+          <tr>
+            <td>Checking stamp count</td>
+            <td>Business rule check (balance, quota, permissions)</td>
+          </tr>
+          <tr>
+            <td>Walking to counter</td>
+            <td>Latency / concurrency window</td>
+          </tr>
+          <tr>
+            <td>Someone else redeeming</td>
+            <td>Concurrent state mutation</td>
+          </tr>
+          <tr>
+            <td>Presenting your card</td>
+            <td>Acting on stale, invalidated assumptions</td>
+          </tr>
+        </table>
+        <pre>
 Check: "1 stamp left"
 Gap:  Someone else redeems it
 Use:  "Redeem stamp" → inconsistent → vulnerability
         </pre>
-<div id="section-2-quiz"></div>
-<script>
-            document.addEventListener("DOMContentLoaded", function () {
-                AppSecWidgets.Quiz.create("section-2-quiz", {
-                    title: "🗘️ Knowledge Check – Section 2",
-                    mode: "step",
-                    questions: [
-                        {
-                            text: "In the analogy, what represents the TOCTOU gap?",
-                            options: [
-                                { value: "1", label: "Walking from check to counter", correct: true },
-                                { value: "2", label: "The cashier scanning the card", correct: false }
-                            ]
-                        },
-                        {
-                            text: "What breaks the system's assumption in the analogy?",
-                            options: [
-                                { value: "1", label: "Another person redeeming the reward in between", correct: true },
-                                { value: "2", label: "The card design", correct: false }
-                            ]
-                        }
-                    ]
-                });
+        <div id="section-2-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section-2-quiz", {
+              title: "🗘️ Knowledge Check – Section 2",
+              mode: "step",
+              questions: [
+                {
+                  text: "In the analogy, what represents the TOCTOU gap?",
+                  options: [
+                    { value: "1", label: "Walking from check to counter", correct: true },
+                    { value: "2", label: "The cashier scanning the card", correct: false }
+                  ]
+                },
+                {
+                  text: "What breaks the system's assumption in the analogy?",
+                  options: [
+                    { value: "1", label: "Another person redeeming the reward in between", correct: true },
+                    { value: "2", label: "The card design", correct: false }
+                  ]
+                }
+              ]
             });
+          });
         </script>
-</div>
-</section><section class="card">
-<div class="card-header">3. Mental Model – Why → How → What-If 🧠</div>
-<div class="card-body">
-<p>
-      In the model of a system under concurrent load, a TOCTOU vulnerability arises because of three fundamental elements: 
-      <strong>Why</strong> the state is checked, <strong>How</strong> the state may change, and <strong>What-If</strong> an attacker exploits it.  
-    </p>
-<div class="callout callout-info-solid">
-      Think of it as: Check → (Gap) → Use. If the gap is non-zero and other actors intervene, the system's assumption fails.
-    </div>
-<pre>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">3. Mental Model – Why → How → What-If 🧠</div>
+      <div class="card-body">
+        <p>
+          In the model of a system under concurrent load, a TOCTOU vulnerability arises because of three fundamental
+          elements:
+          <strong>Why</strong> the state is checked, <strong>How</strong> the state may change, and
+          <strong>What-If</strong> an attacker exploits it.
+        </p>
+        <div class="callout callout-info-solid">
+          Think of it as: Check → (Gap) → Use. If the gap is non-zero and other actors intervene, the system's
+          assumption fails.
+        </div>
+        <pre>
            ┌── Why check state? ──► (Check) ────► Gap ────► (Use) ────► Outcome
                       │                                    ▲
                       └── How could it change? ────────────┘ 
     </pre>
-<p><strong>Why → How → What-If</strong> breakdown:</p>
-<ul>
-<li><strong>Why:</strong> We validate a condition (e.g., “user has enough quota”) because business logic demands it.</li>
-<li><strong>How:</strong> Concurrent requests, shared caches, async jobs or external services may mutate the condition between the check and the use.</li>
-<li><strong>What-If:</strong> An attacker or competing process collides in the gap and invalidates the check, causing the system to act on stale or false assumptions.</li>
-</ul>
-<p><strong>What-if scenarios to imagine:</strong></p>
-<ul>
-<li>What if two requests for the same user debit the last $100 in parallel? → Double withdrawal.</li>
-<li>What if a permission check is done, and before the action, the user’s role changes? → Unauthorized action.</li>
-<li>What if an inventory check passes, then before locking, a second process reserves the same item? → Over-booking.</li>
-</ul>
-<div id="section-3-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section-3-quiz", {
-        title: "🗘️ Knowledge Check – Section 3",
-        mode: "step",
-        questions: [
-          {
-            text: "Which part of the model introduces the vulnerability window?",
-            options: [
-              { value: "1", label: "The Check phase", correct: false },
-              { value: "2", label: "The Gap between check and use", correct: true },
-              { value: "3", label: "The Use phase", correct: false }
-            ]
-          },
-          {
-            text: "An attacker manipulates state during which stage?",
-            options: [
-              { value: "1", label: "Before the check", correct: false },
-              { value: "2", label: "Between check and use", correct: true },
-              { value: "3", label: "After the use", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">3.1 Visualising System View</div>
-<div class="card-body">
-<p>
-      Consider a microservice architecture with an API gateway, business service, cache layer and shared database. The race window can span network hops, threads and processes.
-    </p>
-<pre>
+        <p><strong>Why → How → What-If</strong> breakdown:</p>
+        <ul>
+          <li><strong>Why:</strong> We validate a condition (e.g., “user has enough quota”) because business logic
+            demands it.</li>
+          <li><strong>How:</strong> Concurrent requests, shared caches, async jobs or external services may mutate the
+            condition between the check and the use.</li>
+          <li><strong>What-If:</strong> An attacker or competing process collides in the gap and invalidates the check,
+            causing the system to act on stale or false assumptions.</li>
+        </ul>
+        <p><strong>What-if scenarios to imagine:</strong></p>
+        <ul>
+          <li>What if two requests for the same user debit the last $100 in parallel? → Double withdrawal.</li>
+          <li>What if a permission check is done, and before the action, the user’s role changes? → Unauthorized action.
+          </li>
+          <li>What if an inventory check passes, then before locking, a second process reserves the same item? →
+            Over-booking.</li>
+        </ul>
+        <div id="section-3-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section-3-quiz", {
+              title: "🗘️ Knowledge Check – Section 3",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which part of the model introduces the vulnerability window?",
+                  options: [
+                    { value: "1", label: "The Check phase", correct: false },
+                    { value: "2", label: "The Gap between check and use", correct: true },
+                    { value: "3", label: "The Use phase", correct: false }
+                  ]
+                },
+                {
+                  text: "An attacker manipulates state during which stage?",
+                  options: [
+                    { value: "1", label: "Before the check", correct: false },
+                    { value: "2", label: "Between check and use", correct: true },
+                    { value: "3", label: "After the use", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">3.1 Visualising System View</div>
+      <div class="card-body">
+        <p>
+          Consider a microservice architecture with an API gateway, business service, cache layer and shared database.
+          The race window can span network hops, threads and processes.
+        </p>
+        <pre>
 Client ─► API Gateway ─► Business Service ─► Cache Layer / DB
                    │              ▲
                    │ (&lt;–– load, latency ––) │
                    └────────────────────────┘
     </pre>
-<p>
-      In high-concurrency environments (e.g., multi-tenant SaaS), you may see multiple threads/processes entering the check phase before one completes the use phase. That creates the race window.
-    </p>
-</div>
-</section><section class="card">
-<div class="card-header">3.2 “What-If” Attack Paths</div>
-<div class="card-body">
-<p><strong>Scenario A – Concurrent Debit</strong></p>
-<pre>
+        <p>
+          In high-concurrency environments (e.g., multi-tenant SaaS), you may see multiple threads/processes entering
+          the check phase before one completes the use phase. That creates the race window.
+        </p>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">3.2 “What-If” Attack Paths</div>
+      <div class="card-body">
+        <p><strong>Scenario A – Concurrent Debit</strong></p>
+        <pre>
 Time 0: Account balance = $100
 Request 1: check(balance &gt;= 100) → true
 Request 2: check(balance &gt;= 100) → true
 Request 1: debit(100) → new balance = $0
 Request 2: debit(100) → new balance = -$100  ← vulnerability
     </pre>
-<p><strong>Scenario B – Permission Change Mid-Flight</strong></p>
-<pre>
+        <p><strong>Scenario B – Permission Change Mid-Flight</strong></p>
+        <pre>
 Process A: check(user.isAdmin) → true
 Concurrent: revocation job changes user.isAdmin → false
 Process A: performPrivilegedAction() → allowed though revocation occurred  ← vulnerability
     </pre>
-<div class="callout callout-warning">
-      Attackers often flood endpoints using parallel requests (threads, HTTP/2 streams) to maximise overlap in the gap.  [oai_citation:0‡PortSwigger](https://portswigger.net/web-security/race-conditions?utm_source=chatgpt.com)
-    </div>
-<p>Key takeaway: The gap is real, and even micro-seconds matter in distributed systems.</p>
-</div>
-</section><section class="card">
-<div class="card-header">4. Deep Explanation (Step-by-Step) 🔍</div>
-<div class="card-body">
-<p>
-      We’ll walk through the check-then‐use sequence, identify where the race window emerges, illustrate how concurrent actors exploit it, and map to code patterns in modern systems (APIs, background jobs, caches, DBs).
-    </p>
-<div class="callout callout-info-solid">
-      Always assume that between check and use, **state may change** — transiently, asynchronously, or via another thread.
-    </div>
-<h4>Step 1: Check phase</h4>
-<p>The system reads state and forms an assumption. Example: “User has 1 free voucher remaining.”</p>
-<h4>Step 2: Gap window opens</h4>
-<p>
-      The system delays while the assumption waits for use. In this period, other operations may change the state:
-    </p>
-<ul>
-<li>Concurrency: another thread uses the voucher.</li>
-<li>Distributed: another service updates the same record.</li>
-<li>Cache stale: read from old cache, write has not propagated.</li>
-</ul>
-<h4>Step 3: Use phase</h4>
-<p>The system acts on the assumption (redeem voucher, debit account, grant privilege). If state changed, the action may be invalid.</p>
-<h4>Step 4: Failure/Recovery</h4>
-<p>If the use occurs on invalid state, business invariants break. Without detection or rollback, damage occurs.</p>
-<p><strong>In code terms:</strong></p>
-<pre>
+        <div class="callout callout-warning">
+          Attackers often flood endpoints using parallel requests (threads, HTTP/2 streams) to maximise overlap in the
+          gap. [oai_citation:0‡PortSwigger](https://portswigger.net/web-security/race-conditions?utm_source=chatgpt.com)
+        </div>
+        <p>Key takeaway: The gap is real, and even micro-seconds matter in distributed systems.</p>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">4. Deep Explanation (Step-by-Step) 🔍</div>
+      <div class="card-body">
+        <p>
+          We’ll walk through the check-then‐use sequence, identify where the race window emerges, illustrate how
+          concurrent actors exploit it, and map to code patterns in modern systems (APIs, background jobs, caches, DBs).
+        </p>
+        <div class="callout callout-info-solid">
+          Always assume that between check and use, **state may change** — transiently, asynchronously, or via another
+          thread.
+        </div>
+        <h4>Step 1: Check phase</h4>
+        <p>The system reads state and forms an assumption. Example: “User has 1 free voucher remaining.”</p>
+        <h4>Step 2: Gap window opens</h4>
+        <p>
+          The system delays while the assumption waits for use. In this period, other operations may change the state:
+        </p>
+        <ul>
+          <li>Concurrency: another thread uses the voucher.</li>
+          <li>Distributed: another service updates the same record.</li>
+          <li>Cache stale: read from old cache, write has not propagated.</li>
+        </ul>
+        <h4>Step 3: Use phase</h4>
+        <p>The system acts on the assumption (redeem voucher, debit account, grant privilege). If state changed, the
+          action may be invalid.</p>
+        <h4>Step 4: Failure/Recovery</h4>
+        <p>If the use occurs on invalid state, business invariants break. Without detection or rollback, damage occurs.
+        </p>
+        <p><strong>In code terms:</strong></p>
+        <pre>
 // Vulnerable pattern
 if (account.balance &gt;= price) {
     account.balance -= price;
@@ -388,57 +416,61 @@ if (account.balance &gt;= price) {
 }
 commit();
     </pre>
-<div class="callout callout-danger">
-      Using simple “check then update” without locking or transactions opens race window.  [oai_citation:1‡CWE](https://cwe.mitre.org/data/definitions/367.html?utm_source=chatgpt.com)
-    </div>
-<p><strong>Modern system considerations:</strong></p>
-<ul>
-<li>APIs exposed via HTTP/2: high parallelism =&gt; bigger windows.</li>
-<li>Microservices using eventual-consistency caches: stale reads widen gap.</li>
-<li>Background jobs with delayed execution: state drift before use.</li>
-<li>Multi-tenant shared resources: one tenant inadvertently interferes with another.</li>
-</ul>
-<div id="section-4-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section-4-quiz", {
-        title: "🗘️ Knowledge Check – Section 4",
-        mode: "step",
-        questions: [
-          {
-            text: "Which code change reduces the TOCTOU risk in a debit operation?",
-            options: [
-              { value: "1", label: "Check balance then update without lock", correct: false },
-              { value: "2", label: "Select row for update within a transaction", correct: true },
-              { value: "3", label: "Cache the balance and update asynchronously", correct: false }
-            ]
-          },
-          {
-            text: "Which system design factor increases the race window?",
-            options: [
-              { value: "1", label: "Single-threaded execution", correct: false },
-              { value: "2", label: "High concurrency and stale cache reads", correct: true },
-              { value: "3", label: "Low latency synchronous calls", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">5. Real-World Context &amp; Interactions 🌍</div>
-<div class="card-body">
-<p>
-      This section uses a realistic SaaS architecture involving a wallet-based billing system.  
-      The service exposes <strong>debitWallet()</strong> and <strong>reserveInventory()</strong> endpoints across microservices.
-      Under high load, multiple concurrent requests can collide between the check-then-use boundary.
-    </p>
-<div class="callout callout-info-solid">
-      Real SaaS systems typically run on horizontally scaled services with shared databases, caches, message queues and async workers — perfect conditions for TOCTOU races.
-    </div>
-<p>Architecture overview:</p>
-<pre>
+        <div class="callout callout-danger">
+          Using simple “check then update” without locking or transactions opens race window.
+          [oai_citation:1‡CWE](https://cwe.mitre.org/data/definitions/367.html?utm_source=chatgpt.com)
+        </div>
+        <p><strong>Modern system considerations:</strong></p>
+        <ul>
+          <li>APIs exposed via HTTP/2: high parallelism =&gt; bigger windows.</li>
+          <li>Microservices using eventual-consistency caches: stale reads widen gap.</li>
+          <li>Background jobs with delayed execution: state drift before use.</li>
+          <li>Multi-tenant shared resources: one tenant inadvertently interferes with another.</li>
+        </ul>
+        <div id="section-4-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section-4-quiz", {
+              title: "🗘️ Knowledge Check – Section 4",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which code change reduces the TOCTOU risk in a debit operation?",
+                  options: [
+                    { value: "1", label: "Check balance then update without lock", correct: false },
+                    { value: "2", label: "Select row for update within a transaction", correct: true },
+                    { value: "3", label: "Cache the balance and update asynchronously", correct: false }
+                  ]
+                },
+                {
+                  text: "Which system design factor increases the race window?",
+                  options: [
+                    { value: "1", label: "Single-threaded execution", correct: false },
+                    { value: "2", label: "High concurrency and stale cache reads", correct: true },
+                    { value: "3", label: "Low latency synchronous calls", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">5. Real-World Context &amp; Interactions 🌍</div>
+      <div class="card-body">
+        <p>
+          This section uses a realistic SaaS architecture involving a wallet-based billing system.
+          The service exposes <strong>debitWallet()</strong> and <strong>reserveInventory()</strong> endpoints across
+          microservices.
+          Under high load, multiple concurrent requests can collide between the check-then-use boundary.
+        </p>
+        <div class="callout callout-info-solid">
+          Real SaaS systems typically run on horizontally scaled services with shared databases, caches, message queues
+          and async workers — perfect conditions for TOCTOU races.
+        </div>
+        <p>Architecture overview:</p>
+        <pre>
                   ┌──────────────────────────┐
                   │      API Gateway         │
                   └─────────────┬────────────┘
@@ -458,45 +490,47 @@ commit();
                      │ (stale reads risk!) │
                      └──────────────────────┘
     </pre>
-<p>
-<strong>Happy Path (Single Request)</strong>  
-      The user buys one item. The system checks balance (e.g., $150 ≥ $100), debits $100, and updates the DB.
-    </p>
-<p>
-<strong>Attacker Path (Concurrency Flood)</strong>  
-      The attacker rapidly fires 10–20 parallel requests (HTTP/2, curl parallel, Burp Intruder). The check is computed multiple times on the same stale value before any update commits.
-    </p>
-<div id="section5-flow"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.FlowVisualizer.create("section5-flow", [
-        { title: "Step 1 – Attacker sends parallel requests", description: "10–20 debit requests hit the Billing Service nearly simultaneously." },
-        { title: "Step 2 – All requests perform balance check", description: "Reads stale or cached balance = $150." },
-        { title: "Step 3 – Some succeed in committing updates", description: "Multiple commits overlap; database ends up with negative or inconsistent balance." },
-        { title: "Step 4 – Invariant broken", description: "System incorrectly allowed more debits than funds available." }
-      ]);
-    });
-    </script>
-<p>
-<strong>Inter-service interaction risks:</strong>
-</p>
-<ul>
-<li>Redis caching delays may cause stale reads.</li>
-<li>Kubernetes autoscaling spreads load across multiple pods → more concurrency → larger race window.</li>
-<li>Background jobs (refunds, rollbacks, ledger sync) alter account state mid-flight.</li>
-<li>Eventual-consistency NoSQL stores widen the gap substantially.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">5.1 Code Review Example</div>
-<div class="card-body">
-<p>Below is a real-world API excerpt with an intentional TOCTOU flaw.</p>
-<div id="section5-codereview"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.CodeReviewChecker.create("section5-codereview", {
-        title: "🔎 Security Code Review – Billing Race",
-        code: `
+        <p>
+          <strong>Happy Path (Single Request)</strong>
+          The user buys one item. The system checks balance (e.g., $150 ≥ $100), debits $100, and updates the DB.
+        </p>
+        <p>
+          <strong>Attacker Path (Concurrency Flood)</strong>
+          The attacker rapidly fires 10–20 parallel requests (HTTP/2, curl parallel, Burp Intruder). The check is
+          computed multiple times on the same stale value before any update commits.
+        </p>
+        <div id="section5-flow"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.FlowVisualizer.create("section5-flow", [
+              { title: "Step 1 – Attacker sends parallel requests", description: "10–20 debit requests hit the Billing Service nearly simultaneously." },
+              { title: "Step 2 – All requests perform balance check", description: "Reads stale or cached balance = $150." },
+              { title: "Step 3 – Some succeed in committing updates", description: "Multiple commits overlap; database ends up with negative or inconsistent balance." },
+              { title: "Step 4 – Invariant broken", description: "System incorrectly allowed more debits than funds available." }
+            ]);
+          });
+        </script>
+        <p>
+          <strong>Inter-service interaction risks:</strong>
+        </p>
+        <ul>
+          <li>Redis caching delays may cause stale reads.</li>
+          <li>Kubernetes autoscaling spreads load across multiple pods → more concurrency → larger race window.</li>
+          <li>Background jobs (refunds, rollbacks, ledger sync) alter account state mid-flight.</li>
+          <li>Eventual-consistency NoSQL stores widen the gap substantially.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">5.1 Code Review Example</div>
+      <div class="card-body">
+        <p>Below is a real-world API excerpt with an intentional TOCTOU flaw.</p>
+        <div id="section5-codereview"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.CodeReviewChecker.create("section5-codereview", {
+              title: "🔎 Security Code Review – Billing Race",
+              code: `
 async function debitWallet(userId, amount) {
   const balance = await db.getBalance(userId);   // Time-of-Check
   if (balance >= amount) {
@@ -506,171 +540,179 @@ async function debitWallet(userId, amount) {
   throw new Error("Insufficient funds");
 }
         `,
-        vulnerabilities: [
-          {
-            severity: "high",
-            title: "TOCTOU Race Condition",
-            description: "Balance is checked before update without locking or transactional isolation.",
-            line: 3,
-            recommendation: "Use SELECT FOR UPDATE or equivalent transactional locking."
-          },
-          {
-            severity: "medium",
-            title: "Artificial latency",
-            description: "The delay increases the attack window.",
-            line: 4,
-            recommendation: "Avoid unnecessary delays between check and write."
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">5.2 Knowledge Check</div>
-<div class="card-body">
-<div id="section5-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section5-quiz", {
-        mode: "step",
-        title: "🗘️ Section 5 Quiz",
-        questions: [
-          {
-            text: "What enables an attacker to exploit TOCTOU in a wallet system?",
-            options: [
-              { value: "1", label: "Using HTTP/2 or parallel requests", correct: true },
-              { value: "2", label: "Performing slow single requests", correct: false }
-            ]
-          },
-          {
-            text: "Which component often widens the race gap?",
-            options: [
-              { value: "1", label: "Redis stale cache", correct: true },
-              { value: "2", label: "Static files CDN", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">6. Common Weaknesses, Pitfalls &amp; Attack Paths ⚠️</div>
-<div class="card-body">
-<p>
-      This section covers the most prevalent TOCTOU patterns, how attackers exploit them,  
-      and how defenders can detect and mitigate them.  
-      We will use realistic, pentest-style flows.
-    </p>
-<div class="callout callout-warning">
-      Race conditions rarely show up in unit tests — attackers rely on concurrency floods, latency injection, and cache manipulation to win the race.
-    </div>
-<p><strong>Primary attack patterns:</strong></p>
-<ul>
-<li>Double-spend through concurrent financial transactions</li>
-<li>Privilege escalation via stale authorization checks</li>
-<li>Inventory over-booking</li>
-<li>Filesystem TOCTOU on temporary files and symlinks</li>
-<li>Session state races (e.g., inconsistent login throttling)</li>
-</ul>
-<pre>
+              vulnerabilities: [
+                {
+                  severity: "high",
+                  title: "TOCTOU Race Condition",
+                  description: "Balance is checked before update without locking or transactional isolation.",
+                  line: 3,
+                  recommendation: "Use SELECT FOR UPDATE or equivalent transactional locking."
+                },
+                {
+                  severity: "medium",
+                  title: "Artificial latency",
+                  description: "The delay increases the attack window.",
+                  line: 4,
+                  recommendation: "Avoid unnecessary delays between check and write."
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">5.2 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section5-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section5-quiz", {
+              mode: "step",
+              title: "🗘️ Section 5 Quiz",
+              questions: [
+                {
+                  text: "What enables an attacker to exploit TOCTOU in a wallet system?",
+                  options: [
+                    { value: "1", label: "Using HTTP/2 or parallel requests", correct: true },
+                    { value: "2", label: "Performing slow single requests", correct: false }
+                  ]
+                },
+                {
+                  text: "Which component often widens the race gap?",
+                  options: [
+                    { value: "1", label: "Redis stale cache", correct: true },
+                    { value: "2", label: "Static files CDN", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">6. Common Weaknesses, Pitfalls &amp; Attack Paths ⚠️</div>
+      <div class="card-body">
+        <p>
+          This section covers the most prevalent TOCTOU patterns, how attackers exploit them,
+          and how defenders can detect and mitigate them.
+          We will use realistic, pentest-style flows.
+        </p>
+        <div class="callout callout-warning">
+          Race conditions rarely show up in unit tests — attackers rely on concurrency floods, latency injection, and
+          cache manipulation to win the race.
+        </div>
+        <p><strong>Primary attack patterns:</strong></p>
+        <ul>
+          <li>Double-spend through concurrent financial transactions</li>
+          <li>Privilege escalation via stale authorization checks</li>
+          <li>Inventory over-booking</li>
+          <li>Filesystem TOCTOU on temporary files and symlinks</li>
+          <li>Session state races (e.g., inconsistent login throttling)</li>
+        </ul>
+        <pre>
 Attack → Detect → Defend Model:
 • Attack: Exploit concurrency gap  
 • Detect: Logs show overlapping requests or negative balances  
 • Defend: Locking, transactions, idempotency, optimistic concurrency  
     </pre>
-</div>
-</section><section class="card">
-<div class="card-header">6.1 Attack Path – Double Spend</div>
-<div class="card-body">
-<p>The attacker floods the debit endpoint:</p>
-<pre>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">6.1 Attack Path – Double Spend</div>
+      <div class="card-body">
+        <p>The attacker floods the debit endpoint:</p>
+        <pre>
 for i in {1..20}; do
   curl -X POST /debit --data '{ "amount":100 }' &amp;
 done
     </pre>
-<div class="callout callout-danger">
-<strong>Detect:</strong> Negative balances or multiple identical debits in logs.  
-      <strong>Defend:</strong> Row-level locking, SELECT FOR UPDATE, atomic DB operations.
-    </div>
-</div>
-</section><section class="card">
-<div class="card-header">6.2 Attack Path – Inventory Race</div>
-<div class="card-body">
-<p>
-      Many e-commerce systems compute availability using <em>read → modify → write</em>.  
-      Attackers exploit this through parallel reservation attempts.
-    </p>
-<pre>
+        <div class="callout callout-danger">
+          <strong>Detect:</strong> Negative balances or multiple identical debits in logs.
+          <strong>Defend:</strong> Row-level locking, SELECT FOR UPDATE, atomic DB operations.
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">6.2 Attack Path – Inventory Race</div>
+      <div class="card-body">
+        <p>
+          Many e-commerce systems compute availability using <em>read → modify → write</em>.
+          Attackers exploit this through parallel reservation attempts.
+        </p>
+        <pre>
 check: "items_left = 1"
 gap:   5 requests try to reserve
 use:   multiple reservations succeed
     </pre>
-<div class="callout callout-warning">
-<strong>Detect:</strong> Oversold items.  
-       <strong>Defend:</strong> DB constraints, version columns (optimistic locks), transaction blocks.
-    </div>
-</div>
-</section><section class="card">
-<div class="card-header">6.3 Attack Path – Permission Race</div>
-<div class="card-body">
-<p>
-      Users whose roles change mid-request may perform actions they should no longer be allowed to.
-    </p>
-<pre>
+        <div class="callout callout-warning">
+          <strong>Detect:</strong> Oversold items.
+          <strong>Defend:</strong> DB constraints, version columns (optimistic locks), transaction blocks.
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">6.3 Attack Path – Permission Race</div>
+      <div class="card-body">
+        <p>
+          Users whose roles change mid-request may perform actions they should no longer be allowed to.
+        </p>
+        <pre>
 Process A: check user.isAdmin == true
 Process B: revoke admin rights
 Process A: action executes as admin ← vulnerability
     </pre>
-<div class="callout callout-danger">
-<strong>Detect:</strong> Audit log mismatches.  
-      <strong>Defend:</strong> Re-check authorization inside critical section.
-    </div>
-</div>
-</section><section class="card">
-<div class="card-header">6.4 Knowledge Check</div>
-<div class="card-body">
-<div id="section6-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section6-quiz", {
-        mode: "step",
-        title: "🗘️ Section 6 Quiz",
-        questions: [
-          {
-            text: "Which attack path is a TOCTOU pattern?",
-            options: [
-              { value: "1", label: "Double-spend via concurrent debits", correct: true },
-              { value: "2", label: "Slow single thread purchase", correct: false }
-            ]
-          },
-          {
-            text: "What is a common detection signal?",
-            options: [
-              { value: "1", label: "Negative balances / oversold inventory", correct: true },
-              { value: "2", label: "High CPU load", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">7. Practical Implementation &amp; Review (Hands-On) 🛠️</div>
-<div class="card-body">
-<p>
-      In this section, you will mentally “run” a TOCTOU lab: a simple wallet debit API in Python, exercised under
-      concurrent load. We will contrast insecure vs secure implementations, then look at how logs and tooling
-      reveal the race condition in practice.
-    </p>
-<div class="callout callout-info-solid">
-      Goal: Be able to look at a code diff or design doc and quickly say
-      “this is susceptible to TOCTOU” and propose a concrete, testable fix.
-    </div>
-<p><strong>Lab scenario:</strong></p>
-<pre>
+        <div class="callout callout-danger">
+          <strong>Detect:</strong> Audit log mismatches.
+          <strong>Defend:</strong> Re-check authorization inside critical section.
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">6.4 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section6-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section6-quiz", {
+              mode: "step",
+              title: "🗘️ Section 6 Quiz",
+              questions: [
+                {
+                  text: "Which attack path is a TOCTOU pattern?",
+                  options: [
+                    { value: "1", label: "Double-spend via concurrent debits", correct: true },
+                    { value: "2", label: "Slow single thread purchase", correct: false }
+                  ]
+                },
+                {
+                  text: "What is a common detection signal?",
+                  options: [
+                    { value: "1", label: "Negative balances / oversold inventory", correct: true },
+                    { value: "2", label: "High CPU load", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">7. Practical Implementation &amp; Review (Hands-On) 🛠️</div>
+      <div class="card-body">
+        <p>
+          In this section, you will mentally “run” a TOCTOU lab: a simple wallet debit API in Python, exercised under
+          concurrent load. We will contrast insecure vs secure implementations, then look at how logs and tooling
+          reveal the race condition in practice.
+        </p>
+        <div class="callout callout-info-solid">
+          Goal: Be able to look at a code diff or design doc and quickly say
+          “this is susceptible to TOCTOU” and propose a concrete, testable fix.
+        </div>
+        <p><strong>Lab scenario:</strong></p>
+        <pre>
 Client / Load tool
         │
         ▼
@@ -679,28 +721,29 @@ Client / Load tool
         ▼
    Database (balances table)
     </pre>
-<p><strong>Workflow:</strong></p>
-<ul>
-<li>Step 1 – Review vulnerable debit endpoint.</li>
-<li>Step 2 – Imagine concurrency test (curl/Burp/locust) to trigger race.</li>
-<li>Step 3 – Observe logs indicating double-spend / negative balances.</li>
-<li>Step 4 – Apply transactional locking and retry-safe patterns.</li>
-<li>Step 5 – Re-test and confirm that race no longer succeeds.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">7.1 Python Implementation – Insecure vs Secure</div>
-<div class="card-body">
-<p>
-      Below is a minimal Python-style debit function showing an explicit TOCTOU issue,
-      followed by the corrected transactional variant.
-    </p>
-<div id="section7-codereview"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.CodeReviewChecker.create("section7-codereview", {
-        title: "🔎 Security Code Review – TOCTOU in debit_wallet",
-        code: `# Insecure: check-then-use without locking
+        <p><strong>Workflow:</strong></p>
+        <ul>
+          <li>Step 1 – Review vulnerable debit endpoint.</li>
+          <li>Step 2 – Imagine concurrency test (curl/Burp/locust) to trigger race.</li>
+          <li>Step 3 – Observe logs indicating double-spend / negative balances.</li>
+          <li>Step 4 – Apply transactional locking and retry-safe patterns.</li>
+          <li>Step 5 – Re-test and confirm that race no longer succeeds.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">7.1 Python Implementation – Insecure vs Secure</div>
+      <div class="card-body">
+        <p>
+          Below is a minimal Python-style debit function showing an explicit TOCTOU issue,
+          followed by the corrected transactional variant.
+        </p>
+        <div id="section7-codereview"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.CodeReviewChecker.create("section7-codereview", {
+              title: "🔎 Security Code Review – TOCTOU in debit_wallet",
+              code: `# Insecure: check-then-use without locking
 async def debit_wallet_insecure(db, user_id, amount):
     balance = await db.get_balance(user_id)     # Time-of-Check
     if balance >= amount:
@@ -720,286 +763,305 @@ async def debit_wallet_secure(db, user_id, amount):
         new_balance = balance - amount
         await db.update_balance(user_id, new_balance)
         return new_balance`,
-        vulnerabilities: [
-          {
-            severity: "high",
-            title: "TOCTOU race condition",
-            description: "Balance is checked and later updated without a transaction or row lock.",
-            line: 3,
-            recommendation: "Use a transaction + SELECT ... FOR UPDATE or equivalent to make check+update atomic."
-          },
-          {
-            severity: "medium",
-            title: "Artificial delay in critical section",
-            description: "Introduces unnecessary latency and increases the race window for attackers.",
-            line: 5,
-            recommendation: "Remove sleeps or heavy work from critical sections; perform them before or after the transaction."
-          }
-        ]
-      });
-    });
-    </script>
-<p><strong>What to observe in code review:</strong></p>
-<ul>
-<li>Any read of shared state followed by a separate write using the same value.</li>
-<li>Lack of transactions or row locks around the critical section.</li>
-<li>Any deliberate sleep, network call, or heavy computation between check and write.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">7.2 Observability – Logs &amp; Signals</div>
-<div class="card-body">
-<p>
-      When you (or a tester) hammer the insecure endpoint with parallel requests, your main evidence will be in logs
-      and account snapshots. Below is an example of how a logging view might highlight the race.
-    </p>
-<div id="section7-logs"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.LogAnalyzer.create("section7-logs", {
-        title: "🔍 Security Log Analyzer – Debit Race",
-        columns: ["Time", "Event", "User", "Amount", "BalanceBefore", "BalanceAfter", "Status"],
-        logs: [
-          {
-            time: "10:00:01.001",
-            event: "debit_wallet",
-            user: "user-123",
-            ip: "203.0.113.5",
-            status: "success",
-            severity: "info",
-            amount: "100",
-            BalanceBefore: "150",
-            BalanceAfter: "50"
-          },
-          {
-            time: "10:00:01.003",
-            event: "debit_wallet",
-            user: "user-123",
-            ip: "203.0.113.5",
-            status: "success",
-            severity: "danger",
-            amount: "100",
-            BalanceBefore: "150",
-            BalanceAfter: "-50"
-          },
-          {
-            time: "10:00:01.005",
-            event: "alert_negative_balance",
-            user: "user-123",
-            ip: "n/a",
-            status: "blocked",
-            severity: "warning"
-          }
-        ],
-        placeholder: "Trigger your race test and inspect logs for overlapping debits and negative balances."
-      });
-    });
-    </script>
-<p><strong>What success/failure looks like:</strong></p>
-<ul>
-<li><strong>Failure (vulnerable):</strong> negative balances, duplicate debits, same “BalanceBefore” across multiple concurrent requests.</li>
-<li><strong>Success (fixed):</strong> at most one debit succeeds when funds are limited; others fail cleanly with “insufficient funds”.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">7.3 Attack Sandbox – Thinking like an Attacker 🎯</div>
-<div class="card-body">
-<p>
-      Use this mental sandbox to reason about payloads and attacker strategies.  
-      The goal is to develop intuition for how small code changes affect exploitability.
-    </p>
-<div id="section7-attack-sandbox"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.AttackSandbox.create("section7-attack-sandbox", {
-        title: "🎯 Attack Vector Sandbox – Debit Flood",
-        scenarios: [
-          {
-            name: "Parallel debit flood",
-            description: "Simulate 20 concurrent debit requests on a $150 balance for $100 each.",
-            payload: "for i in {1..20}; do curl -X POST /api/debit -d '{\"amount\":100}' & done",
-            response: "Observe whether multiple requests succeed and whether balance goes negative.",
-            notifyType: "warning",
-            notifyMessage: "If more than one debit succeeds, your implementation is vulnerable to TOCTOU."
-          },
-          {
-            name: "Latency injection",
-            description: "Add artificial delay between balance check and update and repeat the test.",
-            payload: "# Insert sleep(50ms) between check and update\n# Re-run parallel debit script.",
-            response: "Race window widens; exploit becomes more reliable.",
-            notifyType: "info",
-            notifyMessage: "Any latency between check and use widens the window. Keep critical sections tight."
-          }
-        ],
-        placeholder: "Use these scenarios as templates when designing your own race-condition tests."
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">7.4 Knowledge Check</div>
-<div class="card-body">
-<div id="section7-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section7-quiz", {
-        title: "🗘️ Section 7 Quiz",
-        mode: "step",
-        questions: [
-          {
-            text: "Which change most directly mitigates TOCTOU in debit_wallet?",
-            options: [
-              { value: "1", label: "Adding a sleep between check and update", correct: false },
-              { value: "2", label: "Using a transaction and row-level lock (SELECT ... FOR UPDATE)", correct: true },
-              { value: "3", label: "Logging every debit to stdout only", correct: false }
-            ]
-          },
-          {
-            text: "What is a strong signal of a TOCTOU issue in logs?",
-            options: [
-              { value: "1", label: "Negative balances after concurrent debits", correct: true },
-              { value: "2", label: "Single request with HTTP 200", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">8. Good Design Principles, Defense &amp; Mitigation 🛡️</div>
-<div class="card-body">
-<p>
-      This section distils TOCTOU defenses into design rules, patterns, and review checklists you can apply in design
-      reviews, threat models, and code reviews. The goal is to make “race-safe” logic your default.
-    </p>
-<div class="callout callout-info-solid">
-      Think in terms of <strong>atomic operations, idempotent APIs, and explicit ownership of shared state</strong>.
-      If two actors can mutate the same resource without coordination, you probably have a race risk.
-    </div>
-<p><strong>High-level principles:</strong></p>
-<ul>
-<li>Collapse “check then act” into a single atomic operation where possible.</li>
-<li>Use strong consistency for critical invariants (balances, quotas, permissions).</li>
-<li>Design endpoints to be idempotent so retries can’t amplify races.</li>
-<li>Keep critical sections small: avoid sleeps, blocking I/O, or remote calls inside them.</li>
-<li>Use explicit locking or optimistic concurrency for shared resources.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">8.1 Secure Flow Patterns</div>
-<div class="card-body">
-<p>
-      Below is a secure debit flow visualised step-by-step. Each step is designed to minimise or eliminate race windows.
-    </p>
-<div id="section8-flow"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.FlowVisualizer.create("section8-flow", [
-        {
-          title: "Step 1 – Begin transaction",
-          description: "Open a DB transaction scoped to the minimal operation (debit one wallet)."
-        },
-        {
-          title: "Step 2 – Lock row / select for update",
-          description: "Read the current balance using SELECT ... FOR UPDATE to prevent concurrent writers."
-        },
-        {
-          title: "Step 3 – Validate invariant",
-          description: "Check that balance >= amount; if not, abort the transaction immediately."
-        },
-        {
-          title: "Step 4 – Apply mutation",
-          description: "Update the locked row with the new balance."
-        },
-        {
-          title: "Step 5 – Commit transaction",
-          description: "Commit changes atomically, releasing the lock."
-        },
-        {
-          title: "Step 6 – Emit event / log",
-          description: "Log the successful debit and publish events after commit (outside of critical section)."
-        }
-      ]);
-    });
-    </script>
-<p><strong>Key design rules you should internalise:</strong></p>
-<ul>
-<li>Any state that defines money, quota, or privileges must be mutated under a clear concurrency control mechanism.</li>
-<li>External side effects (emails, downstream APIs) should happen after commit, never inside the lock.</li>
-<li>When using caches, treat them as hints; always enforce invariants in the system of record (DB).</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">8.2 Reviewer Checklist (TOCTOU Defense)</div>
-<div class="card-body">
-<p>
-      Use this checklist when reviewing designs or code related to shared resources and critical business invariants.
-    </p>
-<div id="section8-checklist"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Checklist.create("section8-checklist", {
-        title: "✅ TOCTOU Defense Checklist",
-        items: [
-          "Is any critical business decision implemented as check-then-act across multiple statements?",
-          "Are transactions and locks used around shared resource updates (balances, inventory, permissions)?",
-          "Is there any artificial latency (sleep, remote calls) in the critical section?",
-          "Are caches only advisory, with final checks enforced in the database or system of record?",
-          "Are APIs idempotent where retries or duplicates are expected?",
-          "Do logs capture enough context (user, balance_before, balance_after, correlation IDs) to detect races?"
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">8.3 Knowledge Check</div>
-<div class="card-body">
-<div id="section8-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section8-quiz", {
-        title: "🗘️ Section 8 Quiz",
-        mode: "step",
-        questions: [
-          {
-            text: "Which design choice most effectively prevents TOCTOU in critical balance updates?",
-            options: [
-              { value: "1", label: "Performing balance checks in a cache only", correct: false },
-              { value: "2", label: "Using DB transactions with row-level locking or optimistic concurrency", correct: true },
-              { value: "3", label: "Adding more logging but no locking", correct: false }
-            ]
-          },
-          {
-            text: "Where should you place slow operations (emails, external API calls) relative to the critical section?",
-            options: [
-              { value: "1", label: "Inside the critical section for strong consistency", correct: false },
-              { value: "2", label: "After the transaction commits / lock is released", correct: true }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">9. Incident Case Study and Analysis 📉</div>
-<div class="card-body">
-<p>
-      For TOCTOU race conditions, many real incidents are quietly fixed rather than publicly branded as “race condition bugs”.
-      However, patterns have been documented extensively by security researchers (e.g., PortSwigger’s race condition research,
-      CWE-367 – Time-of-check Time-of-use). We will model a realistic composite incident based on documented
-      double-spend and over-booking issues in payment and ticketing systems.
-    </p>
-<div class="callout callout-info-solid">
-      Think of this as a <strong>representative real-world incident</strong> that could (and has) happened in many services:
-      a wallet-backed purchase flow where concurrent requests bypass business invariants.
-    </div>
-<p><strong>Scenario:</strong> A large SaaS platform provides a wallet feature. Users can top up balance and make purchases.
-      An attacker discovers that firing concurrent purchase requests allows them to obtain more value than their wallet holds.</p>
-<p><strong>High-level architecture:</strong></p>
-<pre>
+              vulnerabilities: [
+                {
+                  severity: "high",
+                  title: "TOCTOU race condition",
+                  description: "Balance is checked and later updated without a transaction or row lock.",
+                  line: 3,
+                  recommendation: "Use a transaction + SELECT ... FOR UPDATE or equivalent to make check+update atomic."
+                },
+                {
+                  severity: "medium",
+                  title: "Artificial delay in critical section",
+                  description: "Introduces unnecessary latency and increases the race window for attackers.",
+                  line: 5,
+                  recommendation: "Remove sleeps or heavy work from critical sections; perform them before or after the transaction."
+                }
+              ]
+            });
+          });
+        </script>
+        <p><strong>What to observe in code review:</strong></p>
+        <ul>
+          <li>Any read of shared state followed by a separate write using the same value.</li>
+          <li>Lack of transactions or row locks around the critical section.</li>
+          <li>Any deliberate sleep, network call, or heavy computation between check and write.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">7.2 Observability – Logs &amp; Signals</div>
+      <div class="card-body">
+        <p>
+          When you (or a tester) hammer the insecure endpoint with parallel requests, your main evidence will be in logs
+          and account snapshots. Below is an example of how a logging view might highlight the race.
+        </p>
+        <div id="section7-logs"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.LogAnalyzer.create("section7-logs", {
+              title: "🔍 Security Log Analyzer – Debit Race",
+              columns: ["Time", "Event", "User", "Amount", "BalanceBefore", "BalanceAfter", "Status"],
+              logs: [
+                {
+                  time: "10:00:01.001",
+                  event: "debit_wallet",
+                  user: "user-123",
+                  ip: "203.0.113.5",
+                  status: "success",
+                  severity: "info",
+                  amount: "100",
+                  BalanceBefore: "150",
+                  BalanceAfter: "50"
+                },
+                {
+                  time: "10:00:01.003",
+                  event: "debit_wallet",
+                  user: "user-123",
+                  ip: "203.0.113.5",
+                  status: "success",
+                  severity: "danger",
+                  amount: "100",
+                  BalanceBefore: "150",
+                  BalanceAfter: "-50"
+                },
+                {
+                  time: "10:00:01.005",
+                  event: "alert_negative_balance",
+                  user: "user-123",
+                  ip: "n/a",
+                  status: "blocked",
+                  severity: "warning"
+                }
+              ],
+              placeholder: "Trigger your race test and inspect logs for overlapping debits and negative balances."
+            });
+          });
+        </script>
+        <p><strong>What success/failure looks like:</strong></p>
+        <ul>
+          <li><strong>Failure (vulnerable):</strong> negative balances, duplicate debits, same “BalanceBefore” across
+            multiple concurrent requests.</li>
+          <li><strong>Success (fixed):</strong> at most one debit succeeds when funds are limited; others fail cleanly
+            with “insufficient funds”.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">7.3 Attack Sandbox – Thinking like an Attacker 🎯</div>
+      <div class="card-body">
+        <p>
+          Use this mental sandbox to reason about payloads and attacker strategies.
+          The goal is to develop intuition for how small code changes affect exploitability.
+        </p>
+        <div id="section7-attack-sandbox"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.AttackSandbox.create("section7-attack-sandbox", {
+              title: "🎯 Attack Vector Sandbox – Debit Flood",
+              scenarios: [
+                {
+                  name: "Parallel debit flood",
+                  description: "Simulate 20 concurrent debit requests on a $150 balance for $100 each.",
+                  payload: "for i in {1..20}; do curl -X POST /api/debit -d '{\"amount\":100}' & done",
+                  response: "Observe whether multiple requests succeed and whether balance goes negative.",
+                  notifyType: "warning",
+                  notifyMessage: "If more than one debit succeeds, your implementation is vulnerable to TOCTOU."
+                },
+                {
+                  name: "Latency injection",
+                  description: "Add artificial delay between balance check and update and repeat the test.",
+                  payload: "# Insert sleep(50ms) between check and update\n# Re-run parallel debit script.",
+                  response: "Race window widens; exploit becomes more reliable.",
+                  notifyType: "info",
+                  notifyMessage: "Any latency between check and use widens the window. Keep critical sections tight."
+                }
+              ],
+              placeholder: "Use these scenarios as templates when designing your own race-condition tests."
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">7.4 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section7-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section7-quiz", {
+              title: "🗘️ Section 7 Quiz",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which change most directly mitigates TOCTOU in debit_wallet?",
+                  options: [
+                    { value: "1", label: "Adding a sleep between check and update", correct: false },
+                    { value: "2", label: "Using a transaction and row-level lock (SELECT ... FOR UPDATE)", correct: true },
+                    { value: "3", label: "Logging every debit to stdout only", correct: false }
+                  ]
+                },
+                {
+                  text: "What is a strong signal of a TOCTOU issue in logs?",
+                  options: [
+                    { value: "1", label: "Negative balances after concurrent debits", correct: true },
+                    { value: "2", label: "Single request with HTTP 200", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">8. Good Design Principles, Defense &amp; Mitigation 🛡️</div>
+      <div class="card-body">
+        <p>
+          This section distils TOCTOU defenses into design rules, patterns, and review checklists you can apply in
+          design
+          reviews, threat models, and code reviews. The goal is to make “race-safe” logic your default.
+        </p>
+        <div class="callout callout-info-solid">
+          Think in terms of <strong>atomic operations, idempotent APIs, and explicit ownership of shared state</strong>.
+          If two actors can mutate the same resource without coordination, you probably have a race risk.
+        </div>
+        <p><strong>High-level principles:</strong></p>
+        <ul>
+          <li>Collapse “check then act” into a single atomic operation where possible.</li>
+          <li>Use strong consistency for critical invariants (balances, quotas, permissions).</li>
+          <li>Design endpoints to be idempotent so retries can’t amplify races.</li>
+          <li>Keep critical sections small: avoid sleeps, blocking I/O, or remote calls inside them.</li>
+          <li>Use explicit locking or optimistic concurrency for shared resources.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">8.1 Secure Flow Patterns</div>
+      <div class="card-body">
+        <p>
+          Below is a secure debit flow visualised step-by-step. Each step is designed to minimise or eliminate race
+          windows.
+        </p>
+        <div id="section8-flow"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.FlowVisualizer.create("section8-flow", [
+              {
+                title: "Step 1 – Begin transaction",
+                description: "Open a DB transaction scoped to the minimal operation (debit one wallet)."
+              },
+              {
+                title: "Step 2 – Lock row / select for update",
+                description: "Read the current balance using SELECT ... FOR UPDATE to prevent concurrent writers."
+              },
+              {
+                title: "Step 3 – Validate invariant",
+                description: "Check that balance >= amount; if not, abort the transaction immediately."
+              },
+              {
+                title: "Step 4 – Apply mutation",
+                description: "Update the locked row with the new balance."
+              },
+              {
+                title: "Step 5 – Commit transaction",
+                description: "Commit changes atomically, releasing the lock."
+              },
+              {
+                title: "Step 6 – Emit event / log",
+                description: "Log the successful debit and publish events after commit (outside of critical section)."
+              }
+            ]);
+          });
+        </script>
+        <p><strong>Key design rules you should internalise:</strong></p>
+        <ul>
+          <li>Any state that defines money, quota, or privileges must be mutated under a clear concurrency control
+            mechanism.</li>
+          <li>External side effects (emails, downstream APIs) should happen after commit, never inside the lock.</li>
+          <li>When using caches, treat them as hints; always enforce invariants in the system of record (DB).</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">8.2 Reviewer Checklist (TOCTOU Defense)</div>
+      <div class="card-body">
+        <p>
+          Use this checklist when reviewing designs or code related to shared resources and critical business
+          invariants.
+        </p>
+        <div id="section8-checklist"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Checklist.create("section8-checklist", {
+              title: "✅ TOCTOU Defense Checklist",
+              items: [
+                "Is any critical business decision implemented as check-then-act across multiple statements?",
+                "Are transactions and locks used around shared resource updates (balances, inventory, permissions)?",
+                "Is there any artificial latency (sleep, remote calls) in the critical section?",
+                "Are caches only advisory, with final checks enforced in the database or system of record?",
+                "Are APIs idempotent where retries or duplicates are expected?",
+                "Do logs capture enough context (user, balance_before, balance_after, correlation IDs) to detect races?"
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">8.3 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section8-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section8-quiz", {
+              title: "🗘️ Section 8 Quiz",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which design choice most effectively prevents TOCTOU in critical balance updates?",
+                  options: [
+                    { value: "1", label: "Performing balance checks in a cache only", correct: false },
+                    { value: "2", label: "Using DB transactions with row-level locking or optimistic concurrency", correct: true },
+                    { value: "3", label: "Adding more logging but no locking", correct: false }
+                  ]
+                },
+                {
+                  text: "Where should you place slow operations (emails, external API calls) relative to the critical section?",
+                  options: [
+                    { value: "1", label: "Inside the critical section for strong consistency", correct: false },
+                    { value: "2", label: "After the transaction commits / lock is released", correct: true }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">9. Incident Case Study and Analysis 📉</div>
+      <div class="card-body">
+        <p>
+          For TOCTOU race conditions, many real incidents are quietly fixed rather than publicly branded as “race
+          condition bugs”.
+          However, patterns have been documented extensively by security researchers (e.g., PortSwigger’s race condition
+          research,
+          CWE-367 – Time-of-check Time-of-use). We will model a realistic composite incident based on documented
+          double-spend and over-booking issues in payment and ticketing systems.
+        </p>
+        <div class="callout callout-info-solid">
+          Think of this as a <strong>representative real-world incident</strong> that could (and has) happened in many
+          services:
+          a wallet-backed purchase flow where concurrent requests bypass business invariants.
+        </div>
+        <p><strong>Scenario:</strong> A large SaaS platform provides a wallet feature. Users can top up balance and make
+          purchases.
+          An attacker discovers that firing concurrent purchase requests allows them to obtain more value than their
+          wallet holds.</p>
+        <p><strong>High-level architecture:</strong></p>
+        <pre>
 Client (attacker) 
       │
       ▼
@@ -1010,182 +1072,196 @@ Client (attacker)
                              ▼
                         Redis Cache (balances)
     </pre>
-</div>
-</section><section class="card">
-<div class="card-header">9.1 Failure Point &amp; Exploit Path</div>
-<div class="card-body">
-<p>
-      The vulnerable implementation in the Billing Service performs a non-atomic check-then-update on the wallet balance,
-      sometimes using a cached balance value:
-    </p>
-<pre>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">9.1 Failure Point &amp; Exploit Path</div>
+      <div class="card-body">
+        <p>
+          The vulnerable implementation in the Billing Service performs a non-atomic check-then-update on the wallet
+          balance,
+          sometimes using a cached balance value:
+        </p>
+        <pre>
 1. GET /wallet/balance  → returns 100
 2. GET /purchase/item   → checks balance &gt;= 100 (uses cached or DB value)
 3. If OK, later writes new balance = balance - 100
     </pre>
-<p><strong>Exploit strategy:</strong></p>
-<ul>
-<li>Attacker tops up their wallet to $100.</li>
-<li>They script 10–20 parallel purchase requests for a $100 item (HTTP/2, Burp Intruder, custom tool).</li>
-<li>All requests read the same initial balance (100) before any write commits.</li>
-<li>Several purchases succeed before the database balance is reduced, producing a negative or inconsistent balance.</li>
-</ul>
-<div id="section9-timeline"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.VulnerabilityTimeline.create("section9-timeline", {
-        title: "📅 Incident Timeline – Wallet Race Condition",
-        vulnerabilities: [
-          {
-            id: "RACE-2025-001",
-            date: "2025-03-10",
-            title: "Bug introduced",
-            description: "Refactor moved debit logic out of transaction, introducing TOCTOU race.",
-            severity: "Medium"
-          },
-          {
-            id: "RACE-2025-002",
-            date: "2025-06-01",
-            title: "First anomalous negative balances",
-            description: "Monitoring flagged sporadic negative balances under peak load.",
-            severity: "High"
-          },
-          {
-            id: "RACE-2025-003",
-            date: "2025-07-15",
-            title: "Abuse by attacker",
-            description: "Attacker amplifies race, obtaining thousands of dollars of goods with $100 deposit.",
-            severity: "Critical"
-          },
-          {
-            id: "RACE-2025-004",
-            date: "2025-08-01",
-            title: "Fix deployed",
-            description: "Introduced DB transaction with row-level locking and removed cache-based balance checks.",
-            severity: "High"
-          }
-        ],
-        placeholder: "Timeline of how a small race bug evolved into a high-severity incident."
-      });
-    });
-    </script>
-<div class="callout callout-danger">
-      Root Cause: The system used a <strong>non-atomic check-then-debit</strong> pattern on a shared wallet balance, sometimes
-      via a stale cache read, with no transactional isolation or locking.
-    </div>
-</div>
-</section><section class="card">
-<div class="card-header">9.2 Detection &amp; Fix</div>
-<div class="card-body">
-<p><strong>Detection signals</strong> observed in production:</p>
-<ul>
-<li>Accounts with negative balances despite no overdraft feature.</li>
-<li>Multiple purchases for the same user with identical <code>balance_before</code> values in logs.</li>
-<li>Spike in concurrent requests to <code>/purchase</code> from the same IP/user within milliseconds.</li>
-</ul>
-<div id="section9-logs"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.LogAnalyzer.create("section9-logs", {
-        title: "🔍 Security Log Analyzer – Incident Signals",
-        columns: ["Time", "Event", "User", "Amount", "BalanceBefore", "BalanceAfter", "Status"],
-        logs: [
-          {
-            time: "12:00:00.101",
-            event: "purchase_item",
-            user: "attacker-01",
-            amount: "100",
-            BalanceBefore: "100",
-            BalanceAfter: "0",
-            status: "success",
-            severity: "info"
-          },
-          {
-            time: "12:00:00.103",
-            event: "purchase_item",
-            user: "attacker-01",
-            amount: "100",
-            BalanceBefore: "100",
-            BalanceAfter: "-100",
-            status: "success",
-            severity: "danger"
-          },
-          {
-            time: "12:00:00.104",
-            event: "fraud_alert",
-            user: "attacker-01",
-            amount: "0",
-            BalanceBefore: "-100",
-            BalanceAfter: "-100",
-            status: "blocked",
-            severity: "warning"
-          }
-        ],
-        placeholder: "Look for multiple successes with identical BalanceBefore, and negative balances."
-      });
-    });
-    </script>
-<p><strong>Fix (high level):</strong></p>
-<ul>
-<li>Move debit logic into a single DB transaction using <code>SELECT ... FOR UPDATE</code> on the wallet row.</li>
-<li>Remove cache-based balance checks for final authorization; use cache only for display.</li>
-<li>Introduce idempotency keys for purchase requests to prevent replay/double-charge.</li>
-<li>Add monitoring rules for negative balances and duplicate debits.</li>
-</ul>
-<div class="callout callout-info-solid">
-      The incident demonstrates how a “simple refactor” that separated checks and updates across layers
-      transformed a correct design into a race-prone one.
-    </div>
-<p><strong>Further reading:</strong></p>
-<ul>
-<li>OWASP Race Conditions: https://owasp.org/www-community/attacks/Time_of_check_time_of_use</li>
-<li>CWE-367: Time-of-check Time-of-use Race Condition: https://cwe.mitre.org/data/definitions/367.html</li>
-<li>PortSwigger Web Security Academy – Race conditions: https://portswigger.net/web-security/race-conditions</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">9.3 Knowledge Check</div>
-<div class="card-body">
-<div id="section9-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section9-quiz", {
-        title: "🗘️ Section 9 Quiz",
-        mode: "step",
-        questions: [
-          {
-            text: "What was the core root cause of the incident?",
-            options: [
-              { value: "1", label: "Non-atomic check-then-debit on wallet balance", correct: true },
-              { value: "2", label: "Lack of TLS on API endpoints", correct: false },
-              { value: "3", label: "Incorrect tax calculation", correct: false }
-            ]
-          },
-          {
-            text: "Which signal strongly suggests a TOCTOU exploit?",
-            options: [
-              { value: "1", label: "Negative balances and duplicate debits with identical BalanceBefore", correct: true },
-              { value: "2", label: "Single failed login attempt", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">10. Threat Model and Analysis 🎯</div>
-<div class="card-body">
-<p>
-      We will build a STRIDE-style threat model for the wallet/payment architecture with a focus on TOCTOU race conditions.
-      The aim is to identify who can race what, where, and with what business impact.
-    </p>
-<div class="callout callout-info-solid">
-      For TOCTOU, pay special attention to <strong>Tampering</strong>, <strong>Denial of Service</strong>, and
-      <strong>Elevation of Privilege</strong> via stale authorization checks.
-    </div>
-<p><strong>ASCII data flow diagram (DFD):</strong></p>
-<pre>
+        <p><strong>Exploit strategy:</strong></p>
+        <ul>
+          <li>Attacker tops up their wallet to $100.</li>
+          <li>They script 10–20 parallel purchase requests for a $100 item (HTTP/2, Burp Intruder, custom tool).</li>
+          <li>All requests read the same initial balance (100) before any write commits.</li>
+          <li>Several purchases succeed before the database balance is reduced, producing a negative or inconsistent
+            balance.</li>
+        </ul>
+        <div id="section9-timeline"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.TimelineVerticalView.create("section9-timeline", {
+              title: "📅 Incident Timeline – Wallet Race Condition",
+              events: [
+                {
+                  id: "RACE-2025-001",
+                  date: "2025-03-10",
+                  title: "Bug introduced",
+                  description: "Refactor moved debit logic out of transaction, introducing TOCTOU race.",
+                  // Medium → NOT added as tag
+                  tags: ["Bug", "TOCTOU", "Refactor"]
+                },
+                {
+                  id: "RACE-2025-002",
+                  date: "2025-06-01",
+                  title: "First anomalous negative balances",
+                  description: "Monitoring flagged sporadic negative balances under peak load.",
+                  severity: "High",
+                  tags: ["High", "Monitoring", "Anomalies"]
+                },
+                {
+                  id: "RACE-2025-003",
+                  date: "2025-07-15",
+                  title: "Abuse by attacker",
+                  description: "Attacker amplifies race, obtaining thousands of dollars of goods with $100 deposit.",
+                  severity: "Critical",
+                  tags: ["Critical", "Exploit", "Race Condition", "Fraud"]
+                },
+                {
+                  id: "RACE-2025-004",
+                  date: "2025-08-01",
+                  title: "Fix deployed",
+                  description: "Introduced DB transaction with row-level locking and removed cache-based balance checks.",
+                  severity: "High",
+                  tags: ["High", "Fix", "Database", "Locking"]
+                }
+              ],
+              placeholder: "Timeline of how a small race bug evolved into a high-severity incident."
+            });
+          });
+        </script>
+        <div class="callout callout-danger">
+          Root Cause: The system used a <strong>non-atomic check-then-debit</strong> pattern on a shared wallet balance,
+          sometimes
+          via a stale cache read, with no transactional isolation or locking.
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">9.2 Detection &amp; Fix</div>
+      <div class="card-body">
+        <p><strong>Detection signals</strong> observed in production:</p>
+        <ul>
+          <li>Accounts with negative balances despite no overdraft feature.</li>
+          <li>Multiple purchases for the same user with identical <code>balance_before</code> values in logs.</li>
+          <li>Spike in concurrent requests to <code>/purchase</code> from the same IP/user within milliseconds.</li>
+        </ul>
+        <div id="section9-logs"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.LogAnalyzer.create("section9-logs", {
+              title: "🔍 Security Log Analyzer – Incident Signals",
+              columns: ["Time", "Event", "User", "Amount", "BalanceBefore", "BalanceAfter", "Status"],
+              logs: [
+                {
+                  time: "12:00:00.101",
+                  event: "purchase_item",
+                  user: "attacker-01",
+                  amount: "100",
+                  BalanceBefore: "100",
+                  BalanceAfter: "0",
+                  status: "success",
+                  severity: "info"
+                },
+                {
+                  time: "12:00:00.103",
+                  event: "purchase_item",
+                  user: "attacker-01",
+                  amount: "100",
+                  BalanceBefore: "100",
+                  BalanceAfter: "-100",
+                  status: "success",
+                  severity: "danger"
+                },
+                {
+                  time: "12:00:00.104",
+                  event: "fraud_alert",
+                  user: "attacker-01",
+                  amount: "0",
+                  BalanceBefore: "-100",
+                  BalanceAfter: "-100",
+                  status: "blocked",
+                  severity: "warning"
+                }
+              ],
+              placeholder: "Look for multiple successes with identical BalanceBefore, and negative balances."
+            });
+          });
+        </script>
+        <p><strong>Fix (high level):</strong></p>
+        <ul>
+          <li>Move debit logic into a single DB transaction using <code>SELECT ... FOR UPDATE</code> on the wallet row.
+          </li>
+          <li>Remove cache-based balance checks for final authorization; use cache only for display.</li>
+          <li>Introduce idempotency keys for purchase requests to prevent replay/double-charge.</li>
+          <li>Add monitoring rules for negative balances and duplicate debits.</li>
+        </ul>
+        <div class="callout callout-info-solid">
+          The incident demonstrates how a “simple refactor” that separated checks and updates across layers
+          transformed a correct design into a race-prone one.
+        </div>
+        <p><strong>Further reading:</strong></p>
+        <ul>
+          <li>OWASP Race Conditions: https://owasp.org/www-community/attacks/Time_of_check_time_of_use</li>
+          <li>CWE-367: Time-of-check Time-of-use Race Condition: https://cwe.mitre.org/data/definitions/367.html</li>
+          <li>PortSwigger Web Security Academy – Race conditions: https://portswigger.net/web-security/race-conditions
+          </li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">9.3 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section9-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section9-quiz", {
+              title: "🗘️ Section 9 Quiz",
+              mode: "step",
+              questions: [
+                {
+                  text: "What was the core root cause of the incident?",
+                  options: [
+                    { value: "1", label: "Non-atomic check-then-debit on wallet balance", correct: true },
+                    { value: "2", label: "Lack of TLS on API endpoints", correct: false },
+                    { value: "3", label: "Incorrect tax calculation", correct: false }
+                  ]
+                },
+                {
+                  text: "Which signal strongly suggests a TOCTOU exploit?",
+                  options: [
+                    { value: "1", label: "Negative balances and duplicate debits with identical BalanceBefore", correct: true },
+                    { value: "2", label: "Single failed login attempt", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">10. Threat Model and Analysis 🎯</div>
+      <div class="card-body">
+        <p>
+          We will build a STRIDE-style threat model for the wallet/payment architecture with a focus on TOCTOU race
+          conditions.
+          The aim is to identify who can race what, where, and with what business impact.
+        </p>
+        <div class="callout callout-info-solid">
+          For TOCTOU, pay special attention to <strong>Tampering</strong>, <strong>Denial of Service</strong>, and
+          <strong>Elevation of Privilege</strong> via stale authorization checks.
+        </div>
+        <p><strong>ASCII data flow diagram (DFD):</strong></p>
+        <pre>
       +-----------+        +-------------+        +----------------+
       |  Attacker | -----&gt; | API Gateway | -----&gt; | Billing Service|
       +-----------+        +-------------+        +----------------+
@@ -1200,152 +1276,173 @@ Client (attacker)
                                                    | Redis Cache |
                                                    +-------------+
     </pre>
-</div>
-</section><section class="card">
-<div class="card-header">10.1 STRIDE Threats Focused on TOCTOU</div>
-<div class="card-body">
-<p><strong>STRIDE analysis (TOCTOU-focused):</strong></p>
-<ul>
-<li><strong>S – Spoofing:</strong> Stolen tokens could let attacker race as a privileged user, but this is orthogonal to TOCTOU itself.</li>
-<li><strong>T – Tampering:</strong> Concurrent updates tamper with wallet and inventory records by exploiting non-atomic logic.</li>
-<li><strong>R – Repudiation:</strong> Lack of detailed logs (balance_before / after, correlation IDs) allows users to deny having exploited the race.</li>
-<li><strong>I – Information Disclosure:</strong> Timing behavior could leak information about internal locking, but impact is secondary.</li>
-<li><strong>D – Denial of Service:</strong> Aggressive race attempts could lock rows or saturate DB, causing system slowdown.</li>
-<li><strong>E – Elevation of Privilege:</strong> Stale authorization checks may allow actions after privilege revocation.</li>
-</ul>
-<div id="section10-threatmodel"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.ThreatModel.create("section10-threatmodel", {
-        system: {
-          name: "Wallet Billing System",
-          type: "Multi-tenant SaaS",
-          actors: "End users, attackers, internal services",
-          assets: "Wallet balances, inventory, audit logs",
-          entryPoints: "HTTPS APIs via API Gateway",
-          boundaries: "Internet ↔ Gateway ↔ Billing Service ↔ DB/Cache"
-        },
-        stride: {
-          spoofing: "Use stolen auth tokens to initiate races as legitimate users.",
-          tampering: "Exploit TOCTOU to force inconsistent writes to wallet balances.",
-          repudiation: "Exploit weak logging to deny race abuse; logs lack correlation IDs.",
-          information: "Use timing to infer lock contention or balance states.",
-          dos: "Flood concurrent requests to lock rows or exhaust DB connections.",
-          elevation: "Execute privileged operations after role revocation due to stale checks."
-        }
-      }, {
-        title: "🎯 TOCTOU Threat Modeling Canvas"
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">10.2 Knowledge Check</div>
-<div class="card-body">
-<div id="section10-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section10-quiz", {
-        title: "🗘️ Section 10 Quiz",
-        mode: "step",
-        questions: [
-          {
-            text: "Which STRIDE category most directly captures TOCTOU double-spend issues?",
-            options: [
-              { value: "1", label: "Tampering", correct: true },
-              { value: "2", label: "Information Disclosure", correct: false }
-            ]
-          },
-          {
-            text: "What aspect of logging reduces repudiation risk in race attacks?",
-            options: [
-              { value: "1", label: "Capturing balance_before and balance_after with correlation IDs", correct: true },
-              { value: "2", label: "Logging only HTTP status codes", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">11. Compliance Mapping 📋</div>
-<div class="card-body">
-<p>
-      TOCTOU race conditions are not usually named explicitly in compliance frameworks, but the underlying controls
-      around <strong>integrity, access control, and logging</strong> map directly to requirements in ISO 27001, NIST 800-53,
-      PCI DSS, SOC 2, and (indirectly) GDPR/HIPAA when financial or personal data is involved.
-    </p>
-<div class="callout callout-info-solid">
-      Think of TOCTOU mitigations as part of your <strong>application integrity</strong> and <strong>change control</strong>
-      story. If concurrent operations can break business invariants, you are at risk of violating multiple framework controls.
-    </div>
-<p><strong>Framework alignment (high level):</strong></p>
-<ul>
-<li><strong>ISO 27001:</strong> A.14 (System acquisition, development and maintenance), A.12 (Operations security).</li>
-<li><strong>NIST 800-53:</strong> SA-11 (Developer Security Testing), SI-7 (Software, Firmware, and Information Integrity), AU-3/6 (Logging).</li>
-<li><strong>PCI DSS:</strong> Requirements 6 (Secure systems/applications), 10 (Logging and monitoring) for payment flows.</li>
-<li><strong>SOC 2 (Security, Availability, Processing Integrity):</strong> Controls around change management, logical access, and processing integrity.</li>
-<li><strong>GDPR / HIPAA:</strong> When TOCTOU corrupts or exposes personal/health data, integrity and security obligations apply but are indirect.</li>
-</ul>
-</div>
-</section><section class="card">
-<div class="card-header">11.1 Control Mapping Checklist</div>
-<div class="card-body">
-<p>
-      Use this checklist to connect your TOCTOU defenses to specific controls during audits and design reviews.
-    </p>
-<div id="section11-checklist"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Checklist.create("section11-checklist", {
-        title: "✅ TOCTOU Compliance Checklist",
-        items: [
-          "ISO 27001 A.14: Are secure development practices including race-condition testing and code review in place?",
-          "NIST 800-53 SA-11: Are concurrency and race conditions covered in security testing and static analysis?",
-          "NIST 800-53 SI-7: Do you enforce data integrity via atomic DB operations and constraints?",
-          "PCI DSS Req 6: Are payment-related balance/inventory updates protected with transactions and locking?",
-          "PCI DSS Req 10: Do logs include enough detail (user, balance_before, balance_after) to investigate anomalies?",
-          "SOC 2 Processing Integrity: Are business invariants (no negative balance, no double shipping) enforced even under concurrent load?"
-        ]
-      });
-    });
-    </script>
-</div>
-</section><section class="card">
-<div class="card-header">11.2 Knowledge Check</div>
-<div class="card-body">
-<div id="section11-quiz"></div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-      AppSecWidgets.Quiz.create("section11-quiz", {
-        title: "🗘️ Section 11 Quiz",
-        mode: "step",
-        questions: [
-          {
-            text: "Which PCI DSS requirement is most directly impacted by TOCTOU in payment balances?",
-            options: [
-              { value: "1", label: "Requirement 6 – Develop and maintain secure systems and applications", correct: true },
-              { value: "2", label: "Requirement 3 – Protect stored cardholder data only", correct: false }
-            ]
-          },
-          {
-            text: "Which NIST 800-53 control most clearly relates to enforcing data integrity against race conditions?",
-            options: [
-              { value: "1", label: "SI-7 – Software, Firmware, and Information Integrity", correct: true },
-              { value: "2", label: "PE-3 – Physical Access Control", correct: false }
-            ]
-          }
-        ]
-      });
-    });
-    </script>
-</div>
-</section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
-            Daily AppSec Study · Lesson 67 – Master TOCTOU Race Conditions
-        </footer>
-</div>
-<script src="appsec-theme.js"></script>
-<script src="appsec-widgets.js"></script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">10.1 STRIDE Threats Focused on TOCTOU</div>
+      <div class="card-body">
+        <p><strong>STRIDE analysis (TOCTOU-focused):</strong></p>
+        <ul>
+          <li><strong>S – Spoofing:</strong> Stolen tokens could let attacker race as a privileged user, but this is
+            orthogonal to TOCTOU itself.</li>
+          <li><strong>T – Tampering:</strong> Concurrent updates tamper with wallet and inventory records by exploiting
+            non-atomic logic.</li>
+          <li><strong>R – Repudiation:</strong> Lack of detailed logs (balance_before / after, correlation IDs) allows
+            users to deny having exploited the race.</li>
+          <li><strong>I – Information Disclosure:</strong> Timing behavior could leak information about internal
+            locking, but impact is secondary.</li>
+          <li><strong>D – Denial of Service:</strong> Aggressive race attempts could lock rows or saturate DB, causing
+            system slowdown.</li>
+          <li><strong>E – Elevation of Privilege:</strong> Stale authorization checks may allow actions after privilege
+            revocation.</li>
+        </ul>
+        <div id="section10-threatmodel"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.ThreatModel.create("section10-threatmodel", {
+              system: {
+                name: "Wallet Billing System",
+                type: "Multi-tenant SaaS",
+                actors: "End users, attackers, internal services",
+                assets: "Wallet balances, inventory, audit logs",
+                entryPoints: "HTTPS APIs via API Gateway",
+                boundaries: "Internet ↔ Gateway ↔ Billing Service ↔ DB/Cache"
+              },
+              stride: {
+                spoofing: "Use stolen auth tokens to initiate races as legitimate users.",
+                tampering: "Exploit TOCTOU to force inconsistent writes to wallet balances.",
+                repudiation: "Exploit weak logging to deny race abuse; logs lack correlation IDs.",
+                information: "Use timing to infer lock contention or balance states.",
+                dos: "Flood concurrent requests to lock rows or exhaust DB connections.",
+                elevation: "Execute privileged operations after role revocation due to stale checks."
+              }
+            }, {
+              title: "🎯 TOCTOU Threat Modeling Canvas"
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">10.2 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section10-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section10-quiz", {
+              title: "🗘️ Section 10 Quiz",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which STRIDE category most directly captures TOCTOU double-spend issues?",
+                  options: [
+                    { value: "1", label: "Tampering", correct: true },
+                    { value: "2", label: "Information Disclosure", correct: false }
+                  ]
+                },
+                {
+                  text: "What aspect of logging reduces repudiation risk in race attacks?",
+                  options: [
+                    { value: "1", label: "Capturing balance_before and balance_after with correlation IDs", correct: true },
+                    { value: "2", label: "Logging only HTTP status codes", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">11. Compliance Mapping 📋</div>
+      <div class="card-body">
+        <p>
+          TOCTOU race conditions are not usually named explicitly in compliance frameworks, but the underlying controls
+          around <strong>integrity, access control, and logging</strong> map directly to requirements in ISO 27001, NIST
+          800-53,
+          PCI DSS, SOC 2, and (indirectly) GDPR/HIPAA when financial or personal data is involved.
+        </p>
+        <div class="callout callout-info-solid">
+          Think of TOCTOU mitigations as part of your <strong>application integrity</strong> and <strong>change
+            control</strong>
+          story. If concurrent operations can break business invariants, you are at risk of violating multiple framework
+          controls.
+        </div>
+        <p><strong>Framework alignment (high level):</strong></p>
+        <ul>
+          <li><strong>ISO 27001:</strong> A.14 (System acquisition, development and maintenance), A.12 (Operations
+            security).</li>
+          <li><strong>NIST 800-53:</strong> SA-11 (Developer Security Testing), SI-7 (Software, Firmware, and
+            Information Integrity), AU-3/6 (Logging).</li>
+          <li><strong>PCI DSS:</strong> Requirements 6 (Secure systems/applications), 10 (Logging and monitoring) for
+            payment flows.</li>
+          <li><strong>SOC 2 (Security, Availability, Processing Integrity):</strong> Controls around change management,
+            logical access, and processing integrity.</li>
+          <li><strong>GDPR / HIPAA:</strong> When TOCTOU corrupts or exposes personal/health data, integrity and
+            security obligations apply but are indirect.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">11.1 Control Mapping Checklist</div>
+      <div class="card-body">
+        <p>
+          Use this checklist to connect your TOCTOU defenses to specific controls during audits and design reviews.
+        </p>
+        <div id="section11-checklist"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Checklist.create("section11-checklist", {
+              title: "✅ TOCTOU Compliance Checklist",
+              items: [
+                "ISO 27001 A.14: Are secure development practices including race-condition testing and code review in place?",
+                "NIST 800-53 SA-11: Are concurrency and race conditions covered in security testing and static analysis?",
+                "NIST 800-53 SI-7: Do you enforce data integrity via atomic DB operations and constraints?",
+                "PCI DSS Req 6: Are payment-related balance/inventory updates protected with transactions and locking?",
+                "PCI DSS Req 10: Do logs include enough detail (user, balance_before, balance_after) to investigate anomalies?",
+                "SOC 2 Processing Integrity: Are business invariants (no negative balance, no double shipping) enforced even under concurrent load?"
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-header">11.2 Knowledge Check</div>
+      <div class="card-body">
+        <div id="section11-quiz"></div>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            AppSecWidgets.Quiz.create("section11-quiz", {
+              title: "🗘️ Section 11 Quiz",
+              mode: "step",
+              questions: [
+                {
+                  text: "Which PCI DSS requirement is most directly impacted by TOCTOU in payment balances?",
+                  options: [
+                    { value: "1", label: "Requirement 6 – Develop and maintain secure systems and applications", correct: true },
+                    { value: "2", label: "Requirement 3 – Protect stored cardholder data only", correct: false }
+                  ]
+                },
+                {
+                  text: "Which NIST 800-53 control most clearly relates to enforcing data integrity against race conditions?",
+                  options: [
+                    { value: "1", label: "SI-7 – Software, Firmware, and Information Integrity", correct: true },
+                    { value: "2", label: "PE-3 – Physical Access Control", correct: false }
+                  ]
+                }
+              ]
+            });
+          });
+        </script>
+      </div>
+    </section>
+    <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+      Daily AppSec Study · Lesson 67 – Master TOCTOU Race Conditions
+    </footer>
+  </div>
+  <script src="appsec-theme.js"></script>
+  <script src="appsec-widgets.js"></script>
 </body>
+
 </html>

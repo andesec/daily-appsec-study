@@ -42,6 +42,22 @@
   /* Code Display */
   --code-padding-right: 0.5rem;
   --line-number-width: 2rem;
+
+  --vtw-text: #1a1a1a;
+
+  --vtw-line: #cfcfcf;
+
+  --vtw-dot: #3b82f6;
+  --vtw-dot-outline: #d0d0d0;
+
+  --vtw-card-bg: #ffffff;
+  --vtw-card-border: #e3e3e3;
+  --vtw-shadow: rgba(0, 0, 0, 0.06);
+
+  --vtw-tag-bg: #e8eefc;
+  --vtw-tag-text: #2656c5;
+
+  --vtw-btn-bg: #3b82f6;
 }
 
 /* Dark Mode */
@@ -68,6 +84,23 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+
+  --vtw-text: #e5e5e5;
+
+  --vtw-line: #4a4a4a;
+
+  --vtw-dot: #60a5fa;
+  --vtw-dot-outline: #0f0f0f;
+
+  --vtw-card-bg: #1a1a1a;
+  --vtw-card-border: #333;
+  --vtw-shadow: rgba(0, 0, 0, 0.45);
+
+  --vtw-tag-bg: #2b3a55;
+  --vtw-tag-text: #cbd6f8;
+
+  --vtw-btn-bg: #2563eb;
+  --vtw-link: #60a5fa;
 }
 
 /* Base Styles */
@@ -1024,7 +1057,7 @@ a {
 
 code {
   overflow-x: auto;
-  white-space: pre;
+  white-space: pre-line;
 }
 
 @media (max-width: 640px) {
@@ -1068,4 +1101,188 @@ code {
 .code-wrapped .code-content code {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Container */
+.vtw {
+  position: relative;
+  font-family: system-ui, sans-serif;
+  color: var(--vtw-text, #1a1a1a);
+  margin-bottom: 1rem;
+}
+
+/* Title */
+.vtw-header {
+  margin-bottom: 14px;
+}
+
+.vtw-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* EVENTS WRAPPER */
+.vtw-events {
+  position: relative;
+  margin-left: 32px;
+  padding-left: 8px;
+}
+
+/* CENTRAL TIMELINE LINE */
+.vtw-events::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  /* ensures the dots sit centered on the line */
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--vtw-line, #cfcfcf);
+}
+
+/* Each event row */
+.vtw-event-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+/* Marker with dot */
+.vtw-marker {
+  position: relative;
+  width: 20px;
+  /* room for dot alignment */
+  height: 20px;
+  right: 6px;
+  align-self: center;
+}
+
+.vtw-marker .dot {
+  position: absolute;
+  left: -1px;
+  /* perfectly centers dot over the 2px line */
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vtw-dot, #3b82f6);
+  border: 2px solid var(--vtw-card-bg, #f8f8f8);
+  box-shadow: 0 0 0 2px var(--vtw-dot-outline, #3b82f660);
+}
+
+/* Card */
+.vtw-card {
+  background: var(--vtw-card-bg, #ffffff);
+  border: 1px solid var(--vtw-card-border, #e3e3e3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  max-width: 520px;
+  font-size: 14px;
+  box-shadow: 0 2px 6px var(--vtw-shadow, rgba(0, 0, 0, 0.06));
+  transition: background 0.2s ease;
+}
+
+.vtw-card-date {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.vtw-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.vtw-card-desc {
+  line-height: 1.45;
+}
+
+/* TAGS */
+.vtw-tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vtw-tag {
+  background: var(--vtw-tag-bg, #e8eefc);
+  color: var(--vtw-tag-text, #2656c5);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Controls */
+.vtw-controls {
+  margin-top: 12px;
+}
+
+.vtw-btn {
+  padding: 7px 18px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: none;
+  background: var(--vtw-btn-bg, #3b82f6);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.vtw-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Animations */
+.fade-in {
+  animation: fade-in 0.25s ease-in;
+}
+
+.slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Link block in card */
+.vtw-card-link {
+  margin-top: 10px;
+}
+
+.vtw-card-link a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vtw-link, #2563eb);
+  text-decoration: none;
+}
+
+.vtw-card-link a:hover {
+  text-decoration: underline;
 }

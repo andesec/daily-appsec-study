@@ -77,7 +77,7 @@ Teach the topic from the ground up using the following structure below.
     - Describe where the failure occurred and what was the exploit path
     - How they fixed the problem.
     - Provide the URLs to read more about the problem.
-    - Widget Suggestions: Callout, VulnerabilityTimeline, LogAnalyzer, ConfigDiff, ASCII Diagram, FlowVisualizer
+    - Widget Suggestions: Callout, TimelineVerticalView, LogAnalyzer, ConfigDiff, ASCII Diagram, FlowVisualizer
     
 10. **Threat Model and Analysis**
     - Provide a Threat Model Diagram using ASCII for a known related architecture
