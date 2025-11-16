@@ -1,0 +1,240 @@
+<!-- ========================= -->
+<!-- SECTION 3 — Mental Model -->
+<!-- ========================= -->
+
+<section class="card" id="section-3">
+    <div class="card-header">3. Mental Model — “Why → How → What-If”</div>
+    <div class="card-body">
+
+        <p>
+            To design or review mTLS correctly, you must internalize a clear mental model that links
+            <strong>why</strong> mTLS exists,
+            <strong>how</strong> it enforces identity,
+            and <strong>what happens</strong> when key assumptions break.
+        </p>
+
+        <h3>3.1 WHY — The underlying need</h3>
+        <p>
+            In large-scale SaaS and microservice systems:
+        </p>
+        <ul>
+            <li>Any compromised workload can attempt internal movement.</li>
+            <li>Bearer tokens are replayable if stolen (logs, memory dumps, debug output).</li>
+            <li>Zero Trust assumes no implicit trust for “internal callers”.</li>
+            <li>You need proof that the <em>caller itself</em> is a trusted workload.</li>
+        </ul>
+
+        <div class="callout callout-info">
+            💡 <strong>mTLS converts services into first-class cryptographic identities.</strong>
+        </div>
+
+        <h3>3.2 HOW — The enforcement model</h3>
+        <p>
+            mTLS enforces identity through certificate possession:
+        </p>
+
+        <ul>
+            <li><strong>Authentication:</strong> Both sides present certificates.</li>
+            <li><strong>Integrity:</strong> TLS protects against tampering.</li>
+            <li><strong>Confidentiality:</strong> Session keys encrypt all traffic.</li>
+        </ul>
+
+        <p>ASCII handshake model:</p>
+        <pre>
+Client                                     Server
+------                                     ------
+ClientHello ----------------------------->  (1)
+                              ServerHello + Certificate
+                     <---------------------------------- (2)
+Validate server certificate              
+
+Client Certificate + Proof ------------->  (3)
+                                Validate client certificate
+                                               
+        <<< Secure encrypted channel established >>>       (4)
+        </pre>
+
+        <p>
+            The <strong>proof of private key possession</strong> prevents impersonation even if cert contents are copied.
+        </p>
+
+        <h3>3.3 WHAT-IF — Failure scenarios</h3>
+        <ul>
+            <li><strong>If cert expires:</strong> Service becomes unreachable → availability impact.</li>
+            <li><strong>If private key leaks:</strong> Attacker impersonates service until cert rotates.</li>
+            <li><strong>If CA compromised:</strong> Entire trust fabric collapses.</li>
+            <li><strong>If trust stores desync:</strong> Partial outages, unexpected connection failures.</li>
+            <li><strong>If app doesn't map certificate identity to auth:</strong> No authorization → incorrect trust.</li>
+        </ul>
+
+        <div class="callout callout-warning">
+            ⚠️ Authentication ≠ Authorization.  
+            mTLS verifies who you are; authorization decides what you may do.
+        </div>
+
+    </div>
+</section>
+
+
+
+<!-- ========================= -->
+<!-- SECTION 4 — Deep Explanation -->
+<!-- ========================= -->
+
+<section class="card" id="section-4">
+    <div class="card-header">4. Deep Explanation (Step-by-Step)</div>
+    <div class="card-body">
+
+        <p>
+            This section walks through mTLS from PKI construction → certificate issuance → handshake →
+            identity extraction → rotation. Each step maps directly to how production systems behave.
+        </p>
+
+        <h3>4.1 Step 1 — Establish the trust hierarchy</h3>
+
+        <pre>
+          ┌──────────┐
+          │ Root  CA │   ← Offline / HSM protected
+          └─────┬────┘
+                │ signs
+          ┌─────▼─────┐
+          │ Intermediate│  ← Lives in Vault / ACM PCA / cert-manager
+          └─────┬──────┘
+                │ issues
+        ┌───────▼──────────┐
+        │ Service Leaf Cert │  ← Used by workloads (Orders, Billing, etc.)
+        └───────────────────┘
+        </pre>
+
+        <p>
+            The <strong>root must remain offline or extremely protected</strong>.
+            Intermediates perform real-time workload certificate signing.
+        </p>
+
+        <h3>4.2 Step 2 — Certificate issuance flow</h3>
+        <p>
+            Workloads authenticate to a CA using:
+        </p>
+        <ul>
+            <li>Kubernetes ServiceAccount tokens</li>
+            <li>AWS/GCP Workload Identity (OIDC-based)</li>
+            <li>SPIRE node attestation</li>
+            <li>Vault AppRole / Kubernetes auth</li>
+        </ul>
+
+        <pre>
+Workload → CSR → CA → Signed Certificate → Installed into pod/sidecar
+        </pre>
+
+        <div class="callout callout-info">
+            💡 This is called <strong>trust bootstrapping</strong> — the workload must prove its initial identity <em>before</em> receiving a certificate.
+        </div>
+
+        <h3>4.3 Step 3 — The mTLS handshake in detail</h3>
+
+        <p>Below is an ASCII sequence diagram of the full handshake:</p>
+
+        <pre>
+┌────────────┐                                 ┌──────────────┐
+│  Client     │                                 │   Server     │
+└──────┬──────┘                                 └──────┬───────┘
+       |   1. ClientHello --------------------->       |
+       |                                             |
+       |                         2. ServerHello +     |
+       |                     Server Certificate <-----|
+       |                                             |
+       |   3. Validate Server Certificate            |
+       |   - Signature (CA)                          |
+       |   - SAN / SPIFFE                            |
+       |   - Validity window                         |
+       |                                             |
+       |   4. Client Certificate + Proof ----------> |
+       |                                             |
+       |                         5. Validate Client   |
+       |                            Certificate       |
+       |                                             |
+       |   6. Derive session keys                    |
+       |<===========================================>|
+       |                                             |
+       |              7. Application data            |
+       |<------------------------------------------->|
+</pre>
+
+        <p>
+            Steps <strong>3</strong> and <strong>5</strong> are security-critical:  
+            <em>If certificate verification fails on either side, the connection never becomes encrypted.</em>
+        </p>
+
+        <h3>4.4 Step 4 — Extracting identity & enforcing authorization</h3>
+
+        <p>
+            After the handshake succeeds, the system extracts identity (usually from SAN) and maps it to auth policies.
+        </p>
+
+        <pre>
+Subject Alternative Names (SAN):
+   spiffe://corp.local/ns/payments/sa/billing
+   DNS: billing.svc.cluster.local
+
+Extract SAN → Map to service → Apply RBAC/ABAC → Allow/Deny
+        </pre>
+
+        <div class="callout callout-warning">
+            ⚠️ Modern systems <strong>must not rely on CN</strong> for identity.  
+            Always enforce SAN-based identity.
+        </div>
+
+        <h3>4.5 Step 5 — Rotation and lifecycle management</h3>
+
+        <p>
+            Proper rotation is what makes mTLS viable at scale.
+        </p>
+
+        <ul>
+            <li>Use short-lived certificates (6h–24h typical).</li>
+            <li>Automate renewal using agents (Vault Agent, Istio SDS, cert-manager).</li>
+            <li>Hot-reload TLS contexts to avoid downtime.</li>
+            <li>Let expired certs die naturally; avoid heavy CRL dependency.</li>
+        </ul>
+
+        <pre>
+1. New CSR generated
+2. CA signs new cert
+3. Service installs new cert alongside old
+4. Listener reloads
+5. Old cert expires → removed
+        </pre>
+
+        <div class="callout callout-success">
+            ✅ Short-lived certs minimize the blast radius of a leaked key and reduce the need for revocation.
+        </div>
+
+        <h3>4.6 Interactive: Sequence visualizer (correct widget)</h3>
+
+        <div id="mtls-sequence"></div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Sequence) {
+                AppSecWidgets.Sequence.create("mtls-sequence", {
+                    title: "🔐 mTLS Handshake – Interactive Sequence",
+                    steps: [
+                        "ClientHello → Server",
+                        "ServerHello + Certificate → Client",
+                        "Client validates server certificate",
+                        "Client certificate + proof → Server",
+                        "Server validates client certificate",
+                        "Session keys derived",
+                        "Secure channel established"
+                    ]
+                });
+            }
+        });
+        </script>
+
+        <div class="callout callout-success">
+            🎉 With this, you now have a deep mechanistic view of mTLS — exactly what you need for AppSec design reviews.
+        </div>
+
+    </div>
+</section>
