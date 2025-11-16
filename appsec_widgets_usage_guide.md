@@ -7,6 +7,7 @@ All widgets share the following behavior:
 - They render a **`.widget-header`** and **`.widget-body`** inside the div they are invoked on.
 - They automatically add the **`widget`** CSS class on the container div.
 - Most widgets accept an optional **`title`** parameter to override the default heading.
+- 💡 **DOM readiness:** Invoke widgets only after the container elements exist. Wrap initialization code in `document.addEventListener('DOMContentLoaded', ...)` (or equivalent SPA hooks) so widgets don't throw “element not found” errors in the console.
 
 > In all examples, `containerId` is the **id** of an existing `<div>` element.
 
