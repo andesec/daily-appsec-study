@@ -1360,7 +1360,7 @@ AppSecWidgets.ThreatModel = {
       'Are upstream dependencies (DB, cache, queues) protected against overload?'
     ],
     elevation: [
-      'Can a normal user gain admin-like capabilities via parameter changes or missing checks?',
+      'Can a regular user gain admin-like capabilities via parameter changes or missing checks?',
       'Are role/permission checks centralized and consistent across services?',
       'Can an attacker abuse a low-privileged component or service to reach a high-privileged one?',
       'Are there hidden or debug endpoints that bypass authorization?'
@@ -1383,15 +1383,39 @@ AppSecWidgets.ThreatModel = {
       { id: 'elevation', label: 'Elevation of Privilege', emoji: '👑', color: 'var(--color-danger)' }
     ];
 
+    // Initialize state for this canvas
+    this.initState(containerId, categories, prefill);
+
     const categoriesHtml = categories.map(cat => {
       const prompts = (this.prompts[cat.id] || [])
         .map(p => `<li>${p}</li>`)
         .join('');
       return `
         <div class="threat-category">
-          <h4 style="color: ${cat.color};">${cat.emoji} ${cat.label}</h4>
-          <textarea id="${containerId}-${cat.id}" rows="4" placeholder="List concrete threats, scenarios, and affected components..."></textarea>
-          <details class="threat-prompts mt-1">
+          <div class="threat-category-header">
+            <h4 style="color: ${cat.color};">${cat.emoji} ${cat.label}</h4>
+          </div>
+
+          <div class="threat-add-row">
+            <textarea
+              id="${containerId}-${cat.id}-input"
+              class="threat-add-input"
+              rows="2"
+              placeholder="Add a concrete threat scenario (one per card)..."></textarea>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm threat-add-btn"
+              id="${containerId}-${cat.id}-add"
+              data-cat="${cat.id}">
+              + Add
+            </button>
+          </div>
+
+          <ul class="threat-list" id="${containerId}-${cat.id}-list"></ul>
+          <!-- Hidden field keeps exports backwards compatible -->
+          <input type="hidden" id="${containerId}-${cat.id}">
+
+          <details class="threat-prompts">
             <summary>💡 Guided questions</summary>
             <ul class="mt-1" style="margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
               ${prompts}
@@ -1405,7 +1429,7 @@ AppSecWidgets.ThreatModel = {
       <div class="widget-header">
         <h3 class="widget-title">${title}</h3>
       </div>
-      <div class="widget-body">
+      <div class="widget-body widget-small-fonts">
         <!-- Architecture / Context Section -->
         <div class="grid grid-2 threat-architecture mb-1">
           <div>
@@ -1443,7 +1467,7 @@ AppSecWidgets.ThreatModel = {
         <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
 
         <!-- STRIDE Categories -->
-        <div class="grid grid-3">
+        <div class="grid grid-3 threat-grid">
           ${categoriesHtml}
         </div>
 
@@ -1459,34 +1483,132 @@ AppSecWidgets.ThreatModel = {
     `;
 
     this.addStyles();
+    this.attachHandlers(containerId, categories);
+    this.renderAllThreatLists(containerId, categories);
 
-    // --- Auto‑populate if JSON provided ---
-    if (prefill && typeof prefill === 'object') {
-      // System fields
-      if (prefill.system) {
-        const sys = prefill.system;
-        const assign = (id, val) => {
-          const el = document.getElementById(`${containerId}-${id}`);
-          if (el && typeof val === 'string') el.value = val;
-        };
-        assign('system-name', sys.name);
-        assign('system-type', sys.type);
-        assign('actors', sys.actors);
-        assign('assets', sys.assets);
-        assign('entrypoints', sys.entryPoints);
-        assign('boundaries', sys.boundaries);
-      }
-
-      // STRIDE fields
-      if (prefill.stride) {
-        const stride = prefill.stride;
-        const cats = ['spoofing', 'tampering', 'repudiation', 'information', 'dos', 'elevation'];
-        cats.forEach(cat => {
-          const el = document.getElementById(`${containerId}-${cat}`);
-          if (el && typeof stride[cat] === 'string') el.value = stride[cat];
-        });
-      }
+    // --- Auto‑populate system fields if JSON provided ---
+    if (prefill && typeof prefill === 'object' && prefill.system) {
+      const sys = prefill.system;
+      const assign = (id, val) => {
+        const el = document.getElementById(`${containerId}-${id}`);
+        if (el && typeof val === 'string') el.value = val;
+      };
+      assign('system-name', sys.name);
+      assign('system-type', sys.type);
+      assign('actors', sys.actors);
+      assign('assets', sys.assets);
+      assign('entrypoints', sys.entryPoints);
+      assign('boundaries', sys.boundaries);
     }
+  },
+
+  // --- New helper methods for per-threat cards ---
+  initState(containerId, categories, prefill) {
+    const existing = AppSecWidgets._state[containerId] || {};
+    if (!existing.threats) {
+      existing.threats = {};
+      categories.forEach(cat => {
+        existing.threats[cat.id] = [];
+      });
+    }
+
+    // Only hydrate from prefill once
+    if (prefill && typeof prefill === 'object' && prefill.stride && !existing._prefilled) {
+      categories.forEach(cat => {
+        const raw = prefill.stride[cat.id];
+        if (typeof raw === 'string' && raw.trim()) {
+          existing.threats[cat.id] = this.parseThreatText(raw);
+        }
+      });
+      existing._prefilled = true;
+    }
+
+    AppSecWidgets._state[containerId] = existing;
+  },
+
+  parseThreatText(text) {
+    return text
+      .split('\n')
+      .map(line => line.replace(/^[-*•]\s*/, '').trim())
+      .filter(Boolean);
+  },
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  },
+
+  renderAllThreatLists(containerId, categories) {
+    categories.forEach(cat => this.renderThreatList(containerId, cat.id));
+  },
+
+  renderThreatList(containerId, categoryId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state || !state.threats || !state.threats[categoryId]) return;
+
+    const list = state.threats[categoryId];
+    const listEl = document.getElementById(`${containerId}-${categoryId}-list`);
+    const hidden = document.getElementById(`${containerId}-${categoryId}`);
+    if (!listEl || !hidden) return;
+
+    listEl.innerHTML = list
+      .map((text, index) => `
+        <li class="threat-list-item">
+          <span class="threat-list-item-text">${this.escapeHtml(text)}</span>
+          <button
+            type="button"
+            class="threat-pill-remove"
+            data-cat="${categoryId}"
+            data-index="${index}">
+            ✕
+          </button>
+        </li>
+      `)
+      .join('');
+
+    // Keep hidden field in sync for exportModel/exportMarkdown
+    hidden.value = list.length ? list.map(t => `- ${t}`).join('\n') : '';
+  },
+
+  attachHandlers(containerId, categories) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state || !state.threats) return;
+
+    // Add handlers for "Add" buttons
+    categories.forEach(cat => {
+      const addBtn = document.getElementById(`${containerId}-${cat.id}-add`);
+      const input = document.getElementById(`${containerId}-${cat.id}-input`);
+      if (!addBtn || !input) return;
+
+      const addThreat = () => {
+        const value = input.value.trim();
+        if (!value) return;
+        state.threats[cat.id].push(value);
+        input.value = '';
+        this.renderThreatList(containerId, cat.id);
+      };
+
+      addBtn.addEventListener('click', addThreat);
+    });
+
+    // Delegate remove clicks from the widget container
+    const root = document.getElementById(containerId);
+    if (!root) return;
+
+    root.addEventListener('click', (event) => {
+      const btn = event.target.closest('.threat-pill-remove');
+      if (!btn) return;
+
+      const catId = btn.getAttribute('data-cat');
+      const index = parseInt(btn.getAttribute('data-index'), 10);
+      if (!catId || Number.isNaN(index)) return;
+
+      if (state.threats[catId]) {
+        state.threats[catId].splice(index, 1);
+        this.renderThreatList(containerId, catId);
+      }
+    });
   },
 
   addStyles() {
@@ -1508,16 +1630,93 @@ AppSecWidgets.ThreatModel = {
         width: 100%;
         margin-top: 0.25rem;
       }
-      .threat-category textarea {
-        width: 100%;
+
+      /* STRIDE grid + cards */
+      .threat-grid {
+        gap: 0.75rem;
       }
+      .threat-category {
+        background: var(--bg-secondary);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .threat-category-header h4 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.95rem;
+      }
+
+      .threat-add-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+      }
+      .threat-add-input {
+        flex: 1;
+        resize: vertical;
+        font-size: 0.85rem;
+      }
+      .threat-add-btn {
+        white-space: nowrap;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+      }
+
+      .threat-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 0.25rem 0;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      .threat-list-item {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.4rem 0.55rem;
+        margin-bottom: 0.25rem;
+        border-radius: 0.35rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+      }
+      .threat-list-item-text {
+        flex: 1;
+        white-space: pre-wrap;
+      }
+      .threat-pill-remove {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+      .threat-pill-remove:hover {
+        color: var(--color-danger);
+      }
+
       .threat-prompts summary {
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--text-secondary);
       }
       .threat-prompts summary:hover {
         color: var(--color-primary);
+      }
+
+      @media (max-width: 900px) {
+        .threat-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 640px) {
+        .threat-grid {
+          grid-template-columns: 1fr;
+        }
       }
     `;
     document.head.appendChild(style);

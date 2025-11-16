@@ -182,7 +182,7 @@ pre code {
   display: grid;
   grid-template-columns: var(--line-number-width) 1fr;
   gap: 0.5rem;
-  margin: 02rem 0rem;
+  margin: 01rem 0rem;
 }
 
 .line-numbers {
@@ -485,8 +485,14 @@ select {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 1rem;
+  /* font-size: 1rem; */
   transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .widget-small-fonts {
+    font-size: small !important;
+  }
 }
 
 input:focus,
