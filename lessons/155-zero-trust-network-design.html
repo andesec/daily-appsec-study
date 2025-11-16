@@ -47,21 +47,79 @@
       <strong>
        Assumed prerequisites:
       </strong>
-      <ul>
-       <li>
-        Basic understanding of TCP/IP networking (IP, ports, subnets, routing).
-       </li>
-       <li>
-        Familiarity with traditional “perimeter” security (firewalls, VPNs, DMZs).
-       </li>
-       <li>
-        High-level knowledge of authentication &amp; authorization (OIDC/OAuth2, SSO, RBAC).
-       </li>
-       <li>
-        Some exposure to cloud concepts (VPC/VNet, security groups, load balancers).
-       </li>
-      </ul>
-     </div>
+     <ul>
+      <li>
+       Basic understanding of TCP/IP networking (IP, ports, subnets, routing).
+      </li>
+      <li>
+       Familiarity with traditional “perimeter” security (firewalls, VPNs, DMZs).
+      </li>
+      <li>
+       High-level knowledge of authentication &amp; authorization (OIDC/OAuth2, SSO, RBAC).
+      </li>
+      <li>
+       Some exposure to cloud concepts (VPC/VNet, security groups, load balancers).
+      </li>
+     </ul>
+    </div>
+     <h4>
+      References &amp; Further Reading
+     </h4>
+     <ul class="references">
+      <li>
+       <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" rel="noopener" target="_blank">
+        NIST SP 800-207
+       </a>
+       – Baseline definition of Zero Trust principles, terminology, and components.
+      </li>
+      <li>
+       <a href="https://cloud.google.com/beyondcorp" rel="noopener" target="_blank">
+        Google BeyondCorp Papers
+       </a>
+       – Practical examples of identity-aware networking used to retire VPN trust.
+      </li>
+      <li>
+       <a href="https://media.defense.gov/2023/Apr/19/2003204165/-1/-1/0/CSI_ZERO_TRUST_SECURITY_MODEL_UOO154072-23.PDF" rel="noopener" target="_blank">
+        NSA Zero Trust Security Model
+       </a>
+       – Military-grade rationale for micro-segmentation and continuous verification.
+      </li>
+     </ul>
+     <div class="widget" id="section-1-quiz"></div>
+     <script>
+      document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section-1-quiz", {
+        title: "Foundation Pulse Check",
+        mode: "classic",
+        questions: [
+          {
+            text: "Why does Zero Trust discard implicit network trust?",
+            options: [
+              { value: "lan", label: "Because internal LANs are always encrypted", correct: false },
+              { value: "mobility", label: "Modern SaaS users and workloads constantly move across networks", correct: true },
+              { value: "cost", label: "To reduce cloud egress charges", correct: false }
+            ]
+          },
+          {
+            text: "Which prerequisite skill best enables Zero Trust design reviews?",
+            options: [
+              { value: "macros", label: "Spreadsheet macros", correct: false },
+              { value: "tcpip", label: "Understanding TCP/IP routing and segmentation", correct: true },
+              { value: "css", label: "CSS animations", correct: false }
+            ]
+          },
+          {
+            text: "How should identity factor into Zero Trust foundations?",
+            options: [
+              { value: "optional", label: "Identity is optional inside a VPC", correct: false },
+              { value: "primary", label: "Every access decision is anchored to authenticated identities", correct: true },
+              { value: "dns", label: "Reverse DNS lookup is sufficient", correct: false }
+            ]
+          }
+        ]
+      });
+      });
+     </script>
     </div>
    </section>
    <section class="card" id="section-1-1">
@@ -264,12 +322,69 @@
     <div class="card-header">
      2. Intuitive Hook
     </div>
-    <div class="card-body">
-     <p>
-      This section is expanded in the subsections below.
-     </p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     This section is expanded in the subsections below.
+    </p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://www.cisa.gov/resources-tools/resources/zero-trust-maturity-model" rel="noopener" target="_blank">
+       CISA Zero Trust Maturity Model
+      </a>
+      – Explains the layered checkpoints that inspired the airport-style analogy.
+     </li>
+     <li>
+      <a href="https://learn.microsoft.com/en-us/security/zero-trust/zero-trust-overview" rel="noopener" target="_blank">
+       Microsoft Zero Trust Overview
+      </a>
+      – Highlights continuous verification touchpoints between users, devices, and services.
+     </li>
+     <li>
+      <a href="https://www.forrester.com/report/the-zero-trust-extended-ecosystem/RES136388" rel="noopener" target="_blank">
+       Forrester Zero Trust Extended Ecosystem
+      </a>
+      – Describes how real-world facilities inspire digital checkpoints and segmentation.
+     </li>
+    </ul>
+    <div class="widget" id="section-2-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-2-quiz", {
+       title: "Analogy Comprehension Quiz",
+       questions: [
+        {
+         text: "In the airport analogy, what represents micro-segmentation?",
+         options: [
+          { value: "waiting", label: "General waiting area", correct: false },
+          { value: "zones", label: "Multiple secured zones with role-specific access", correct: true },
+          { value: "wifi", label: "Free Wi-Fi network", correct: false }
+         ]
+        },
+        {
+         text: "What do random gate checks illustrate?",
+         options: [
+          { value: "one-time", label: "One-time verification at login", correct: false },
+          { value: "continuous", label: "Continuous verification throughout a session", correct: true },
+          { value: "retirement", label: "Retiring old airports", correct: false }
+         ]
+        },
+        {
+         text: "How should this mental model influence architecture decisions?",
+         options: [
+          { value: "single", label: "Add a single perimeter firewall", correct: false },
+          { value: "multi", label: "Plan for multiple checkpoints tailored to each role and resource", correct: true },
+          { value: "none", label: "Avoid segmenting to keep traffic flowing", correct: false }
+         ]
+        }
+       ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-2-1">
     <div class="card-header">
      2.1 Analogy: Airport Security vs. Old Office Building
@@ -381,12 +496,69 @@
     <div class="card-header">
      3. Mental Model — “Why → How → What-If”
     </div>
-    <div class="card-body">
-     <p>
-      This section is expanded in the subsections below.
-     </p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     This section is expanded in the subsections below.
+    </p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://www.whitehouse.gov/wp-content/uploads/2022/01/M-22-09.pdf" rel="noopener" target="_blank">
+       U.S. Federal Zero Trust Strategy (M-22-09)
+      </a>
+      – Clarifies the “why → how” sequencing required for enterprise adoption.
+     </li>
+     <li>
+      <a href="https://www.ncsc.gov.uk/collection/zero-trust-architecture" rel="noopener" target="_blank">
+       UK NCSC Zero Trust Collection
+      </a>
+      – Offers mental models and diagrams for evaluating trust boundaries.
+     </li>
+     <li>
+      <a href="https://learn.microsoft.com/en-us/security/zero-trust/deploy/zero-trust-deployment" rel="noopener" target="_blank">
+       Microsoft Zero Trust Deployment Guide
+      </a>
+      – Shows how to translate the mental model into specific controls and telemetry.
+     </li>
+    </ul>
+    <div class="widget" id="section-3-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-3-quiz", {
+       title: "Mental Model Quiz",
+       questions: [
+        {
+         text: "Which question kicks off every Zero Trust decision loop?",
+         options: [
+          { value: "cost", label: "How much will this cost?", correct: false },
+          { value: "who", label: "Who/what is making the request?", correct: true },
+          { value: "latency", label: "What is the current latency?", correct: false }
+         ]
+        },
+        {
+         text: "Why is context evaluation paired with authorization?",
+         options: [
+          { value: "optional", label: "It is optional after login", correct: false },
+          { value: "risk", label: "It adjusts permissions based on current risk signals", correct: true },
+          { value: "storage", label: "It determines storage tiering", correct: false }
+         ]
+        },
+        {
+         text: "What indicates a gap in the mental model?",
+         options: [
+          { value: "auditable", label: "Being able to audit each interaction", correct: false },
+          { value: "unknown", label: "Not knowing who is calling or whether they still should", correct: true },
+          { value: "diagram", label: "Having too many diagrams", correct: false }
+         ]
+        }
+       ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-3-1">
     <div class="card-header">
      3.1 Healthy Baseline: A Well-Designed Zero Trust SaaS
@@ -593,12 +765,69 @@
     <div class="card-header">
      4. Deep Explanation (Step-by-Step)
     </div>
-    <div class="card-body">
-     <p>
-      This section is expanded in the subsections below.
-     </p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     This section is expanded in the subsections below.
+    </p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://www.cisa.gov/sites/default/files/publications/CISA_Zero_Trust_Maturity_Model_V2.pdf" rel="noopener" target="_blank">
+       CISA Zero Trust Maturity Model v2
+      </a>
+      – Details the step-by-step capabilities that a mature Zero Trust loop must implement.
+     </li>
+     <li>
+      <a href="https://www.cncf.io/wp-content/uploads/2022/04/CNCF-Zero-Trust-Security-Whitepaper-April-2022.pdf" rel="noopener" target="_blank">
+       CNCF Zero Trust Security Whitepaper
+      </a>
+      – Provides deep dives on service mesh enforcement and workload identity plumbing.
+     </li>
+     <li>
+      <a href="https://istio.io/latest/docs/concepts/security/" rel="noopener" target="_blank">
+       Istio Security Concepts
+      </a>
+      – Shows how identity, policy, and telemetry combine to enforce each loop iteration.
+     </li>
+    </ul>
+    <div class="widget" id="section-4-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-4-quiz", {
+       title: "Deep Dive Knowledge Check",
+       questions: [
+        {
+         text: "Which step ensures policies propagate quickly in Zero Trust loops?",
+         options: [
+          { value: "batch", label: "Nightly batch pushes", correct: false },
+          { value: "near-real", label: "Near-real-time distribution to proxies/sidecars", correct: true },
+          { value: "manual", label: "Manual SSH edits", correct: false }
+         ]
+        },
+        {
+         text: "Why do we pair identity-based segmentation with network policies?",
+         options: [
+          { value: "redundant", label: "For redundancy only", correct: false },
+          { value: "defense", label: "To align control and data planes across layers", correct: true },
+          { value: "cost", label: "To reduce TLS costs", correct: false }
+         ]
+        },
+        {
+         text: "What does continuous verification evaluate beyond login?",
+         options: [
+          { value: "css", label: "Front-end styles", correct: false },
+          { value: "context", label: "Session behavior, device posture, and risk", correct: true },
+          { value: "color", label: "Dashboard color scheme", correct: false }
+         ]
+        }
+       ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-4-1">
     <div class="card-header">
      4.1 The Core Loop of Zero Trust
@@ -943,12 +1172,69 @@
     <div class="card-header">
      5. Real-World Context &amp; Interactions
     </div>
-    <div class="card-body">
-     <p>
-      This section is expanded in the subsections below.
-     </p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     This section is expanded in the subsections below.
+    </p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html" rel="noopener" target="_blank">
+       AWS Well-Architected Security Pillar
+      </a>
+      – Describes how microservices enforce tenant isolation through network and identity controls.
+     </li>
+     <li>
+      <a href="https://cloud.google.com/architecture/zero-trust-enterprise-architecture" rel="noopener" target="_blank">
+       Google Cloud Zero Trust Architecture Center
+      </a>
+      – Shares reference deployments for combining API gateways, meshes, and cloud IAM.
+     </li>
+     <li>
+      <a href="https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/security" rel="noopener" target="_blank">
+       Microsoft Azure Multitenant Security Guidance
+      </a>
+      – Provides practical checklists for SaaS tenant isolation and service-to-service contracts.
+     </li>
+    </ul>
+    <div class="widget" id="section-5-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-5-quiz", {
+       title: "Real-World Context Quiz",
+       questions: [
+        {
+         text: "Why do SaaS teams pair identity-aware proxies with service meshes?",
+         options: [
+          { value: "cost", label: "To reduce hosting cost", correct: false },
+          { value: "end-to-end", label: "To enforce tenant-aware policies from edge to east-west traffic", correct: true },
+          { value: "cdn", label: "To replace CDNs", correct: false }
+         ]
+        },
+        {
+         text: "What happens when only VPN trust protects internal services?",
+         options: [
+          { value: "ztn", label: "Zero Trust still works fine", correct: false },
+          { value: "blast", label: "Compromise of one account enables wide lateral movement", correct: true },
+          { value: "faster", label: "Traffic gets faster", correct: false }
+         ]
+        },
+        {
+         text: "Which signal keeps multi-tenant workloads separated inside shared clusters?",
+         options: [
+          { value: "static", label: "Static IP allowlists", correct: false },
+          { value: "labels", label: "Labels/claims that encode tenant and workload identity", correct: true },
+          { value: "timezone", label: "User time zones", correct: false }
+         ]
+        }
+       ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-5-1">
     <div class="card-header">
      5.1 Scenario: Multi-Tenant SaaS with Microservices
@@ -1299,6 +1585,7 @@
      </p>
      <div class="widget" id="attack-sandbox-6"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.AttackSandbox.create("attack-sandbox-6", {
         title: "🎯 Zero Trust Breaker Lab",
         scenarios: [
@@ -1313,24 +1600,74 @@
           {
             name: "Shadow API to Object Storage",
             description: "An undocumented admin API shares the storage network plane and exposes raw bucket paths.",
-            payload: "POST /ops/debug/export {"bucket":"tenant-a","path":"../../tenant-b"}",
+            payload: 'POST /ops/debug/export {"bucket":"tenant-a","path":"../../tenant-b"}',
             response: "If input validation fails, AppSecWidgets shows the exfiltrated object list.",
             notifyType: "danger",
             notifyMessage: "Shadow APIs often bypass zero trust gates when not registered with the mesh."
           }
         ]
       });
+      });
      </script>
-     <p>
-      References:
-      <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" target="_blank" rel="noopener">NIST SP 800-207</a>
-      ·
-      <a href="https://www.cisa.gov/zero-trust-maturity-model" target="_blank" rel="noopener">CISA Zero Trust Maturity Model</a>
-      ·
-      <a href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a>
-     </p>
-    </div>
-   </section>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://attack.mitre.org/" rel="noopener" target="_blank">
+       MITRE ATT&amp;CK Enterprise Matrix
+      </a>
+      – Maps the lateral-movement and credential-abuse techniques exploited when segmentation fails.
+     </li>
+     <li>
+      <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" rel="noopener" target="_blank">
+       CISA Known Exploited Vulnerabilities Catalog
+      </a>
+      – Highlights real CVEs attackers chain with weak east-west controls.
+     </li>
+     <li>
+      <a href="https://media.defense.gov/2022/Feb/25/2002946756/-1/-1/0/CSI_SELECTING_A_ZERO_TRUST_ARCHITECTURE.PDF" rel="noopener" target="_blank">
+       NSA/CISA Selecting a Zero Trust Architecture
+      </a>
+      – Describes anti-patterns such as trusting VPN location or static service tokens.
+     </li>
+    </ul>
+    <div class="widget" id="section-6-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-6-quiz", {
+      title: "Weakness Spotter",
+      questions: [
+       {
+        text: "What signals that micro-segmentation has drifted?",
+        options: [
+         { value: "broad", label: "Broad allow-all rules between service tiers", correct: true },
+         { value: "labeled", label: "Tightly labeled policies", correct: false },
+         { value: "tls", label: "mTLS enforcement", correct: false }
+        ]
+       },
+       {
+        text: "How can CI/CD unintentionally weaken Zero Trust?",
+        options: [
+         { value: "review", label: "By enforcing code review", correct: false },
+         { value: "misdeploy", label: "By deploying stale mesh policies or omitting workload identities", correct: true },
+         { value: "logging", label: "By forwarding logs", correct: false }
+        ]
+       },
+       {
+        text: "Which response limits attacker movement after an initial foothold?",
+        options: [
+         { value: "ignore", label: "Ignore anomaly alerts", correct: false },
+         { value: "quarantine", label: "Quarantine the compromised segment and revoke tokens", correct: true },
+         { value: "allow", label: "Temporarily allow more egress", correct: false }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-6-1">
     <div class="card-header">
      6.1 Attack Path: Compromised CI Token → Mesh Pivot
@@ -1488,13 +1825,14 @@
      </div>
     </div>
    </section>
-   <section class="card" id="section-6-quiz">
+  <section class="card" id="section-6q">
     <div class="card-header">
      6.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-6"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-6", {
         title: "Attack Surface Sanity Quiz",
         mode: "classic",
@@ -1517,6 +1855,7 @@
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -1524,12 +1863,69 @@
     <div class="card-header">
      7. Practical Implementation &amp; Review (Hands-On)
     </div>
-    <div class="card-body">
-     <p>
-      The following runbooks show how SaaS teams enforce Zero Trust in code reviews and observability: diff policies before deploy, monitor logs for tenant drift, and run integration tests that simulate hostile workloads.
-                     Tie every artifact back to source control so reviewers can sign off on the controls, not just the feature.</p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     The following runbooks show how SaaS teams enforce Zero Trust in code reviews and observability: diff policies before deploy, monitor logs for tenant drift, and run integration tests that simulate hostile workloads.
+                    Tie every artifact back to source control so reviewers can sign off on the controls, not just the feature.</p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/" rel="noopener" target="_blank">
+       Kubernetes NetworkPolicy Concepts
+      </a>
+      – Baseline for reviewing ingress/egress guardrails in Git.
+     </li>
+     <li>
+      <a href="https://istio.io/latest/docs/tasks/security/authorization/" rel="noopener" target="_blank">
+       Istio Authorization Tasks
+      </a>
+      – Shows hands-on flows for verifying service-to-service contracts and tests.
+     </li>
+     <li>
+      <a href="https://www.hashicorp.com/resources/zero-trust-security-modern-apps" rel="noopener" target="_blank">
+       HashiCorp Zero Trust Runbooks
+      </a>
+      – Demonstrates how infrastructure-as-code pipelines enforce identity-aware access.
+     </li>
+    </ul>
+    <div class="widget" id="section-7-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-7-quiz", {
+      title: "Hands-On Review Quiz",
+      questions: [
+       {
+        text: "What should trigger a deployment block during config diff review?",
+        options: [
+         { value: "allowall", label: "An egress '*' rule added to a sensitive namespace", correct: true },
+         { value: "changelog", label: "A descriptive changelog", correct: false },
+         { value: "lint", label: "Passing lint", correct: false }
+        ]
+       },
+       {
+        text: "Why are synthetic hostile workloads part of CI?",
+        options: [
+         { value: "fun", label: "For entertainment", correct: false },
+         { value: "regression", label: "They ensure mesh rejects spoofed identities before release", correct: true },
+         { value: "costly", label: "To increase cloud spend", correct: false }
+        ]
+       },
+       {
+        text: "Which telemetry correlation proves tenant drift detection works?",
+        options: [
+         { value: "singlelog", label: "Single pod log entries", correct: false },
+         { value: "multi", label: "Gateway + DB logs sharing the same tenant ID and request ID", correct: true },
+         { value: "cpu", label: "CPU utilization", correct: false }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-7-1">
     <div class="card-header">
      7.1 Config Diff: Kubernetes NetworkPolicy Guardrail
@@ -1539,6 +1935,7 @@
       Reviewers compare insecure vs. hardened policies before approving a release. The secure variant mirrors NIST SP 800-207 guidance by pairing workload labels with mTLS identities.</p>
      <div class="widget" id="config-diff-7-1"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.ConfigDiff.create("config-diff-7-1", "🔐 Tenant Scoped NetworkPolicy", `apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -1583,6 +1980,7 @@ spec:
     - port: 5432
       protocol: TCP
 `);
+      });
      </script>
      <p>
       Reviewer checklist:</p>
@@ -1602,6 +2000,7 @@ spec:
       Log-based detection is the fastest feedback loop for SaaS abuse. Feed API gateway, service mesh, and database logs into one schema to spot mismatched tenants.</p>
      <div class="widget" id="log-analyzer-7-2"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.LogAnalyzer.create("log-analyzer-7-2", {
         title: "🔍 Zero Trust Log Triage",
         columns: ["Time", "Component", "Identity", "Event", "Status"],
@@ -1611,6 +2010,7 @@ spec:
           { time: "10:22:17", component: "ledger-db", identity: "svc:billing-green", event: "Tenant mismatch: claims=tenant-a row=tenant-b", status: "blocked", severity: "warning" },
           { time: "10:22:18", component: "mesh-control", identity: "ci-runner", event: "Cert issuance denied (no attestation)", status: "blocked", severity: "danger" }
         ]
+      });
       });
      </script>
      <p>
@@ -1636,13 +2036,14 @@ spec:
       Wire this into CI so a mesh regression cannot ship unnoticed.</p>
     </div>
    </section>
-   <section class="card" id="section-7-quiz">
+  <section class="card" id="section-7q">
     <div class="card-header">
      7.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-7"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-7", {
         intro: "Validate your implementation instincts.",
         questions: [
@@ -1662,6 +2063,7 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -1669,11 +2071,68 @@ spec:
     <div class="card-header">
      8. Good Design Principles, Defense &amp; Mitigation
     </div>
-    <div class="card-body">
-     <p>
-      Translate Zero Trust theory into actionable design principles that keep SaaS blast radii tiny even when new microservices join daily.</p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     Translate Zero Trust theory into actionable design principles that keep SaaS blast radii tiny even when new microservices join daily.</p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://www.cisa.gov/resources-tools/resources/zero-trust-maturity-model" rel="noopener" target="_blank">
+       CISA Zero Trust Maturity Model
+      </a>
+      – Provides the capability roadmap for architecture, policy, and telemetry alignment.
+     </li>
+     <li>
+      <a href="https://cloudsecurityalliance.org/artifacts/zero-trust-guidance/" rel="noopener" target="_blank">
+       Cloud Security Alliance Zero Trust Guidance
+      </a>
+      – Summarizes design patterns for SaaS segmentation, governance, and automation.
+     </li>
+     <li>
+      <a href="https://www.nsa.gov/Press-Room/News-Highlights/Article/Article/2743376/nsa-cisa-release-kubernetes-hardening-guidance/" rel="noopener" target="_blank">
+       NSA/CISA Kubernetes Hardening Guide
+      </a>
+      – Offers concrete mitigations for workloads that need Zero Trust-style isolation.
+     </li>
+    </ul>
+    <div class="widget" id="section-8-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-8-quiz", {
+      title: "Design Principle Drill",
+      questions: [
+       {
+        text: "What does “identity before network” enforce?",
+        options: [
+         { value: "cidr", label: "Decisions based solely on CIDR", correct: false },
+         { value: "identity", label: "Policies keyed to workload identity and posture", correct: true },
+         { value: "none", label: "No policy checks", correct: false }
+        ]
+       },
+       {
+        text: "Why codify segmentation changes?",
+        options: [
+         { value: "speed", label: "To bypass review", correct: false },
+         { value: "trace", label: "To keep auditable history and enforce approvals", correct: true },
+         { value: "chaos", label: "To allow ad-hoc firewall rules", correct: false }
+        ]
+       },
+       {
+        text: "Continuous verification loops should trigger at which events?",
+        options: [
+         { value: "never", label: "Never, once logged in", correct: false },
+         { value: "sensitive", label: "At payment, export, or admin actions where risk increases", correct: true },
+         { value: "monthly", label: "Monthly only", correct: false }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-8-1">
     <div class="card-header">
      8.1 Architecture Guardrails
@@ -1719,13 +2178,14 @@ spec:
       References: <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" target="_blank" rel="noopener">NIST SP 800-207</a>, <a href="https://www.cisa.gov/zero-trust-maturity-model" target="_blank" rel="noopener">CISA ZTMM</a>.</p>
     </div>
    </section>
-   <section class="card" id="section-8-quiz">
+  <section class="card" id="section-8q">
     <div class="card-header">
      8.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-8"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-8", {
         questions: [
           {
@@ -1744,6 +2204,7 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -1755,8 +2216,63 @@ spec:
      <p>
       We study the October 2023 Okta Support System breach, where session tokens from a third-party vendor were used to access customer support consoles.
                      The case demonstrates why Zero Trust must enforce least privilege for every support integration, not only production services.</p>
-     <p>
-      References: <a href="https://www.okta.com/blog/2023/10/okta-security-incident/" target="_blank" rel="noopener">Okta incident report</a>, <a href="https://www.cisa.gov/news-events/alerts/2023/11/03/cisa-releases-zero-trust-guidance" target="_blank" rel="noopener">CISA guidance</a>.</p>
+     <h4>
+      References &amp; Further Reading
+     </h4>
+     <ul class="references">
+      <li>
+       <a href="https://www.okta.com/blog/2023/10/okta-security-incident/" rel="noopener" target="_blank">
+        Okta 2023 Security Incident Report
+       </a>
+       – Primary disclosure describing the stolen HAR files and session token replay.
+      </li>
+      <li>
+       <a href="https://www.cisa.gov/news-events/alerts/2023/11/03/cisa-releases-zero-trust-guidance" rel="noopener" target="_blank">
+        CISA Zero Trust Alert
+       </a>
+       – Explains why vendor access paths must receive the same conditional access controls as production.
+      </li>
+      <li>
+       <a href="https://media.defense.gov/2023/Nov/06/2003340342/-1/-1/0/CSI_ZERO_TRUST_AND_PRIVILEGED_ACCESS.PDF" rel="noopener" target="_blank">
+        NSA/CISA Guidance on Privileged Access within Zero Trust
+       </a>
+       – Offers mitigations for support and admin tooling segments.
+      </li>
+     </ul>
+     <div class="widget" id="section-9-quiz"></div>
+     <script>
+      document.addEventListener("DOMContentLoaded", function () {
+      AppSecWidgets.Quiz.create("section-9-quiz", {
+        title: "Incident Comprehension",
+        questions: [
+          {
+            text: "Which Zero Trust gap made the Okta support environment vulnerable?",
+            options: [
+              { value: "vpn", label: "Over-reliance on trusted vendor VPN ranges", correct: true },
+              { value: "mfa", label: "Too much phishing-resistant MFA", correct: false },
+              { value: "audited", label: "Immutable audit logs", correct: false }
+            ]
+          },
+          {
+            text: "What control would have invalidated the stolen HAR files?",
+            options: [
+              { value: "static", label: "Static passwords", correct: false },
+              { value: "device", label: "Device posture or hardware-bound session binding", correct: true },
+              { value: "dns", label: "Internal DNS caching", correct: false }
+            ]
+          },
+          {
+            text: "How should vendor-connected support tools be segmented?",
+            options: [
+              { value: "flat", label: "Flat network with prod", correct: false },
+              { value: "isolated", label: "Dedicated microsegment with just-in-time credentials", correct: true },
+              { value: "guest", label: "Placed on guest Wi-Fi", correct: false }
+            ]
+          }
+        ]
+      });
+      });
+     </script>
     </div>
    </section>
    <section class="card" id="section-9-1">
@@ -1782,6 +2298,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="timeline-9"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.TimelineVerticalView.create("timeline-9", {
         title: "🕒 Okta Support Incident Timeline",
         events: [
@@ -1790,6 +2307,7 @@ spec:
           { date: "2023-10-17", title: "Customer reports anomalies", description: "Several SaaS tenants notice admin MFA resets." },
           { date: "2023-10-19", title: "Containment", description: "Okta revokes session tokens, enforces device attestation, and isolates support environment." }
         ]
+      });
       });
      </script>
      <p>
@@ -1808,13 +2326,14 @@ spec:
      </ul>
     </div>
    </section>
-   <section class="card" id="section-9-quiz">
+  <section class="card" id="section-9q">
     <div class="card-header">
      9.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-9"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-9", {
         questions: [
           {
@@ -1833,6 +2352,7 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -1840,11 +2360,65 @@ spec:
     <div class="card-header">
      10. Threat Model &amp; Analysis
     </div>
-    <div class="card-body">
-     <p>
-      We threat-model a SaaS platform with API gateway, service mesh, and shared data plane to visualize Zero Trust defenses.</p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     We threat-model a SaaS platform with API gateway, service mesh, and shared data plane to visualize Zero Trust defenses.</p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://owasp.org/www-community/Threat_Modeling" rel="noopener" target="_blank">
+       OWASP Threat Modeling Cheat Sheet
+      </a>
+      – Provides STRIDE prompts and boundary identification guidance.
+     </li>
+     <li>
+      <a href="https://attack.mitre.org/matrices/enterprise/" rel="noopener" target="_blank">
+       MITRE ATT&amp;CK Enterprise Matrix
+      </a>
+      – Helps enumerate attacker techniques when populating the model.
+     </li>
+     <li>
+      <a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/threat-modeling-tool" rel="noopener" target="_blank">
+       Microsoft Threat Modeling Tool Guidance
+      </a>
+      – Demonstrates how to encode Zero Trust data flows and STRIDE traces.
+     </li>
+    </ul>
+    <div class="widget" id="section-10-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-10-quiz", {
+      title: "Threat Model Quiz",
+      questions: [
+       {
+        text: "Which boundary is most critical in this SaaS model?",
+        options: [
+         { value: "mesh-data", label: "Service mesh ↔ data tier", correct: true },
+         { value: "printer", label: "Office printer ↔ Wi-Fi", correct: false }
+        ]
+       },
+       {
+        text: "How does ATT&amp;CK support the STRIDE analysis?",
+        options: [
+         { value: "ignore", label: "By ignoring attacker behavior", correct: false },
+         { value: "map", label: "By mapping realistic attacker techniques to each trust boundary", correct: true }
+        ]
+       },
+       {
+        text: "What evidence shows spoofing controls are effective?",
+        options: [
+         { value: "none", label: "Absence of certificates", correct: false },
+         { value: "attested", label: "Hardware- or attestation-backed workload identities", correct: true }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-10-1">
     <div class="card-header">
      10.1 ASCII Architecture
@@ -1922,6 +2496,7 @@ spec:
     <div class="card-body">
      <div class="widget" id="threatmodel-10"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.ThreatModel.create("threatmodel-10", {
         system: {
           name: "Zero Trust SaaS Mesh",
@@ -1940,16 +2515,18 @@ spec:
           elevation: "Apply just-in-time admin approval and time-bound roles."
         }
       }, { title: "🎯 STRIDE Canvas" });
+      });
      </script>
     </div>
    </section>
-   <section class="card" id="section-10-quiz">
+  <section class="card" id="section-10q">
     <div class="card-header">
      10.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-10"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-10", {
         questions: [
           {
@@ -1968,6 +2545,7 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
    </section>
@@ -1975,11 +2553,65 @@ spec:
     <div class="card-header">
      11. Compliance Mapping
     </div>
-    <div class="card-body">
-     <p>
-      Tie Zero Trust controls to major frameworks so compliance and security pull in the same direction.</p>
-    </div>
-   </section>
+   <div class="card-body">
+    <p>
+     Tie Zero Trust controls to major frameworks so compliance and security pull in the same direction.</p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://www.iso.org/standard/82875.html" rel="noopener" target="_blank">
+       ISO/IEC 27001:2022 Overview
+      </a>
+      – Outlines the Annex A controls tied to segmentation, IAM, and monitoring.
+     </li>
+     <li>
+      <a href="https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final" rel="noopener" target="_blank">
+       NIST SP 800-53 Rev. 5
+      </a>
+      – Provides AC, IA, and SC families often mapped to Zero Trust rollouts.
+     </li>
+     <li>
+      <a href="https://www.pcisecuritystandards.org/document_library" rel="noopener" target="_blank">
+       PCI DSS v4.0 Documentation Library
+      </a>
+      – Details requirements 1 and 7 that micro-segmentation and least privilege satisfy.
+     </li>
+    </ul>
+    <div class="widget" id="section-11-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-11-quiz", {
+      title: "Compliance Mapping Quiz",
+      questions: [
+       {
+        text: "Which ISO 27001 control family benefits directly from Zero Trust segmentation?",
+        options: [
+         { value: "a8", label: "Annex A.8 Asset & access controls", correct: true },
+         { value: "a18", label: "Annex A.18 supplier relationships", correct: false }
+        ]
+       },
+       {
+        text: "How does Zero Trust satisfy PCI DSS 7.1?",
+        options: [
+         { value: "broad", label: "By granting broad cardholder data access", correct: false },
+         { value: "least", label: "By enforcing least privilege per role and tenant", correct: true }
+        ]
+       },
+       {
+        text: "What evidence supports SOC 2 CC7 monitoring requirements?",
+        options: [
+         { value: "screenshots", label: "Screenshots of dashboards only", correct: false },
+         { value: "logs", label: "Correlated gateway, mesh, and DB logs stored for the audit window", correct: true }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
    <section class="card" id="section-11-1">
     <div class="card-header">
      11.1 Control Map
@@ -2042,13 +2674,14 @@ spec:
      </ul>
     </div>
    </section>
-   <section class="card" id="section-11-quiz">
+  <section class="card" id="section-11q">
     <div class="card-header">
      11.Q Knowledge Check
     </div>
     <div class="card-body">
      <div class="widget" id="quiz-11"></div>
      <script>
+      document.addEventListener("DOMContentLoaded", function () {
       AppSecWidgets.Quiz.create("quiz-11", {
         questions: [
           {
@@ -2067,12 +2700,258 @@ spec:
           }
         ]
       });
+      });
      </script>
     </div>
-   </section>
-   <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
-    Daily AppSec Study · Zero Trust Network Design
-   </footer>
+  </section>
+  <section class="card" id="section-12">
+   <div class="card-header">
+    12. Capstone Scenario Quiz
+   </div>
+   <div class="card-body">
+    <p>
+     Pull everything together by answering the capstone quiz that blends situations, code reviews, configuration checks, and pure knowledge prompts.
+                    Treat it like the pre-deployment readiness review for a Zero Trust program.
+    </p>
+    <h4>
+     References &amp; Further Reading
+    </h4>
+    <ul class="references">
+     <li>
+      <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" rel="noopener" target="_blank">
+       NIST SP 800-207
+      </a>
+      – Authoritative definition of Zero Trust capabilities and trust planes.
+     </li>
+     <li>
+      <a href="https://www.cisa.gov/sites/default/files/2023-07/CISA_Zero_Trust_Maturity_Model_V2_508c.pdf" rel="noopener" target="_blank">
+       CISA Zero Trust Maturity Model v2
+      </a>
+      – Provides maturity checkpoints used to craft the scenarios below.
+     </li>
+     <li>
+      <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD-Zero-Trust-Strategy.pdf" rel="noopener" target="_blank">
+       DoD Zero Trust Strategy &amp; Roadmap
+      </a>
+      – Demonstrates how federal programs operationalize these review questions.
+     </li>
+    </ul>
+    <div class="widget" id="section-12-quiz"></div>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+     AppSecWidgets.Quiz.create("section-12-quiz", {
+      title: "25-Question Mastery Check",
+      mode: "classic",
+      questions: [
+       {
+        text: "Situation: A new analytics microservice needs read-only ledger access for tenant exports. What is the first Zero Trust gating step?",
+        options: [
+         { value: "share", label: "Share the existing billing DB password with the new pods", correct: false },
+         { value: "scope", label: "Issue a dedicated workload identity scoped only to ledger read APIs", correct: true },
+         { value: "subnet", label: "Trust the service once it lives in the billing subnet", correct: false }
+        ]
+       },
+       {
+        text: "Configuration review: a NetworkPolicy shows `ingress: - {}` and `egress: - {}` to simplify testing. How do you harden it before release?",
+        options: [
+         { value: "ship", label: "Ship it as-is because default deny will cover it", correct: false },
+         { value: "labels", label: "Replace the wildcards with label- and port-scoped rules tied to the service identity", correct: true },
+         { value: "comment", label: "Add a TODO comment for later", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: What does “never trust, always verify” require for every request?",
+        options: [
+         { value: "vpn", label: "Only that it originates from the corporate VPN", correct: false },
+         { value: "continuous", label: "Continuous authentication, authorization, and context evaluation", correct: true },
+         { value: "dns", label: "Reverse DNS matching", correct: false }
+        ]
+       },
+       {
+        text: "Situation: CI automatically registers workloads in SPIRE. Which safeguard blocks rogue runners?",
+        options: [
+         { value: "token", label: "Allow any token signed by CI", correct: false },
+         { value: "attest", label: "Require hardware or attestation data before issuing workload certificates", correct: true },
+         { value: "ip", label: "Trust the runner IP range", correct: false }
+        ]
+       },
+       {
+        text: "Code review: `if req.Header['X-Tenant'] == session.Tenant { return true }` is the only authorization check. What must change?",
+        options: [
+         { value: "header", label: "Continue trusting unsinged headers", correct: false },
+         { value: "signed", label: "Validate signed claims (JWT/mTLS identity) before comparing tenants", correct: true },
+         { value: "cache", label: "Cache the header for speed", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: Which document formally defines the pillars of a Zero Trust architecture?",
+        options: [
+         { value: "nist", label: "NIST SP 800-207", correct: true },
+         { value: "pci", label: "PCI DSS Self-Assessment Questionnaire", correct: false },
+         { value: "hipaa", label: "HIPAA Notice of Privacy Practices", correct: false }
+        ]
+       },
+       {
+        text: "Configuration: An access token currently includes `scope: tenant:*`. How do you reduce blast radius?",
+        options: [
+         { value: "keep", label: "Keep the wildcard and rely on logging", correct: false },
+         { value: "narrow", label: "Issue per-tenant, per-action scopes and enforce them at the gateway", correct: true },
+         { value: "rotate", label: "Rotate the signing key weekly", correct: false }
+        ]
+       },
+       {
+        text: "Situation: A support engineer deploys a shadow API that bypasses the gateway. What Zero Trust response is correct?",
+        options: [
+         { value: "ignore", label: "Allow it because it is internal", correct: false },
+         { value: "catalog", label: "Force registration in the service catalog + mesh policies before traffic is permitted", correct: true },
+         { value: "vpn", label: "Whitelist the support VPN subnet", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: Which signal counts as device posture?",
+        options: [
+         { value: "timezone", label: "User time zone", correct: false },
+         { value: "encryption", label: "Disk encryption and EDR attestation state", correct: true },
+         { value: "color", label: "Theme color", correct: false }
+        ]
+       },
+       {
+        text: "Situation: A third-party vendor requires support console access. Which control prevents token replay?",
+        options: [
+         { value: "session", label: "Binding sessions to attested devices plus short lifetimes", correct: true },
+         { value: "ssl", label: "Allowing self-signed SSL certificates", correct: false },
+         { value: "log", label: "Only logging access", correct: false }
+        ]
+       },
+       {
+        text: "Configuration: All production data uses one KMS key shared across tenants. What is the Zero Trust improvement?",
+        options: [
+         { value: "single", label: "Leave a single key for easier rotation", correct: false },
+         { value: "scopedkeys", label: "Create per-environment or per-tenant keys and policies", correct: true },
+         { value: "kms", label: "Disable KMS because it adds latency", correct: false }
+        ]
+       },
+       {
+        text: "Code hygiene: A Go health probe test fails when the mesh rejects a rogue cert, but the test currently treats failure as success. What fix is required?",
+        options: [
+         { value: "invert", label: "Fail the test when the rogue connection succeeds and pass only on rejection", correct: true },
+         { value: "mute", label: "Mute the error to reduce noise", correct: false },
+         { value: "skip", label: "Skip the test on CI", correct: false }
+        ]
+       },
+       {
+        text: "Situation: Mesh certificate rotation is delayed by a stale CA bundle. How do you maintain Zero Trust assurances?",
+        options: [
+         { value: "ignore", label: "Ignore the warning until the next quarter", correct: false },
+         { value: "block", label: "Block new workloads until the CA bundle is refreshed and attested", correct: true },
+         { value: "downgrade", label: "Downgrade to plaintext to keep services online", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: What is the primary benefit of micro-segmentation inside a service mesh?",
+        options: [
+         { value: "perf", label: "Improved CPU performance", correct: false },
+         { value: "blast", label: "Reduced lateral-movement blast radius when a workload is compromised", correct: true },
+         { value: "ui", label: "Cleaner UI themes", correct: false }
+        ]
+       },
+       {
+        text: "Situation: Behavioral analytics flags a privileged user exporting unusual data volumes. What action aligns with continuous verification?",
+        options: [
+         { value: "nothing", label: "Do nothing until a ticket is filed", correct: false },
+         { value: "stepup", label: "Trigger step-up MFA + temporarily narrow the user’s scopes", correct: true },
+         { value: "blockall", label: "Permanently disable all exports for all users", correct: false }
+        ]
+       },
+       {
+        text: "Configuration: Compliance requires 1-year retention of Zero Trust telemetry. Which approach satisfies it?",
+        options: [
+         { value: "local", label: "Store logs locally on pods", correct: false },
+         { value: "worm", label: "Ship correlated gateway/mesh/DB logs to WORM storage with lifecycle policies", correct: true },
+         { value: "screenshot", label: "Capture monthly screenshots of dashboards", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: In STRIDE, which threat is mitigated by signed policies and immutable pipelines?",
+        options: [
+         { value: "tampering", label: "Tampering", correct: true },
+         { value: "spoofing", label: "Spoofing", correct: false },
+         { value: "dos", label: "Denial of Service", correct: false }
+        ]
+       },
+       {
+        text: "Situation: A break-glass account becomes the daily login for an operations team. What is the Zero Trust response?",
+        options: [
+         { value: "accept", label: "Accept the risk because it is convenient", correct: false },
+         { value: "expire", label: "Rotate credentials, enforce MFA, and restore just-in-time approvals", correct: true },
+         { value: "share", label: "Share the password with more staff", correct: false }
+        ]
+       },
+       {
+        text: "Configuration: The API gateway still trusts CIDR allowlists for internal calls. What should replace this check?",
+        options: [
+         { value: "none", label: "Remove all checks", correct: false },
+         { value: "identity", label: "Require authenticated workload identities plus per-route policy", correct: true },
+         { value: "dns", label: "Only trust hostnames", correct: false }
+        ]
+       },
+       {
+        text: "Situation: A data-export job fires from a region your company never operates in. Which Zero Trust control reacts correctly?",
+        options: [
+         { value: "allow", label: "Allow it because it authenticated", correct: false },
+         { value: "geo", label: "Geo-conditional access that blocks or steps up verification", correct: true },
+         { value: "logonly", label: "Log only and continue", correct: false }
+        ]
+       },
+       {
+        text: "Code-based policy: `if riskScore &gt; 70 { requireMFA() } else { allow() }`. What additional check makes it Zero Trust ready?",
+        options: [
+         { value: "static", label: "Remove the risk score entirely", correct: false },
+         { value: "expiretoken", label: "Expire or re-issue tokens when risk spikes so downstream services re-evaluate", correct: true },
+         { value: "hardcode", label: "Hardcode the risk score at 0", correct: false }
+        ]
+       },
+       {
+        text: "Knowledge: Which compliance objective aligns with GDPR Article 32 when building Zero Trust telemetry?",
+        options: [
+         { value: "minimize", label: "Ensuring security of processing through least privilege and monitoring", correct: true },
+         { value: "ads", label: "Serving targeted ads", correct: false },
+         { value: "tax", label: "Preparing tax filings", correct: false }
+        ]
+       },
+       {
+        text: "Situation: Outgoing webhooks send tenant data to SaaS partners. How do you keep Zero Trust coverage?",
+        options: [
+         { value: "skip", label: "Skip authentication because it is egress", correct: false },
+         { value: "broker", label: "Route through an egress broker that signs requests per tenant and enforces policy", correct: true },
+         { value: "hardcode", label: "Hardcode partner IPs only", correct: false }
+        ]
+       },
+       {
+        text: "Configuration: Service discovery currently auto-allows any new pod to talk east-west. What is the Zero Trust fix?",
+        options: [
+         { value: "default", label: "Keep default allow to simplify scaling", correct: false },
+         { value: "deny", label: "Adopt default-deny mesh/NetworkPolicy rules that require explicit registration", correct: true },
+         { value: "vpn", label: "Move pods to the VPN", correct: false }
+        ]
+       },
+       {
+        text: "Situation: Support tooling still resides in the same VPC segment as production identity services. What remediation aligns with Zero Trust?",
+        options: [
+         { value: "statusquo", label: "Leave it because they share engineers", correct: false },
+         { value: "segregate", label: "Isolate support tooling into its own microsegment with conditional access", correct: true },
+         { value: "morevpn", label: "Add another VPN tunnel", correct: false }
+        ]
+       }
+      ]
+     });
+     });
+    </script>
+   </div>
+  </section>
+  <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+   Daily AppSec Study · Zero Trust Network Design
+  </footer>
   </div>
  </body>
 </html>
