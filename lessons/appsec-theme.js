@@ -368,77 +368,92 @@ function applyTableScroll() {
 
 document.addEventListener("DOMContentLoaded", applyTableScroll);
 
-window.AppSec.convertTextNodeContent = function (text) {
-    if (typeof text !== "string") return text;
+/********************************************************************
+ * Convert a single text string:
+ *   **bold**   -> <strong>
+ *   *italic*   -> <em>
+ *   `code`     -> <code>
+ *   http(s):// -> <a>
+ ********************************************************************/
+function convertTextNodeContent(text) {
+  if (typeof text !== "string") return text;
 
-    // Inline code
-    text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+  // 1) Inline code
+  text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
 
-    // Bold
-    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // 2) Bold
+  text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
-    // Italic
-    text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  // 3) Italic
+  text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
-    // URLs → clickable links
-    const urlRegex = /\bhttps?:\/\/[^\s<]+/gi;
+  // 4) URLs → clickable links
+  const urlRegex = /\bhttps?:\/\/[^\s<]+/gi;
 
-    text = text.replace(urlRegex, (url) => {
-        const safeUrl = url.replace(/"/g, "&quot;");
-        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
-    });
+  text = text.replace(urlRegex, (url) => {
+    const safeUrl = url.replace(/"/g, "&quot;");
+    return `<a class="appsec-autolink" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`;
+  });
 
-    return text;
-};
+  return text;
+}
 
-window.AppSec.applyMarkdownToDOM = function () {
-    const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode(node) {
-                const parent = node.parentNode;
 
-                // Skip script/style widgets
-                if (!parent) return NodeFilter.FILTER_REJECT;
-                const tag = parent.nodeName.toLowerCase();
-                if (["script", "style", "noscript"].includes(tag)) {
-                    return NodeFilter.FILTER_REJECT;
-                }
+/********************************************************************
+ * Walk the DOM and enhance existing static text nodes.
+ * - Only touches text nodes, not attributes.
+ * - Skips <script>, <style>, <noscript>.
+ * - Wraps transformed text in a <span> with HTML inside.
+ ********************************************************************/
+function applyStaticMarkdown(rootSelector) {
+  const root = rootSelector
+    ? document.querySelector(rootSelector)
+    : document.body;
 
-                // Skip already-processed nodes
-                if (node.nodeValue.trim() === "") return NodeFilter.FILTER_REJECT;
+  if (!root) return;
 
-                return NodeFilter.FILTER_ACCEPT;
-            }
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentNode;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+
+        const tag = parent.nodeName.toLowerCase();
+        if (["script", "style", "noscript"].includes(tag)) {
+          return NodeFilter.FILTER_REJECT;
         }
-    );
 
-    const toTransform = [];
+        const value = node.nodeValue;
+        if (!value || value.trim() === "") {
+          return NodeFilter.FILTER_REJECT;
+        }
 
-    let node;
-    while ((node = walker.nextNode())) {
-        toTransform.push(node);
+        return NodeFilter.FILTER_ACCEPT;
+      }
     }
+  );
 
-    toTransform.forEach(textNode => {
-        const original = textNode.nodeValue;
-        const transformed = window.AppSec.convertTextNodeContent(original);
+  const nodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    nodes.push(node);
+  }
 
-        if (original !== transformed) {
-            const span = document.createElement("span");
-            span.innerHTML = transformed;
-            textNode.replaceWith(span);
-        }
-    });
-};
+  nodes.forEach((textNode) => {
+    const original = textNode.nodeValue;
+    const transformed = convertTextNodeContent(original);
 
-document.addEventListener("DOMContentLoaded", function () {
-    window.AppSec.applyMarkdownToDOM();
-});
+    if (original === transformed) return; // nothing to do
 
+    const span = document.createElement("span");
+    span.innerHTML = transformed;
+    textNode.replaceWith(span);
+  });
+}
 
-
+document.addEventListener("DOMContentLoaded", applyStaticMarkdown());
 
 // Export for use in other modules
 window.AppSec = {

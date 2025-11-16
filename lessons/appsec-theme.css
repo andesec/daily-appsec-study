@@ -929,3 +929,21 @@ section.card.collapsed .card-header {
     /* adjust this if needed */
   }
 }
+
+/* Make autolinked URLs responsive & nice */
+.appsec-autolink {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    display: inline-block;
+    max-width: 100%;
+    text-decoration: underline;
+    color: var(--color-primary);
+}
+
+/* OPTIONAL: visually nicer truncation */
+.appsec-autolink {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    vertical-align: middle;
+}
