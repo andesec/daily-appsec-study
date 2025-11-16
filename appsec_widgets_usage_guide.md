@@ -90,10 +90,12 @@ AppSecWidgets.FlowVisualizer.create(containerId, {
 
 ---
 
-## 4. LogAnalyzer
+## 4. LogAnalyzer *(Deprecated)*
 
-**What it does**  
+**What it does**
 Renders a security log table with severity highlighting and a Refresh button.
+
+> ⚠️ **Deprecated:** Prefer `AppSecWidgets.AdvancedLogAnalyzer` for new content. The legacy widget will remain for backward compatibility but no longer receives feature updates.
 
 **API**
 
@@ -526,6 +528,69 @@ AppSecWidgets.PatternLibrary.create('sig-pattern-library', {
         'Gateway verifies RS256/PS256 signatures and time-based claims.',
         'Backends trust only gateway-injected identity context.'
       ]
+    }
+  ]
+});
+```
+
+
+---
+
+## 15. AdvancedLogAnalyzer
+
+**What it does**
+SIEM-style log explorer with built-in text search, severity filters, expand/collapse controls, and a JSON drill-down so learners can triage noisy telemetry without leaving the lesson.
+
+**API**
+
+```js
+AppSecWidgets.AdvancedLogAnalyzer.create(containerId, config?)
+AppSecWidgets.AdvancedLogAnalyzer.expandAll(containerId)
+AppSecWidgets.AdvancedLogAnalyzer.collapseAll(containerId)
+```
+
+**Parameters** (for `create`)
+
+- `containerId` (string)
+- `config` (object, optional)
+  - `title` (string, optional)
+    Default: `"🔍 SIEM Log Analyzer"`.
+  - `columns` (string[], optional)
+    Default: `["Time", "IP", "Event", "Principal"]`. Column names are matched case-insensitively against log object keys.
+  - `logs` (array of objects, optional)
+    - Each log can include any keys, but these get special handling:
+      - `time` – ISO string or readable date (auto-formatted locally).
+      - `ip`, `event`, `principal` – shown according to the configured columns.
+      - `severity` – `critical | high | medium | low | info` (synonyms like `danger`, `warning`, `informational` are normalized). Controls row tint and filter behavior.
+      - `summary` – short narrative rendered above the JSON payload.
+      - `callstack` / `stack` / `trace` – optional preformatted trace block inside the details view.
+      - Additional properties remain in the JSON block for investigators to inspect.
+  - `placeholder` (string, optional)
+    Message shown when no logs are present.
+
+> Text search inspects every value of a log entry, while the severity dropdown narrows rows to the chosen bucket. Clicking a row toggles a JSON-rich details panel, and the ▲ / ▼ buttons call `collapseAll` / `expandAll` for quick audits.
+
+**Example**
+
+```js
+AppSecWidgets.AdvancedLogAnalyzer.create('advanced-logs', {
+  columns: ["Time", "IP", "Event", "Principal"],
+  logs: [
+    {
+      time: '2025-03-12T19:42:01Z',
+      ip: '203.0.113.77',
+      event: 'Multiple invalid JWT signatures detected',
+      principal: 'payments-api',
+      severity: 'high',
+      summary: 'Rate limiter tripped for 5 distinct issuers using forged tokens.',
+      stack: 'GatewayVerifier.verify -> JwtValidator.validateSignature -> KeyStore.fetch'
+    },
+    {
+      time: '2025-03-12T19:43:55Z',
+      ip: '198.51.100.44',
+      event: 'Privileged action approved',
+      principal: 'audit-bot',
+      severity: 'info'
     }
   ]
 });
