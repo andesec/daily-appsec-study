@@ -2,8 +2,7 @@ name: Build Lessons & Generate Homepage
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: ['*']
 
 permissions:
   contents: write
@@ -18,6 +17,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -51,24 +53,28 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add lessons/*.html
           if ! git diff --cached --quiet; then
             git commit -m "Auto-build lesson HTML"
-            git push
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           else
             echo "No changes to commit."
           fi
 
-    # ------------------------
-    # 2. GENERATE HOMEPAGE (RUNS SECOND)
-    # ------------------------
+  # ------------------------
+  # 2. GENERATE HOMEPAGE (RUNS SECOND)
+  # ------------------------
   generate-homepage:
-    needs: build-lessons # <-- THIS enforces correct order
+    needs: build-lessons
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Generate index.html
         run: |
@@ -107,13 +113,12 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # Make sure we have the latest commits from build-lessons job
-          git pull origin main --rebase || true
+          git pull origin ${{ github.head_ref || github.ref_name }} --rebase || true
 
           git add index.html
           if ! git diff --cached --quiet; then
             git commit -m "Auto-generate homepage"
-            git push
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           else
             echo "No changes to commit."
           fi
