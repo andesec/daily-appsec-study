@@ -1285,6 +1285,791 @@
      </div>
     </div>
    </section>
+   <section class="card" id="section-6">
+    <div class="card-header">
+     6. Common Weaknesses, Pitfalls &amp; Attack Paths
+    </div>
+    <div class="card-body">
+     <p>
+      Zero Trust collapses when a single SaaS component is allowed to assume implicit trust, so modern playbooks (NIST SP 800-207, CISA Zero Trust Maturity Model) insist on pairing identity, device, and workload posture for every hop.
+                     The scenarios below show how microservices that look healthy can still be abused if the verification signals drift or if mesh policies lag deployments.
+     </p>
+     <p>
+      Use the sandbox to rehearse blended attacks that combine IAM abuse and east-west reconnaissance before studying the deeper attack paths.
+     </p>
+     <div class="widget" id="attack-sandbox-6"></div>
+     <script>
+      AppSecWidgets.AttackSandbox.create("attack-sandbox-6", {
+        title: "🎯 Zero Trust Breaker Lab",
+        scenarios: [
+          {
+            name: "Leaky Service Token",
+            description: "A compromised CI runner leaks a service account token that was never scoped to a microsegment.",
+            payload: "curl -H 'Authorization: Bearer leaked-ci-token' https://mesh.local/billing/v1/ledger",
+            response: "403 when mesh policies verify SPIFFE ID; 200 only when policies rely on subnet allowlists.",
+            notifyType: "warning",
+            notifyMessage: "Did the request hit identity-aware policy or legacy network ACLs?"
+          },
+          {
+            name: "Shadow API to Object Storage",
+            description: "An undocumented admin API shares the storage network plane and exposes raw bucket paths.",
+            payload: "POST /ops/debug/export {"bucket":"tenant-a","path":"../../tenant-b"}",
+            response: "If input validation fails, AppSecWidgets shows the exfiltrated object list.",
+            notifyType: "danger",
+            notifyMessage: "Shadow APIs often bypass zero trust gates when not registered with the mesh."
+          }
+        ]
+      });
+     </script>
+     <p>
+      References:
+      <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" target="_blank" rel="noopener">NIST SP 800-207</a>
+      ·
+      <a href="https://www.cisa.gov/zero-trust-maturity-model" target="_blank" rel="noopener">CISA Zero Trust Maturity Model</a>
+      ·
+      <a href="https://attack.mitre.org/" target="_blank" rel="noopener">MITRE ATT&amp;CK</a>
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-6-1">
+    <div class="card-header">
+     6.1 Attack Path: Compromised CI Token → Mesh Pivot
+    </div>
+    <div class="card-body">
+     <p>
+      When CI runners can reach the service mesh control plane, a leaked token lets attackers register fake workloads and request access to tenant databases.
+                     SaaS teams often over-trust build nodes because they live inside the "engineering" VPC.
+     </p>
+     <pre>
+      [CI Runner] --leaked token--> [Mesh Control Plane]
+             |                          |
+        (register bogus)         (issues cert)
+             v                          v
+        [Fake service] ---> lateral --> [Tenant DB]
+     </pre>
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Attack</th>
+         <th>Detect</th>
+         <th>Defend/Mitigate</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Compromised CI token requests mTLS cert for <code>billing-shadow</code>.</td>
+         <td>Mesh audit logs show identity issuance outside deployment window; SIEM correlates runner IP with unusual SPIFFE IDs.</td>
+         <td>Issue workload certs only via GitOps controllers; require attested workload identity (SPIRE/Sigstore) per NIST SP 800-207 §4.2.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-6-2">
+    <div class="card-header">
+     6.2 Attack Path: Shadow API Bypassing the Gateway
+    </div>
+    <div class="card-body">
+     <p>
+      Platform teams sometimes expose internal GraphQL/REST endpoints directly to the service network for troubleshooting.
+                     When these endpoints reuse the same IAM role as production services, an attacker who compromises a pod can reach sensitive admin methods without touching the hardened edge.
+     </p>
+     <pre>
+      [Compromised worker] -> [Shadow API pod]
+             |                    |
+             | (no gateway auth)  v
+             +----------------> [Admin DB]
+     </pre>
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Attack</th>
+         <th>Detect</th>
+         <th>Defend/Mitigate</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Invoke undocumented <code>/ops/debug/export</code> endpoint to dump S3 paths.</td>
+         <td>Mesh telemetry reveals HTTP hostnames not in service catalog; Config Drift alerts show pods not attached to gateway.</td>
+         <td>Register every API with service discovery + policy engine, block east-west calls lacking verified OIDC claims, and enforce egress policies per CISA Zero Trust maturity stage 3.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-6-3">
+    <div class="card-header">
+     6.3 Attack Path: Tenant Claim Confusion in Message Bus
+    </div>
+    <div class="card-body">
+     <p>
+      Multitenant SaaS queues often rely on JWT claims to route jobs, but long-lived workers may never refresh their assertions, so a revoked tenant context can linger and leak data.
+     </p>
+     <pre>
+      [Tenant A job] -> [Queue] -> [Worker Pod]
+                               (cached claims)
+                                   |
+                                   v
+                           Processes Tenant B payloads
+     </pre>
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Attack</th>
+         <th>Detect</th>
+         <th>Defend/Mitigate</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Send crafted job referencing Tenant B resource IDs; worker reuses stale claim &amp; returns data.</td>
+         <td>Per-request audit log shows tenant mismatch between message metadata and worker-issued mTLS cert.</td>
+         <td>Force short-lived workload tokens and verify tenant context at every dequeue; treat queue boundary as trust boundary.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-6-4">
+    <div class="card-header">
+     6.4 Attack Path: Stale Network Policies During Blue/Green Deploys
+    </div>
+    <div class="card-body">
+     <p>
+      During blue/green releases, teams sometimes temporarily broaden Kubernetes NetworkPolicies so both stacks receive traffic; attackers exploit the overlap to probe internal services.
+     </p>
+     <pre>
+      [Blue svc]  [Green svc]
+          |          |
+          +----shared namespace---->
+                    |
+               [Open network policy]
+                    |
+                [Sensitive DB]
+     </pre>
+     <p>
+      Detection hinges on diffing IaC commits versus live cluster policy and alerting when an allowlist suddenly includes <code>0.0.0.0/0</code> or new label selectors.
+     </p>
+    </div>
+   </section>
+   <section class="card" id="section-6-5">
+    <div class="card-header">
+     6.5 Attack Path: East-West Recon via Egress-Less Functions
+    </div>
+    <div class="card-body">
+     <p>
+      Serverless functions sometimes run inside VPC subnets without outbound internet, yet they can still scan internal IP ranges if IAM roles allow <code>ec2:Describe*</code>.
+                     Attackers chain SSRF → AWS Lambda credential theft → DescribeNetworkInterfaces to map the mesh.
+     </p>
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Attack</th>
+         <th>Detect</th>
+         <th>Defend/Mitigate</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Use stolen Lambda role to enumerate ENIs and security groups, then route traffic through API Gateway private integrations.</td>
+         <td>CloudTrail alerts on Describe* bursts tied to Lambda role; VPC Flow Logs reveal abnormal east-west fan-out.</td>
+         <td>Apply least-privilege IAM, enable VPC reachability analyzer in CI, and quarantine roles exhibiting MITRE ATT&amp;CK TA0007 behavior.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-6-quiz">
+    <div class="card-header">
+     6.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-6"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-6", {
+        title: "Attack Surface Sanity Quiz",
+        mode: "classic",
+        questions: [
+          {
+            text: "Which signal proves a workload legitimately belongs in the mesh?",
+            options: [
+              { value: "ip", label: "Placement in the 10.0.0.0/8 subnet", correct: false },
+              { value: "oidc", label: "Workload-issued SPIFFE or OIDC identity bound to attested deployment", correct: true },
+              { value: "dns", label: "Reverse DNS name of the pod", correct: false }
+            ]
+          },
+          {
+            text: "How do you detect shadow APIs bypassing the gateway?",
+            options: [
+              { value: "no-logs", label: "Disable mesh telemetry to reduce noise", correct: false },
+              { value: "catalog", label: "Continuously compare live hostnames to the service catalog and alert on unknown entries", correct: true },
+              { value: "rate", label: "Lower user rate limits", correct: false }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-7">
+    <div class="card-header">
+     7. Practical Implementation &amp; Review (Hands-On)
+    </div>
+    <div class="card-body">
+     <p>
+      The following runbooks show how SaaS teams enforce Zero Trust in code reviews and observability: diff policies before deploy, monitor logs for tenant drift, and run integration tests that simulate hostile workloads.
+                     Tie every artifact back to source control so reviewers can sign off on the controls, not just the feature.</p>
+    </div>
+   </section>
+   <section class="card" id="section-7-1">
+    <div class="card-header">
+     7.1 Config Diff: Kubernetes NetworkPolicy Guardrail
+    </div>
+    <div class="card-body">
+     <p>
+      Reviewers compare insecure vs. hardened policies before approving a release. The secure variant mirrors NIST SP 800-207 guidance by pairing workload labels with mTLS identities.</p>
+     <div class="widget" id="config-diff-7-1"></div>
+     <script>
+      AppSecWidgets.ConfigDiff.create("config-diff-7-1", "🔐 Tenant Scoped NetworkPolicy", `apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: billing-allow-all
+spec:
+  podSelector: { }
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 10.0.0.0/8
+  egress:
+  - {}
+`, `apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: billing-zero-trust
+spec:
+  podSelector:
+    matchLabels:
+      app: billing-svc
+      tenant-tier: regulated
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          mesh: stable
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+  - ports:
+    - protocol: TCP
+      port: 8443
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ledger-db
+    - namespaceSelector:
+        matchLabels:
+          mesh: data
+    ports:
+    - port: 5432
+      protocol: TCP
+`);
+     </script>
+     <p>
+      Reviewer checklist:</p>
+     <ul>
+      <li>Does pod selection rely on documented labels in Git?</li>
+      <li>Are ingress/egress ports tightly scoped and encrypted (mTLS 8443/5432)?</li>
+      <li>Was the policy generated via IaC, or patched manually (anti-pattern)?</li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-7-2">
+    <div class="card-header">
+     7.2 Log Analyzer: Tenant Drift Watch
+    </div>
+    <div class="card-body">
+     <p>
+      Log-based detection is the fastest feedback loop for SaaS abuse. Feed API gateway, service mesh, and database logs into one schema to spot mismatched tenants.</p>
+     <div class="widget" id="log-analyzer-7-2"></div>
+     <script>
+      AppSecWidgets.LogAnalyzer.create("log-analyzer-7-2", {
+        title: "🔍 Zero Trust Log Triage",
+        columns: ["Time", "Component", "Identity", "Event", "Status"],
+        logs: [
+          { time: "10:22:11", component: "api-gateway", identity: "user:tenant-a", event: "Token issued", status: "success" },
+          { time: "10:22:15", component: "billing-svc", identity: "svc:billing-green", event: "mTLS handshake", status: "success" },
+          { time: "10:22:17", component: "ledger-db", identity: "svc:billing-green", event: "Tenant mismatch: claims=tenant-a row=tenant-b", status: "blocked", severity: "warning" },
+          { time: "10:22:18", component: "mesh-control", identity: "ci-runner", event: "Cert issuance denied (no attestation)", status: "blocked", severity: "danger" }
+        ]
+      });
+     </script>
+     <p>
+      Reviewers verify that every alert ties back to an automated response (quarantine, ticket, or CI rollback) to honor CISA’s response maturity recommendations.</p>
+    </div>
+   </section>
+   <section class="card" id="section-7-3">
+    <div class="card-header">
+     7.3 Hands-On Test: Service-to-Service Contract
+    </div>
+    <div class="card-body">
+     <p>
+      Before release, run a contract test that impersonates a rogue workload. The script below (pseudo-Go) fails the pipeline if mesh rejects the connection:</p>
+     <pre><code>func probeMesh() error {
+    client := newMTLSClient("fake-ci", expiredCert)
+    resp, err := client.Get("https://billing.mesh.local/healthz")
+    if err == nil {
+        return fmt.Errorf("rogue workload was accepted: %v", resp.StatusCode)
+    }
+    return nil
+}</code></pre>
+     <p>
+      Wire this into CI so a mesh regression cannot ship unnoticed.</p>
+    </div>
+   </section>
+   <section class="card" id="section-7-quiz">
+    <div class="card-header">
+     7.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-7"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-7", {
+        intro: "Validate your implementation instincts.",
+        questions: [
+          {
+            text: "What should trigger a deployment block?",
+            options: [
+              { value: "diff", label: "Config diff shows egress '*' plus TCP/0", correct: true },
+              { value: "metrics", label: "Increased 200 OK responses", correct: false }
+            ]
+          },
+          {
+            text: "Which log correlation proves Zero Trust policy enforcement?",
+            options: [
+              { value: "single", label: "Single component logs only", correct: false },
+              { value: "multi", label: "Mesh + database logs showing same identity and tenant ID", correct: true }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-8">
+    <div class="card-header">
+     8. Good Design Principles, Defense &amp; Mitigation
+    </div>
+    <div class="card-body">
+     <p>
+      Translate Zero Trust theory into actionable design principles that keep SaaS blast radii tiny even when new microservices join daily.</p>
+    </div>
+   </section>
+   <section class="card" id="section-8-1">
+    <div class="card-header">
+     8.1 Architecture Guardrails
+    </div>
+    <div class="card-body">
+     <ul>
+      <li><strong>Identity before network:</strong> make every policy decision depend on workload identity (SPIFFE, workload OIDC) and device posture, never CIDRs alone.</li>
+      <li><strong>Segmentation-as-code:</strong> commit network/service policies with the same rigor as app code; require code owners to approve any new cross-segment rule.</li>
+      <li><strong>Continuous verification loops:</strong> expire access tokens quickly and re-evaluate risk at transaction boundaries (payment, export, admin change).</li>
+     </ul>
+     <p>
+      These align with NIST SP 800-207 §3.4 and the CISA maturity stages.</p>
+    </div>
+   </section>
+   <section class="card" id="section-8-2">
+    <div class="card-header">
+     8.2 Reviewer Checklist
+    </div>
+    <div class="card-body">
+     <div class="callout callout-info">
+      <strong>Design review prompts:</strong>
+      <ol>
+       <li>Which identities cross each trust boundary, and are they attested?</li>
+       <li>Do monitoring hooks exist at every edge (gateway, mesh, DB) for correlation?</li>
+       <li>What is the blast radius if one pod is fully compromised?</li>
+      </ol>
+     </div>
+     <p>
+      Pair this with automated linting that rejects missing labels or policies.</p>
+    </div>
+   </section>
+   <section class="card" id="section-8-3">
+    <div class="card-header">
+     8.3 Mitigation Patterns
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>Implement policy-as-code controllers (OPA/Gatekeeper) to ensure every Kubernetes namespace enforces mTLS and allowed egress.</li>
+      <li>Use service mesh rate limiting + adaptive authentication for risky flows (device posture drift, unusual geo).</li>
+      <li>Pre-stage isolation runbooks: flip a service into "tenant-quarantine" mode with infrastructure as code.</li>
+     </ul>
+     <p>
+      References: <a href="https://csrc.nist.gov/publications/detail/sp/800-207/final" target="_blank" rel="noopener">NIST SP 800-207</a>, <a href="https://www.cisa.gov/zero-trust-maturity-model" target="_blank" rel="noopener">CISA ZTMM</a>.</p>
+    </div>
+   </section>
+   <section class="card" id="section-8-quiz">
+    <div class="card-header">
+     8.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-8"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-8", {
+        questions: [
+          {
+            text: "What proves segmentation-as-code is working?",
+            options: [
+              { value: "manual", label: "Firewall rules edited in the console", correct: false },
+              { value: "iac", label: "Policies created via GitOps with code-owner approval", correct: true }
+            ]
+          },
+          {
+            text: "When should risk be re-evaluated in Zero Trust?",
+            options: [
+              { value: "login", label: "Only at login", correct: false },
+              { value: "transaction", label: "At every sensitive transaction per continuous verification", correct: true }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-9">
+    <div class="card-header">
+     9. Incident Case Study &amp; Analysis
+    </div>
+    <div class="card-body">
+     <p>
+      We study the October 2023 Okta Support System breach, where session tokens from a third-party vendor were used to access customer support consoles.
+                     The case demonstrates why Zero Trust must enforce least privilege for every support integration, not only production services.</p>
+     <p>
+      References: <a href="https://www.okta.com/blog/2023/10/okta-security-incident/" target="_blank" rel="noopener">Okta incident report</a>, <a href="https://www.cisa.gov/news-events/alerts/2023/11/03/cisa-releases-zero-trust-guidance" target="_blank" rel="noopener">CISA guidance</a>.</p>
+    </div>
+   </section>
+   <section class="card" id="section-9-1">
+    <div class="card-header">
+     9.1 Architecture Overview
+    </div>
+    <div class="card-body">
+     <pre>
+      [Vendor Laptop] --VPN--> [Support Portal]
+             |                     |
+             |              [Session token vault]
+             v                     |
+        [Okta Support Console] --> [Customer Tenants]
+     </pre>
+     <p>
+      Support tools sat on a flatter network segment than production identity services, so session tokens exfiltrated from a vendor became reusable credentials.</p>
+    </div>
+   </section>
+   <section class="card" id="section-9-2">
+    <div class="card-header">
+     9.2 Timeline &amp; Attack Path
+    </div>
+    <div class="card-body">
+     <div class="widget" id="timeline-9"></div>
+     <script>
+      AppSecWidgets.TimelineVerticalView.create("timeline-9", {
+        title: "🕒 Okta Support Incident Timeline",
+        events: [
+          { date: "2023-09-28", title: "Vendor system compromised", description: "Attacker obtains HAR files with session tokens." },
+          { date: "2023-10-02", title: "Session reuse", description: "Tokens replayed to Okta support portal; zero trust checks trusted vendor IP range." },
+          { date: "2023-10-17", title: "Customer reports anomalies", description: "Several SaaS tenants notice admin MFA resets." },
+          { date: "2023-10-19", title: "Containment", description: "Okta revokes session tokens, enforces device attestation, and isolates support environment." }
+        ]
+      });
+     </script>
+     <p>
+      Attack path: stolen vendor tokens → support portal → customer tenant admin actions. Lack of device attestation and network segmentation allowed the replay.</p>
+    </div>
+   </section>
+   <section class="card" id="section-9-3">
+    <div class="card-header">
+     9.3 Lessons &amp; Mitigations
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>Enforce Zero Trust between support and production: require device posture, phishing-resistant MFA, and conditional access before honoring support tokens.</li>
+      <li>Isolate vendor-connected tools in their own microsegment with just-in-time credentials.</li>
+      <li>Log analyzer correlation between support actions and tenant admin APIs must alert instantly.</li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-9-quiz">
+    <div class="card-header">
+     9.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-9"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-9", {
+        questions: [
+          {
+            text: "Which Zero Trust gap enabled the Okta support breach?",
+            options: [
+              { value: "none", label: "Proper segmentation was in place", correct: false },
+              { value: "support", label: "Support environment lacked device attestation and least privilege", correct: true }
+            ]
+          },
+          {
+            text: "Best mitigation?",
+            options: [
+              { value: "vpn", label: "Trust any device on vendor VPN", correct: false },
+              { value: "jit", label: "Require just-in-time access with hardware-bound creds", correct: true }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-10">
+    <div class="card-header">
+     10. Threat Model &amp; Analysis
+    </div>
+    <div class="card-body">
+     <p>
+      We threat-model a SaaS platform with API gateway, service mesh, and shared data plane to visualize Zero Trust defenses.</p>
+    </div>
+   </section>
+   <section class="card" id="section-10-1">
+    <div class="card-header">
+     10.1 ASCII Architecture
+    </div>
+    <div class="card-body">
+     <pre>
+      Users -> [Identity-Aware Proxy] -> [API Gateway]
+                                   |            |
+                      [Device Posture]    [Service Mesh]
+                                              |
+                                       +------+------+ 
+                                       |      |      |
+                                   [user] [billing] [files]
+                                              |
+                                           [DB cluster]
+     </pre>
+     <p>
+      Trust boundaries: internet ↔ proxy, proxy ↔ gateway, gateway ↔ mesh, mesh ↔ data.</p>
+    </div>
+   </section>
+   <section class="card" id="section-10-2">
+    <div class="card-header">
+     10.2 STRIDE Highlights
+    </div>
+    <div class="card-body">
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Threat</th>
+         <th>Scenario</th>
+         <th>Control</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Spoofing</td>
+         <td>Fake workload cert issued via CI compromise.</td>
+         <td>Hardware-backed attestation + SPIFFE federation.</td>
+        </tr>
+        <tr>
+         <td>Tampering</td>
+         <td>Inline proxy modifies JWT claims.</td>
+         <td>JWT signing + gateway signature verification.</td>
+        </tr>
+        <tr>
+         <td>Repudiation</td>
+         <td>Service denies making tenant export call.</td>
+         <td>Immutable audit logs tying identity to request ID.</td>
+        </tr>
+        <tr>
+         <td>Information Disclosure</td>
+         <td>Shadow API leaks tenant data.</td>
+         <td>Service catalog enforcement + DLP for exports.</td>
+        </tr>
+        <tr>
+         <td>DoS</td>
+         <td>Botnet floods gateway with authenticated but risky traffic.</td>
+         <td>Adaptive rate limits + risk-based MFA challenges.</td>
+        </tr>
+        <tr>
+         <td>Elevation</td>
+         <td>Support account escalates to global admin.</td>
+         <td>Just-in-time approval + step-up authentication.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-10-3">
+    <div class="card-header">
+     10.3 ThreatModel Widget
+    </div>
+    <div class="card-body">
+     <div class="widget" id="threatmodel-10"></div>
+     <script>
+      AppSecWidgets.ThreatModel.create("threatmodel-10", {
+        system: {
+          name: "Zero Trust SaaS Mesh",
+          type: "Multi-tenant platform",
+          actors: "Customers, support engineers, CI pipelines",
+          assets: "Tenant data, signing keys, workload certs",
+          entryPoints: "API gateway, support portal, CI runners",
+          boundaries: "Edge proxy, service mesh, data tier"
+        },
+        stride: {
+          spoofing: "Enforce attested workload identities and phishing-resistant MFA.",
+          tampering: "Sign policies, enforce integrity via GitOps pipelines.",
+          repudiation: "Centralize audit logs with WORM storage.",
+          information: "Apply column-level encryption + access brokers.",
+          dos: "Autoscale gateways with per-tenant rate limits.",
+          elevation: "Apply just-in-time admin approval and time-bound roles."
+        }
+      }, { title: "🎯 STRIDE Canvas" });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-10-quiz">
+    <div class="card-header">
+     10.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-10"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-10", {
+        questions: [
+          {
+            text: "Which boundary is most critical for Zero Trust SaaS?",
+            options: [
+              { value: "db", label: "Service mesh ↔ data tier", correct: true },
+              { value: "none", label: "No boundaries are needed", correct: false }
+            ]
+          },
+          {
+            text: "What mitigates spoofing in the model?",
+            options: [
+              { value: "cidr", label: "CIDR allowlists", correct: false },
+              { value: "attest", label: "Workload attestation + SPIFFE", correct: true }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
+   <section class="card" id="section-11">
+    <div class="card-header">
+     11. Compliance Mapping
+    </div>
+    <div class="card-body">
+     <p>
+      Tie Zero Trust controls to major frameworks so compliance and security pull in the same direction.</p>
+    </div>
+   </section>
+   <section class="card" id="section-11-1">
+    <div class="card-header">
+     11.1 Control Map
+    </div>
+    <div class="card-body">
+     <div class="table-container">
+      <table>
+       <thead>
+        <tr>
+         <th>Framework</th>
+         <th>Control</th>
+         <th>Zero Trust Link</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>ISO 27001</td>
+         <td>A.8.1, A.12.6</td>
+         <td>Asset inventory + technical hardening for mesh policies and workload identities.</td>
+        </tr>
+        <tr>
+         <td>NIST 800-53</td>
+         <td>SC-7, AC-6, IA-2</td>
+         <td>Boundary protection, least privilege, and multi-factor authentication for every hop.</td>
+        </tr>
+        <tr>
+         <td>PCI DSS</td>
+         <td>Req. 1.2, 7.1</td>
+         <td>Segment cardholder data environment with microsegmentation and role-based access.</td>
+        </tr>
+        <tr>
+         <td>HIPAA</td>
+         <td>164.312(a)-(e)</td>
+         <td>Unique IDs, access control, integrity, transmission security for PHI microservices.</td>
+        </tr>
+        <tr>
+         <td>GDPR</td>
+         <td>Art. 32</td>
+         <td>Security of processing through continuous verification and least privilege.</td>
+        </tr>
+        <tr>
+         <td>SOC 2</td>
+         <td>CC6, CC7</td>
+         <td>Logical access and change monitoring satisfied by zero trust telemetry.</td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <section class="card" id="section-11-2">
+    <div class="card-header">
+     11.2 Implementation Notes
+    </div>
+    <div class="card-body">
+     <ul>
+      <li>If a framework is not applicable (e.g., HIPAA for non-health workloads), document the justification but keep the controls for consistency.</li>
+      <li>Map policy-as-code pull requests to control IDs so audits show traceability.</li>
+      <li>Retain mesh and gateway logs for at least one audit cycle (often 1 year) to support evidence requests.</li>
+     </ul>
+    </div>
+   </section>
+   <section class="card" id="section-11-quiz">
+    <div class="card-header">
+     11.Q Knowledge Check
+    </div>
+    <div class="card-body">
+     <div class="widget" id="quiz-11"></div>
+     <script>
+      AppSecWidgets.Quiz.create("quiz-11", {
+        questions: [
+          {
+            text: "Which control maps Zero Trust segmentation to PCI DSS?",
+            options: [
+              { value: "pci1", label: "Requirement 1.2", correct: true },
+              { value: "pci2", label: "Requirement 12.10 only", correct: false }
+            ]
+          },
+          {
+            text: "How should SOC 2 evidence be produced?",
+            options: [
+              { value: "manual", label: "Manual screenshots", correct: false },
+              { value: "logs", label: "Link policy-as-code commits + telemetry logs to CC6/CC7", correct: true }
+            ]
+          }
+        ]
+      });
+     </script>
+    </div>
+   </section>
    <footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
     Daily AppSec Study · Zero Trust Network Design
    </footer>
