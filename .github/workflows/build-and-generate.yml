@@ -1,104 +1,119 @@
 name: Build Lessons & Generate Homepage
 
 on:
-    push:
-        branches: [main]
-    pull_request:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
-    # ------------------------
-    # 1. BUILD LESSONS (RUNS FIRST)
-    # ------------------------
-    build-lessons:
-        runs-on: ubuntu-latest
+  # ------------------------
+  # 1. BUILD LESSONS (RUNS FIRST)
+  # ------------------------
+  build-lessons:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repo
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-            - name: Setup Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: "3.12"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-            - name: Build lesson HTML files
-              run: python join_html_topics.py
+      - name: Check for lesson fragments
+        id: check_lessons
+        run: |
+          if ls lessons/*/[0-9]*.html 2>/dev/null | grep -q .; then
+            echo "found=true" >> $GITHUB_ENV
+          else
+            echo "found=false" >> $GITHUB_ENV
+          fi
 
-            - name: Commit updated lesson HTML files
-              run: |
-                  git config user.name "github-actions[bot]"
-                  git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add lessons/*.html
-                  if ! git diff --cached --quiet; then
-                    git commit -m "Auto-build lesson HTML"
-                    git push
-                  else
-                    echo "No changes to commit."
-                  fi
+      - name: Build lesson HTML files
+        if: env.found == 'true'
+        run: python join_html_topics.py
+
+      - name: No lesson folders found
+        if: env.found == 'false'
+        run: echo "No lesson folders with fragment files found; skipping merge step."
+
+      - name: Commit updated lesson HTML files
+        if: env.found == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lessons/*.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-build lesson HTML"
+            git push
+          else
+            echo "No changes to commit."
+          fi
 
     # ------------------------
     # 2. GENERATE HOMEPAGE (RUNS SECOND)
     # ------------------------
-    generate-homepage:
-        needs: build-lessons # <-- THIS enforces correct order
-        runs-on: ubuntu-latest
+  generate-homepage:
+    needs: build-lessons # <-- THIS enforces correct order
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repo
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-            - name: Generate index.html
-              run: |
-                  echo "<!DOCTYPE html>" > index.html
-                  echo "<html><head><meta charset='UTF-8'><title>Index</title>" >> index.html
-                  echo "<style>
-                          body { font-family: sans-serif; padding: 20px; }
-                          ul { list-style: none; padding: 0; }
-                          li { margin: 12px 0; }
-                          a {
-                            display: block;
-                            padding: 14px 18px;
-                            background: #f4f4f4;
-                            border-radius: 8px;
-                            text-decoration: none;
-                            color: #333;
-                            font-size: 18px;
-                          }
-                          a:hover {
-                            background: #e0e0e0;
-                          }
-                        </style></head><body>" >> index.html
-                  echo "<h1>Available Lessons</h1>" >> index.html
-                  echo "<ul>" >> index.html
+      - name: Generate index.html
+        run: |
+          echo "<!DOCTYPE html>" > index.html
+          echo "<html><head><meta charset='UTF-8'><title>Index</title>" >> index.html
+          echo "<style>
+                  body { font-family: sans-serif; padding: 20px; }
+                  ul { list-style: none; padding: 0; }
+                  li { margin: 12px 0; }
+                  a {
+                    display: block;
+                    padding: 14px 18px;
+                    background: #f4f4f4;
+                    border-radius: 8px;
+                    text-decoration: none;
+                    color: #333;
+                    font-size: 18px;
+                  }
+                  a:hover {
+                    background: #e0e0e0;
+                  }
+                </style></head><body>" >> index.html
+          echo "<h1>Available Lessons</h1>" >> index.html
+          echo "<ul>" >> index.html
 
-                  for file in $(ls lessons/*.html 2>/dev/null | sort); do
-                    clean=${file#lessons/}
-                    name=${clean%.html}
-                    echo "<li><a href=\"$file\">$name</a></li>" >> index.html
-                  done
+          for file in $(ls lessons/*.html 2>/dev/null | sort); do
+            clean=${file#lessons/}
+            name=${clean%.html}
+            echo "<li><a href=\"$file\">$name</a></li>" >> index.html
+          done
 
-                  echo "</ul></body></html>" >> index.html
+          echo "</ul></body></html>" >> index.html
 
-            - name: Commit updated index.html
-              run: |
-               git config user.name "github-actions"
-               git config user.email "actions@github.com"
+      - name: Commit updated index.html
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
 
-               # Make sure we have the latest commits from build-lessons job
-               git pull origin main --rebase || true
+          # Make sure we have the latest commits from build-lessons job
+          git pull origin main --rebase || true
 
-               git add index.html
-               if ! git diff --cached --quiet; then
-                 git commit -m "Auto-generate homepage"
-                 git push
-               else
-                 echo "No changes to commit."
-               fi
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-generate homepage"
+            git push
+          else
+            echo "No changes to commit."
+          fi
