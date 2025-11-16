@@ -1,0 +1,236 @@
+<section class="card" id="section-1">
+    <div class="card-header">1. Foundations</div>
+    <div class="card-body">
+        <p>
+            AWS Identity and Access Management (IAM) roles are <strong>temporary identities for workloads</strong>. They have no
+            permanent credentials, are assumed via AWS Security Token Service (STS), and scope every Lambda, EC2, ECS, EKS, Glue,
+            and Step Functions workload. This card frames the section; each numbered subsection dives deeper.
+        </p>
+    </div>
+</section>
+
+<section class="card" id="section-1-1">
+    <div class="card-header">1.1 Understanding IAM Roles</div>
+    <div class="card-body">
+        <p>Core reasons roles are favored over IAM users for automation:</p>
+        <ul>
+            <li>Eliminate long-lived access keys that leak through logs, repos, screenshots, or CI artifacts.</li>
+            <li>Scope permissions per workload to enforce least privilege and contain compromises.</li>
+            <li>Rely on scoped trust policies to keep assumptions explicit.</li>
+            <li>Support cross-account automation and vendor integrations safely.</li>
+            <li>Allow credentials to expire automatically, preventing persistence.</li>
+        </ul>
+        <p>Roles power numerous services: Lambda execution, EC2 instance profiles, ECS task roles, EKS IRSA, CloudFormation
+            service roles, CI/CD cross-account access, and federated access through OIDC/SAML. <a
+                href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html" target="_blank" rel="noopener">AWS IAM role
+                guide ↗</a></p>
+    </div>
+</section>
+
+<section class="card" id="section-1-2">
+    <div class="card-header">1.2 AWS STS: Identity Backbone</div>
+    <div class="card-body">
+        <p>
+            AWS STS issues short-lived credentials that inherit permission scope from the assumed role, use session lifetimes of
+            15–60 minutes by default, and rotate automatically at expiration.
+        </p>
+        <ul>
+            <li><code>AssumeRole</code> – used by Lambda, EC2, ECS, Step Functions, cross-account workflows.</li>
+            <li><code>AssumeRoleWithWebIdentity</code> – used by OIDC (EKS IRSA, GitHub Actions OIDC).</li>
+            <li><code>AssumeRoleWithSAML</code> – used for enterprise SSO providers.</li>
+            <li><code>GetFederationToken</code> – legacy federation helper.</li>
+        </ul>
+        <p><a href="https://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html" target="_blank" rel="noopener">STS API
+                reference ↗</a></p>
+    </div>
+</section>
+
+<section class="card" id="section-1-3">
+    <div class="card-header">1.3 Lambda Execution Role (LER)</div>
+    <div class="card-body">
+        <p>
+            Every Lambda function references an execution role. When the function is invoked, the Lambda service assumes that
+            role, and the runtime receives temporary credentials through environment variables or the AWS SDK provider chain.
+        </p>
+        <p>Typical Lambda role permissions:</p>
+        <ul>
+            <li>Baseline logging (<code>logs:CreateLogGroup</code>, <code>logs:CreateLogStream</code>, <code>logs:PutLogEvents</code>).</li>
+            <li>Application actions (S3 read/write, DynamoDB access, SNS publish, Secrets Manager usage).</li>
+        </ul>
+        <p>Example trust policy:</p>
+        <pre><code class="language-json">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "lambda.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}</code></pre>
+        <p><a href="https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html" target="_blank"
+                rel="noopener">Lambda execution role docs ↗</a></p>
+    </div>
+</section>
+
+<section class="card" id="section-1-4">
+    <div class="card-header">1.4 EC2 Instance Profiles</div>
+    <div class="card-body">
+        <p>
+            EC2 cannot attach a role directly, so AWS uses an <em>instance profile</em> containing exactly one role. Applications
+            request credentials through the Instance Metadata Service v2 (IMDSv2): obtain a session token, then retrieve access
+            key, secret key, session token, and expiration. SDKs refresh automatically before expiration.
+        </p>
+        <p>
+            IMDSv1 (the unauthenticated GET variant) is vulnerable to SSRF. Capital One’s breach leveraged IMDSv1 to steal role
+            credentials. Always enforce IMDSv2.
+        </p>
+        <p><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html" target="_blank"
+                rel="noopener">EC2 role reference ↗</a></p>
+    </div>
+</section>
+
+<section class="card" id="section-1-5">
+    <div class="card-header">1.5 Trust Policies: AWS’s Identity Firewall</div>
+    <div class="card-body">
+        <p>Trust policies define which principals can assume a role and under which conditions.</p>
+        <ul>
+            <li><strong>Principal</strong> – AWS service, account, role, or federated identity allowed to assume.</li>
+            <li><strong>Action</strong> – nearly always <code>sts:AssumeRole</code>.</li>
+            <li><strong>Condition</strong> – contextual constraints such as <code>aws:SourceArn</code>, <code>aws:SourceAccount</code>,
+                <code>sts:ExternalId</code>, or <code>aws:SourceIp</code>.</li>
+        </ul>
+        <p>Example hardened trust policy:</p>
+        <pre><code class="language-json">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "lambda.amazonaws.com" },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": { "aws:SourceAccount": "123456789012" },
+        "ArnLike": { "aws:SourceArn": "arn:aws:lambda:us-east-1:123456789012:function:UserRegistration-*" }
+      }
+    }
+  ]
+}</code></pre>
+    </div>
+</section>
+
+<section class="card" id="section-1-6">
+    <div class="card-header">1.6 Knowledge Check</div>
+    <div class="card-body">
+        <div id="quiz-aws-roles-foundations" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-aws-roles-foundations", {
+                    title: "🧠 AWS Role Foundations Quiz",
+                    intro: "Validate that you can explain STS-backed identities and why roles beat IAM users for workloads.",
+                    mode: "step",
+                    questions: [
+                        {
+                            text: "What is the primary benefit of using IAM roles for Lambda instead of embedding access keys?",
+                            options: [
+                                { value: "a", label: "Roles allow unlimited execution time", correct: false },
+                                { value: "b", label: "Roles rely on short-lived STS credentials that rotate automatically", correct: true },
+                                { value: "c", label: "Roles disable CloudWatch logging by default", correct: false },
+                                { value: "d", label: "Roles only work inside a single region", correct: false }
+                            ]
+                        },
+                        {
+                            text: "Which trust policy element restricts a role to specific Lambda functions?",
+                            options: [
+                                { value: "a", label: "aws:SourceArn", correct: true },
+                                { value: "b", label: "aws:RequestTag", correct: false },
+                                { value: "c", label: "iam:PassRole", correct: false },
+                                { value: "d", label: "s3:ExistingObjectTag", correct: false }
+                            ]
+                        },
+                        {
+                            text: "IMDSv2 is required because…",
+                            options: [
+                                { value: "a", label: "it speeds up EC2 boot times", correct: false },
+                                { value: "b", label: "it authenticates metadata requests using session tokens, blocking SSRF theft", correct: true },
+                                { value: "c", label: "it enables IPv6 only", correct: false },
+                                { value: "d", label: "it encrypts S3 traffic", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
+
+<section class="card" id="section-2">
+    <div class="card-header">2. Intuitive Hook – Temporary Badges in a Secure Facility</div>
+    <div class="card-body">
+        <p>
+            Imagine a government research lab. AWS services are workers who need temporary badges. IAM roles are those badges,
+            trust policies are the guards verifying who can receive them, and permissions policies dictate which labs each worker
+            can enter.
+        </p>
+    </div>
+</section>
+
+<section class="card" id="section-2-1">
+    <div class="card-header">2.1 Badge Analogy</div>
+    <div class="card-body">
+        <ul>
+            <li><strong>IAM Role = Temporary badge</strong> — includes doors it opens, floors allowed, and expiration time.</li>
+            <li><strong>Trust Policy = Guard</strong> — checks if the requester is the Lambda service from the right account and invocation.</li>
+            <li><strong>Permissions Policy = Internal rulebook</strong> — once inside, governs which S3 buckets, DynamoDB tables, or IAM actions are allowed.</li>
+        </ul>
+        <p>If the guard is careless (e.g., <code>"Principal": "*"</code>):</p>
+        <ul>
+            <li>Attackers or other AWS services can obtain badges not meant for them.</li>
+            <li>Cross-account impersonation becomes trivial.</li>
+            <li>Compromised workloads laterally move with powerful credentials.</li>
+        </ul>
+        <p>Thinking about roles as badges makes it easier to reason about:</p>
+        <ul>
+            <li>Why each Lambda, EC2, or ECS workload needs its own role.</li>
+            <li>How STS credentials expire, mirroring badge revocation at shift end.</li>
+            <li>Why trust policies and <code>aws:SourceArn</code> conditions are the “guards” preventing badge fraud.</li>
+        </ul>
+    </div>
+</section>
+
+<section class="card" id="section-2-2">
+    <div class="card-header">2.2 Knowledge Check</div>
+    <div class="card-body">
+        <div id="quiz-aws-roles-hook" class="widget"></div>
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+                AppSecWidgets.Quiz.create("quiz-aws-roles-hook", {
+                    title: "🎫 Badge Analogy Quiz",
+                    questions: [
+                        {
+                            text: "Within the badge analogy, what does the trust policy represent?",
+                            options: [
+                                { value: "a", label: "The building’s cafeteria menu", correct: false },
+                                { value: "b", label: "The security guard validating identities before issuing badges", correct: true },
+                                { value: "c", label: "The HR system tracking PTO", correct: false },
+                                { value: "d", label: "The elevators used by visitors", correct: false }
+                            ]
+                        },
+                        {
+                            text: "What happens if the badge (role) lists \"Action: *\"?",
+                            options: [
+                                { value: "a", label: "Only one lab can be entered", correct: false },
+                                { value: "b", label: "Badge holders gain near-admin power inside AWS", correct: true },
+                                { value: "c", label: "Badges never expire", correct: false },
+                                { value: "d", label: "The guard automatically revokes the badge", correct: false }
+                            ]
+                        }
+                    ]
+                });
+            }
+        });
+        </script>
+    </div>
+</section>
