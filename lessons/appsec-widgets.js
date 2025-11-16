@@ -979,7 +979,7 @@ AppSecWidgets.Quiz = {
 
     container.classList.add('widget', 'widget-quiz');
 
-    const mode = data.mode || 'step';
+    const mode = 'step'; //data.mode || 'step';
 
     // Classic mode: render all questions at once + single "Check answers" button
     if (mode === 'classic') {
@@ -1126,6 +1126,8 @@ AppSecWidgets.Quiz = {
         this.handleAnswer(containerId, value);
       });
     });
+
+    window.AppSec.applyStaticMarkdown(".quiz-question-card");
   },
 
   handleAnswer(containerId, value) {
@@ -2246,6 +2248,437 @@ AppSecWidgets.TimelineVerticalView = {
     // Load first event
     addEvent(index);
     index++;
+  }
+};
+
+/**
+ * ============================================
+ * NEW SIEM-STYLE LOG ANALYZER WIDGET (2025)
+ * Compact, Mobile-Friendly, Expandable, Blue-Team Focus
+ * ============================================
+ */
+AppSecWidgets.AdvancedLogAnalyzer = {
+  create(containerId, config = {}) {
+    const defaultConfig = {
+      title: "🔍 SIEM Log Analyzer",
+      // short fields first, longest data 3rd
+      columns: ["Time", "IP", "Event", "Principal"],
+      logs: [],
+      placeholder: "No logs available."
+    };
+
+    const cfg = { ...defaultConfig, ...config };
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    AppSecWidgets._state[containerId] = {
+      config: cfg,
+      filteredLogs: cfg.logs,
+      expanded: {}
+    };
+
+    container.classList.add("widget");
+    container.innerHTML = `
+      <div class="widget-header">
+        <h3 class="widget-title">${cfg.title}</h3>
+      </div>
+      <div class="widget-body">
+        <div class="log-controls">
+          <input type="text"
+                 id="${containerId}-search"
+                 placeholder="Search…"
+                 class="log-search-input"
+                 oninput="AppSecWidgets.AdvancedLogAnalyzer.applyFilters('${containerId}')">
+
+          <select id="${containerId}-severity"
+                  class="log-severity-select"
+                  onchange="AppSecWidgets.AdvancedLogAnalyzer.applyFilters('${containerId}')">
+            <option value="">Severity: All</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="info">Info</option>
+          </select>
+
+          <button class="btn-icon"
+                  onclick="AppSecWidgets.AdvancedLogAnalyzer.expandAll('${containerId}')">▼</button>
+          <button class="btn-icon"
+                  onclick="AppSecWidgets.AdvancedLogAnalyzer.collapseAll('${containerId}')">▲</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="siem-table">
+            <thead>
+              <tr>
+                ${cfg.columns.map(c => `<th>${c}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody id="${containerId}-tbody">
+              ${this._renderRows(containerId)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    this._injectStyles();
+  },
+
+  /* ----------------------------------------------
+   * Time formatting + severity helpers
+   * ---------------------------------------------- */
+  _formatTime(timeStr) {
+    try {
+      const d = new Date(timeStr);
+      if (isNaN(d.getTime())) return timeStr || "";
+      // Local, readable
+      return d.toLocaleString();
+    } catch {
+      return timeStr || "";
+    }
+  },
+
+  _normalizeSeverity(sev) {
+    if (!sev) return "info";
+    const s = String(sev).toLowerCase();
+
+    if (s === "critical") return "critical";
+    if (s === "high" || s === "danger") return "high";
+    if (s === "medium" || s === "warning") return "medium";
+    if (s === "low") return "low";
+    if (s === "info" || s === "informational") return "info";
+
+    // default bucket
+    return "info";
+  },
+
+  _escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  },
+
+  _prettyJSON(obj) {
+    return JSON.stringify(obj, null, 2);
+  },
+
+  /* ----------------------------------------------
+   * INTERNAL — RENDER LOG ROWS
+   * ---------------------------------------------- */
+  _renderRows(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return "";
+    const { filteredLogs: logs, config: cfg } = state;
+
+    if (!logs || !logs.length) {
+      return `<tr><td colspan="${cfg.columns.length}" class="siem-empty">${cfg.placeholder}</td></tr>`;
+    }
+
+    return logs
+      .map((log, i) => {
+        const rowId = `${containerId}-row-${i}`;
+        const normSeverity = this._normalizeSeverity(log.severity);
+        const formattedTime = log.time
+          ? AppSecWidgets.AdvancedLogAnalyzer._formatTime(log.time)
+          : "";
+
+        // main row cells, respecting configured columns
+        const cellsHtml = cfg.columns
+          .map((c) => {
+            const key = c.toLowerCase(); // time, ip, event, principal
+            let value;
+
+            if (key === "time") {
+              value = formattedTime;
+            } else {
+              // allow both lower-case and original keys
+              value = log[key] != null ? log[key] : log[c];
+            }
+
+            return `<td>${value != null ? AppSecWidgets.AdvancedLogAnalyzer._escapeHtml(value) : ""}</td>`;
+          })
+          .join("");
+
+        // Only show details-meta div if summary or stack present
+        const hasSummary = !!log.summary;
+        const hasStack = !!(log.callstack || log.stack || log.trace);
+
+        let detailsMetaHtml = "";
+        if (hasSummary || hasStack) {
+          detailsMetaHtml = `
+            <div class="details-meta">
+              ${hasSummary
+              ? `<div class="details-summary">
+                      <strong>Summary</strong>
+                      <p>${this._escapeHtml(log.summary)}</p>
+                    </div>`
+              : ""
+            }
+              ${hasStack
+              ? `<div class="details-stack">
+                      <strong>Call Stack / Trace</strong>
+                      <pre>${this._escapeHtml(log.callstack || log.stack || log.trace)}</pre>
+                    </div>`
+              : ""
+            }
+            </div>
+          `;
+        }
+
+        const detailRow = `
+          <tr class="details-row" id="${rowId}-details" style="display:none;">
+            <td colspan="${cfg.columns.length}">
+              <div class="details-box">
+                ${detailsMetaHtml}
+                <pre>${this._escapeHtml(this._prettyJSON(log))}</pre>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        const mainRow = `
+          <tr class="siem-row siem-sev-${normSeverity}"
+              onclick="AppSecWidgets.AdvancedLogAnalyzer.toggle('${containerId}', '${rowId}')">
+            ${cellsHtml}
+          </tr>
+        `;
+
+        return mainRow + detailRow;
+      })
+      .join("");
+  },
+
+  /* ----------------------------------------------
+   * EXPAND / COLLAPSE TOGGLE
+   * ---------------------------------------------- */
+  toggle(containerId, rowId) {
+    const el = document.getElementById(`${rowId}-details`);
+    const state = AppSecWidgets._state[containerId];
+    if (!el || !state) return;
+
+    const isHidden = el.style.display === "none";
+    el.style.display = isHidden ? "table-row" : "none";
+    state.expanded[rowId] = isHidden;
+  },
+
+  expandAll(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
+    (state.filteredLogs || []).forEach((_, i) => {
+      const rowId = `${containerId}-row-${i}`;
+      const el = document.getElementById(`${rowId}-details`);
+      if (el) {
+        el.style.display = "table-row";
+        state.expanded[rowId] = true;
+      }
+    });
+  },
+
+  collapseAll(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+
+    (state.filteredLogs || []).forEach((_, i) => {
+      const rowId = `${containerId}-row-${i}`;
+      const el = document.getElementById(`${rowId}-details`);
+      if (el) {
+        el.style.display = "none";
+        state.expanded[rowId] = false;
+      }
+    });
+  },
+
+  /* ----------------------------------------------
+   * FILTERING (SEARCH + SEVERITY)
+   * ---------------------------------------------- */
+  applyFilters(containerId) {
+    const state = AppSecWidgets._state[containerId];
+    if (!state) return;
+    const cfg = state.config;
+
+    const searchEl = document.getElementById(`${containerId}-search`);
+    const severityEl = document.getElementById(`${containerId}-severity`);
+    const search = (searchEl?.value || "").toLowerCase();
+    const severityFilter = severityEl?.value || "";
+
+    state.filteredLogs = (cfg.logs || []).filter((log) => {
+      const textMatch = !search
+        ? true
+        : Object.values(log).some((val) =>
+          val != null
+            ? String(val).toLowerCase().includes(search)
+            : false
+        );
+
+      const sev = this._normalizeSeverity(log.severity);
+      const sevMatch = !severityFilter || sev === severityFilter;
+
+      return textMatch && sevMatch;
+    });
+
+    this._rerender(containerId);
+  },
+
+  _rerender(containerId) {
+    const tbody = document.getElementById(`${containerId}-tbody`);
+    if (!tbody) return;
+    tbody.innerHTML = this._renderRows(containerId);
+  },
+
+  /* ----------------------------------------------
+   * STYLE INJECTION (ONLY ONCE)
+   * ---------------------------------------------- */
+  _injectStyles() {
+    if (document.getElementById("siem-log-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "siem-log-styles";
+    style.textContent = `
+      /* Compact SIEM table */
+      .siem-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        margin-top: 0;
+      }
+
+      .siem-table th,
+      .siem-table td {
+        padding: 0.35rem 0.5rem;
+        white-space: nowrap;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .siem-table thead th {
+        background: var(--bg-tertiary);
+        font-weight: 600;
+        border-radius: 0 !important; /* no curved header corners */
+      }
+
+      .siem-row {
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .siem-row:hover {
+        filter: brightness(1.03);
+      }
+
+      /* CVSS-style severity tinting */
+      .siem-sev-critical { background: rgba(255, 0, 0, 0.75); }
+      .siem-sev-high     { background: rgba(255, 102, 0, 0.75); }
+      .siem-sev-medium   { background: rgba(255, 204, 0, 0.75); }
+      .siem-sev-low      { background: rgba(0, 153, 255, 0.75); }
+      .siem-sev-info     { background: rgba(180, 180, 180, 0.75); }
+
+      /* Prevent hover from darkening too much */
+      .siem-row:hover {
+        filter: brightness(1.02) !important;
+      }
+
+      .siem-empty {
+        text-align: center;
+        padding: 1rem;
+        color: var(--text-secondary);
+      }
+
+      /* Controls row now sits above table */
+      .log-controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 0.5rem;
+      }
+
+      .log-search-input,
+      .log-severity-select {
+        padding: 6px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.8rem;
+      }
+
+      .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      /* Scroll container: horizontal + vertical */
+      .table-responsive {
+        overflow-x: auto;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+      }
+
+      /* Details panel */
+
+      .details-meta {
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+      }
+
+      .details-summary p {
+        margin: 0.15rem 0 0 0;
+      }
+
+      .details-stack pre {
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        white-space: pre-wrap;
+      }
+      
+      .siem-table td, .siem-table th {
+        white-space: nowrap;
+      }
+
+      /* Only event column may wrap */
+      .siem-table td:nth-child(3), 
+      .siem-table th:nth-child(3) {
+        white-space: normal;
+        max-width: 420px;
+        min-width: 260px;
+      }
+
+      /* Set a minimum width for IP, Time, Principal */
+      .siem-table td:nth-child(1), .siem-table th:nth-child(1) { min-width: 140px; }
+      .siem-table td:nth-child(2), .siem-table th:nth-child(2) { min-width: 110px; }
+      .siem-table td:nth-child(4), .siem-table th:nth-child(4) { min-width: 240px; }
+
+      .details-box {
+        background: var(--bg-secondary);
+        margin: -3rem 0;
+        border-left: 3px solid var(--accent);
+        border-radius: 4px;
+      }
+
+      .details-box pre {
+        margin: 0 !important;
+        padding: 0.25rem 0 !important;
+        background: transparent !important;
+        font-size: 0.78rem !important;
+        line-height: 1.2rem !important;
+      }
+      .details-row > td {
+        padding: 0.1rem 0.35rem !important;
+      }
+      .siem-table td {
+        padding: 0.45rem 0.65rem !important;
+        vertical-align: top;
+      }
+
+      .siem-table th {
+        padding: 0.5rem 0.65rem !important;
+        font-size: 0.78rem;
+        letter-spacing: 0.3px;
+      }
+    `;
+    document.head.appendChild(style);
   }
 };
 

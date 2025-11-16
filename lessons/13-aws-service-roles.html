@@ -866,13 +866,73 @@ Attacker → SSRF → http://169.254.169.254/latest/meta-data/iam/
                 <script>
                     document.addEventListener("DOMContentLoaded", function () {
                         if (window.AppSecWidgets && AppSecWidgets.LogAnalyzer) {
-                            AppSecWidgets.LogAnalyzer.create("logs-aws-roles", {
-                                title: "🔍 Detection Signals",
-                                columns: ["Time", "Event", "Principal", "IP", "Severity"],
+                            AppSecWidgets.AdvancedLogAnalyzer.create("logs-aws-roles", {
+                                title: "🔍 AWS Service Role Abuse – Detection Signals",
+                                columns: ["Time", "IP", "Event", "Principal"],
                                 logs: [
-                                    { time: "2024-05-01T12:08Z", event: "AssumeRole from 333333333333", principal: "arn:aws:iam::111111111111:role/AppLambda", ip: "203.0.113.8", severity: "danger" },
-                                    { time: "2024-05-01T12:10Z", event: "GuardDuty UnauthorizedAccess:EC2/MetadataCredentials", principal: "i-0abc123", ip: "198.51.100.45", severity: "warning" },
-                                    { time: "2024-05-01T12:15Z", event: "IAM Access Analyzer finding: Public role trust", principal: "arn:aws:iam::111111111111:role/EC2Processor", ip: "-", severity: "warning" }
+                                    {
+                                        time: "2024-05-01T12:03Z",
+                                        event: "Access Analyzer: Role trust policy allows sts:AssumeRole from unknown external account 998877665544",
+                                        principal: "arn:aws:iam::111111111111:role/EC2Processor",
+                                        ip: "-",
+                                        severity: "warning",
+                                        mitre: "TA0001 Initial Access",
+                                        tags: ["IAM", "Trust Policy", "Misconfiguration"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:08Z",
+                                        event: "Cross-account AssumeRole successful from suspicious AWS account 998877665544",
+                                        principal: "arn:aws:iam::111111111111:role/AppLambda",
+                                        ip: "203.0.113.8",
+                                        severity: "danger",
+                                        mitre: "TA0003 Persistence",
+                                        tags: ["sts:AssumeRole", "Cross-Account", "Privilege Misuse"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:10Z",
+                                        event: "GuardDuty: UnauthorizedAccess – EC2/MetadataCredentials exfiltration attempt",
+                                        principal: "i-0abc1234def567890",
+                                        ip: "198.51.100.45",
+                                        severity: "danger",
+                                        mitre: "TA0006 Credential Access",
+                                        tags: ["EC2", "IMDSv2 Missing", "Metadata", "STS"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:12Z",
+                                        event: "STS:AssumeRole → Privilege Escalation path detected (role-chaining across 3 roles)",
+                                        principal: "arn:aws:iam::111111111111:role/AppLambda",
+                                        ip: "203.0.113.8",
+                                        severity: "warning",
+                                        mitre: "TA0004 Privilege Escalation",
+                                        tags: ["Role Chaining", "STS", "Escalation"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:15Z",
+                                        event: "Access Analyzer: Public role trust – service role assumable by ANY AWS account",
+                                        principal: "arn:aws:iam::111111111111:role/EC2Processor",
+                                        ip: "-",
+                                        severity: "warning",
+                                        mitre: "TA0001 Initial Access",
+                                        tags: ["Public Trust", "IAM", "Misconfiguration"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:17Z",
+                                        event: "CloudTrail: Lambda execution role used to list S3 buckets outside intended scope",
+                                        principal: "arn:aws:sts::111111111111:assumed-role/AppLambda/session-xyz",
+                                        ip: "54.240.197.4",
+                                        severity: "info",
+                                        mitre: "TA0007 Discovery",
+                                        tags: ["Lambda", "Least Privilege Violation"]
+                                    },
+                                    {
+                                        time: "2024-05-01T12:21Z",
+                                        event: "GuardDuty: PrivilegeEscalation – IAMUser/InvokeAdminRole via misconfigured trust",
+                                        principal: "arn:aws:iam::111111111111:user/ci-build-user",
+                                        ip: "203.0.113.110",
+                                        severity: "danger",
+                                        mitre: "TA0004 Privilege Escalation",
+                                        tags: ["IAM", "Privilege Escalation", "Trust Policy"]
+                                    }
                                 ]
                             });
                         }

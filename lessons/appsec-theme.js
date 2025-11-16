@@ -491,5 +491,6 @@ document.addEventListener("DOMContentLoaded", applyStaticMarkdown());
 window.AppSec = {
   ThemeManager,
   CodeDisplay,
-  Notify
+  Notify,
+  applyStaticMarkdown
 };
