@@ -1,0 +1,1085 @@
+<html>
+  <head>
+    <style>
+.word-card {
+  border:1px solid #ddd;
+  padding:10px;
+  border-radius:8px;
+  margin:10px 0;
+  background:#fafafa;
+}
+.word-head {
+  font-weight:bold; 
+  font-size:16px;
+}
+.ex {
+  color:#333;
+  font-size:14px;
+}
+.toggle-btn {
+  background:#e0e0e0;
+  padding:5px 10px;
+  border-radius:5px;
+  cursor:pointer;
+  font-size:12px;
+}
+.hidden { display:none; }
+</style>
+  </head>
+  <body>
+  <div style="font-family:Arial; padding:18px; line-height:1.5;">
+
+<h1>📘 Thema: Persönliche Erfahrungen & Vergangenheit</h1>
+<p style="font-size:14px; color:#444;">Einfache Erklärungen (A1-A2) + B1 Beispiele. Tippen, klicken und lernen.</p>
+
+<!-- ========================= -->
+<!-- SECTION 1 – VOCABULARY SET -->
+<!-- ========================= -->
+
+<h2>1. 🧠 Großer Wortschatz – Persönliche Erfahrungen & Vergangenheit</h2>
+
+<script>
+function toggle(id){
+  const el=document.getElementById(id);
+  el.classList.toggle("hidden");
+}
+</script>
+
+<h3>📍 25–40 Nomen</h3>
+
+<div id="nouns">
+<!-- Repeatable card structure -->
+<div class="word-card">
+  <div class="word-head">die Erinnerung – memory</div>
+  <div class="ex">Bsp: <i>Diese Reise bleibt eine schöne Erinnerung.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Kindheit – childhood</div>
+  <div class="ex">Bsp: <i>In meiner Kindheit habe ich viel draußen gespielt.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Jugend – youth</div>
+  <div class="ex">Bsp: <i>Meine Jugend war ruhig, aber sehr prägend.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">das Erlebnis – experience (event)</div>
+  <div class="ex">Bsp: <i>Der Umzug ins Ausland war ein großes Erlebnis.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Erfahrung – experience (knowledge)</div>
+  <div class="ex">Bsp: <i>Ich habe viel Berufserfahrung im Kundenservice.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Vergangenheit – past</div>
+  <div class="ex">Bsp: <i>Er spricht selten über seine Vergangenheit.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Zukunft – future</div>
+  <div class="ex">Bsp: <i>Ich mache mir viele Gedanken über meine Zukunft.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Entscheidung – decision</div>
+  <div class="ex">Bsp: <i>Die Entscheidung war schwer, aber richtig.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">der Fehler – mistake</div>
+  <div class="ex">Bsp: <i>Aus jedem Fehler lernt man etwas Wichtiges.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">der Erfolg – success</div>
+  <div class="ex">Bsp: <i>Der Abschluss meines Studiums war ein großer Erfolg.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Schwierigkeit – difficulty</div>
+  <div class="ex">Bsp: <i>Am Anfang hatte ich viele Schwierigkeiten mit der Sprache.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">der Traum – dream</div>
+  <div class="ex">Bsp: <i>Einmal wollte ich Pilot werden – das war mein großer Traum.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">der Wunsch – wish</div>
+  <div class="ex">Bsp: <i>Mein Wunsch war es, selbstständig zu werden.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Hoffnung – hope</div>
+  <div class="ex">Bsp: <i>Ich habe die Hoffnung nie verloren.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">das Ziel – goal</div>
+  <div class="ex">Bsp: <i>Mein Ziel war es, besser Deutsch zu sprechen.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Reise – trip</div>
+  <div class="ex">Bsp: <i>Die Reise nach Berlin hat mein Leben verändert.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">das Abenteuer – adventure</div>
+  <div class="ex">Bsp: <i>Meine erste Solo-Reise war ein echtes Abenteuer.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Prüfung – exam</div>
+  <div class="ex">Bsp: <i>Die B1-Prüfung war eine wichtige Erfahrung.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Lektion – lesson</div>
+  <div class="ex">Bsp: <i>Diese Situation war eine harte Lektion.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">der Verlust – loss</div>
+  <div class="ex">Bsp: <i>Der Verlust meines Jobs war am Anfang schwer.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Veränderung – change</div>
+  <div class="ex">Bsp: <i>Der Umzug war eine große Veränderung für mich.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">das Verhältnis – relationship/connection</div>
+  <div class="ex">Bsp: <i>Mein Verhältnis zu meiner Familie ist gut.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Erinnerungslücke – memory gap</div>
+  <div class="ex">Bsp: <i>Nach dem Unfall hatte er eine kleine Erinnerungslücke.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">die Gewohnheit – habit</div>
+  <div class="ex">Bsp: <i>Früh aufzustehen ist eine gute Gewohnheit geworden.</i></div>
+</div>
+</div>
+
+<h3>⚙️ 15–20 Verben</h3>
+
+<div class="word-card"><div class="word-head">erleben – to experience</div><div class="ex">Ich habe viel Neues erlebt.</div></div>
+<div class="word-card"><div class="word-head">erinnern (sich) – to remember</div><div class="ex">Ich erinnere mich gut an meine Schulzeit.</div></div>
+<div class="word-card"><div class="word-head">vergessen – to forget</div><div class="ex">Manche Dinge vergesse ich nie.</div></div>
+<div class="word-card"><div class="word-head">bereuen – to regret</div><div class="ex">Ich bereue keine Entscheidung.</div></div>
+<div class="word-card"><div class="word-head">verändern – to change</div><div class="ex">Die Reise hat mich verändert.</div></div>
+<div class="word-card"><div class="word-head">sich entwickeln – to develop</div><div class="ex">Ich habe mich beruflich gut entwickelt.</div></div>
+<div class="word-card"><div class="word-head">sich bemühen – to try hard</div><div class="ex">Ich habe mich sehr bemüht.</div></div>
+<div class="word-card"><div class="word-head">wachsen – to grow</div><div class="ex">Ich bin an meinen Herausforderungen gewachsen.</div></div>
+<div class="word-card"><div class="word-head">überstehen – to survive/get through</div><div class="ex">Wir haben viele Schwierigkeiten überstanden.</div></div>
+<div class="word-card"><div class="word-head">entscheiden – to decide</div><div class="ex">Ich habe mich für einen neuen Weg entschieden.</div></div>
+<div class="word-card"><div class="word-head">entdecken – to discover</div><div class="ex">Ich habe neue Interessen entdeckt.</div></div>
+<div class="word-card"><div class="word-head">vermissen – to miss</div><div class="ex">Ich habe meine Familie vermisst.</div></div>
+<div class="word-card"><div class="word-head">zweifeln – to doubt</div><div class="ex">Ich habe manchmal an mir gezweifelt.</div></div>
+<div class="word-card"><div class="word-head">hoffen – to hope</div><div class="ex">Ich habe immer auf eine bessere Zukunft gehofft.</div></div>
+
+<h3>✨ 15–20 Adjektive</h3>
+
+<div class="word-card"><div class="word-head">prägend – formative</div><div class="ex">Die Zeit in Berlin war sehr prägend.</div></div>
+<div class="word-card"><div class="word-head">unvergesslich – unforgettable</div><div class="ex">Der Moment war unvergesslich.</div></div>
+<div class="word-card"><div class="word-head">schwierig – difficult</div><div class="ex">Es war eine schwierige Phase.</div></div>
+<div class="word-card"><div class="word-head">mutig – brave</div><div class="ex">Die Entscheidung war mutig.</div></div>
+<div class="word-card"><div class="word-head">persönlich – personal</div><div class="ex">Es war eine sehr persönliche Erfahrung.</div></div>
+<div class="word-card"><div class="word-head">emotional – emotional</div><div class="ex">Der Abschied war emotional.</div></div>
+<div class="word-card"><div class="word-head">vertraut – familiar</div><div class="ex">Die Stadt wurde mir vertraut.</div></div>
+<div class="word-card"><div class="word-head">unsicher – uncertain</div><div class="ex">Am Anfang war ich unsicher.</div></div>
+<div class="word-card"><div class="word-head">entschlossen – determined</div><div class="ex">Ich war entschlossen, weiterzumachen.</div></div>
+
+<h3>🗣️ 15–20 Nützliche Redemittel</h3>
+
+<div class="word-card"><div class="word-head">in der Vergangenheit – in the past</div><div class="ex">In der Vergangenheit habe ich viel gelernt.</div></div>
+<div class="word-card"><div class="word-head">seit meiner Kindheit – since my childhood</div><div class="ex">Seit meiner Kindheit liebe ich Musik.</div></div>
+<div class="word-card"><div class="word-head">damals – back then</div><div class="ex">Damals hatte ich keine Ahnung.</div></div>
+<div class="word-card"><div class="word-head">früher – earlier / used to</div><div class="ex">Früher war ich sehr schüchtern.</div></div>
+<div class="word-card"><div class="word-head">im Laufe der Jahre – over the years</div><div class="ex">Im Laufe der Jahre bin ich selbstbewusster geworden.</div></div>
+<div class="word-card"><div class="word-head">eine wichtige Rolle spielen – to play an important role</div><div class="ex">Meine Familie spielt eine wichtige Rolle in meinem Leben.</div></div>
+<div class="word-card"><div class="word-head">eine Entscheidung treffen – to make a decision</div><div class="ex">Ich habe eine wichtige Entscheidung getroffen.</div></div>
+<div class="word-card"><div class="word-head">Erfahrungen sammeln – to gain experience</div><div class="ex">Ich wollte neue Erfahrungen sammeln.</div></div>
+<div class="word-card"><div class="word-head">es geschafft haben – to have made it</div><div class="ex">Am Ende habe ich es geschafft.</div></div>
+
+<!-- ========================= -->
+<!-- SECTION 2 – ESSENTIAL PHRASES -->
+<!-- ========================= -->
+
+<h2>2. 🗣️ Wichtige Sätze & Muster (B1)</h2>
+<p style="font-size:14px; color:#666;">Für flüssiges Sprechen über Vergangenheit.</p>
+
+<div class="word-card">
+  <div class="word-head">1. In meiner Vergangenheit habe ich oft...</div>
+  <div class="ex">Bsp: <i>In meiner Vergangenheit habe ich oft neue Städte besucht.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">2. Früher war ich jemand, der...</div>
+  <div class="ex">Bsp: <i>Früher war ich jemand, der selten Risiken eingegangen ist.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">3. Eine Erfahrung, die mich geprägt hat, war...</div>
+  <div class="ex">Bsp: <i>Eine Erfahrung, die mich geprägt hat, war mein erster Job.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">4. Damals habe ich nicht verstanden, dass...</div>
+  <div class="ex">Bsp: <i>Damals habe ich nicht verstanden, dass Veränderungen gut sein können.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">5. Seit meiner Kindheit habe ich den Wunsch...</div>
+  <div class="ex">Bsp: <i>Seit meiner Kindheit habe ich den Wunsch, zu reisen.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">6. Im Laufe der Jahre habe ich gelernt, dass...</div>
+  <div class="ex">Bsp: <i>Im Laufe der Jahre habe ich gelernt, dass Geduld wichtig ist.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">7. Rückblickend würde ich sagen, dass...</div>
+  <div class="ex">Bsp: <i>Rückblickend würde ich sagen, dass dieser Umzug notwendig war.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">8. Eine Sache, die ich nie vergessen werde, ist...</div>
+  <div class="ex">Bsp: <i>Eine Sache, die ich nie vergessen werde, ist mein erster Flug.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">9. Ich bereue, dass ich früher nicht...</div>
+  <div class="ex">Bsp: <i>Ich bereue, dass ich früher nicht mehr gelernt habe.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">10. Es gab eine Phase, in der...</div>
+  <div class="ex">Bsp: <i>Es gab eine Phase, in der ich sehr unsicher war.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">11. Eine wichtige Entscheidung war...</div>
+  <div class="ex">Bsp: <i>Eine wichtige Entscheidung war mein Berufswechsel.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">12. Ich habe damals nicht gewusst, dass...</div>
+  <div class="ex">Bsp: <i>Ich habe damals nicht gewusst, dass ich so viel schaffen kann.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">13. Mit der Zeit habe ich verstanden, dass...</div>
+  <div class="ex">Bsp: <i>Mit der Zeit habe ich verstanden, dass Fehler normal sind.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">14. Das war eine Erfahrung, die ich jedem empfehlen würde.</div>
+  <div class="ex">Bsp: <i>Mein Auslandsjahr war eine Erfahrung, die ich jedem empfehlen würde.</i></div>
+</div>
+
+<div class="word-card">
+  <div class="word-head">15. Es hat mich viel Mut gekostet, aber...</div>
+  <div class="ex">Bsp: <i>Es hat mich viel Mut gekostet, aber ich habe neu angefangen.</i></div>
+</div>
+
+</div>
+  <div style="font-family:Arial; padding:18px; line-height:1.5;">
+
+<!-- Simple styles & helpers (compatible with Sections 1–2) -->
+<style>
+.section-title { margin-top:24px; }
+.word-card, .mcq-card {
+  border:1px solid #ddd;
+  padding:10px;
+  border-radius:8px;
+  margin:10px 0;
+  background:#fafafa;
+}
+.word-head {
+  font-weight:bold;
+  font-size:16px;
+}
+.ex { color:#333; font-size:14px; }
+.mcq-q { font-weight:bold; margin-bottom:6px; }
+.mcq-opt { margin-left:8px; }
+.answer {
+  margin-top:6px;
+  font-size:13px;
+  color:#00695c;
+}
+.hidden { display:none; }
+.btn-small {
+  background:#e0e0e0;
+  padding:4px 8px;
+  border-radius:5px;
+  cursor:pointer;
+  font-size:12px;
+  border:none;
+}
+</style>
+
+<script>
+function showAnswer(id){
+  var el = document.getElementById(id);
+  if(el){ el.classList.toggle('hidden'); }
+}
+</script>
+
+<!-- ========================= -->
+<!-- 3. GRAMMAR FOCUS -->
+<!-- ========================= -->
+
+<h2 class="section-title">3. 🔧 Grammatik-Fokus: Perfekt mit Zeitwörtern der Vergangenheit</h2>
+<p style="font-size:14px; color:#444;">
+Wir benutzen das <b>Perfekt</b>, wenn wir im Alltag über <b>Persönliche Erfahrungen</b> und die <b>Vergangenheit</b> sprechen.
+Das Perfekt hat zwei Teile:
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li><b>haben/sein</b> im Präsens + <b>Partizip II</b> (ge-Form)</li>
+  <li><b>zeitliche Ausdrücke</b> helfen: früher, damals, vor drei Jahren, seit meiner Kindheit, in der Vergangenheit ...</li>
+</ul>
+
+<p style="font-size:14px; color:#444;">
+<b>Einfache Regeln (A2):</b>
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li>Wir benutzen meistens <b>haben</b>: <i>Ich habe eine Reise gemacht.</i></li>
+  <li>Mit Bewegung/Ortswechsel oft <b>sein</b>: <i>Ich bin nach Deutschland gefahren.</i></li>
+  <li>Wir sagen <b>wann</b> mit Zeitwörtern: <i>Früher, damals, vor zwei Jahren, in meiner Kindheit ...</i></li>
+</ul>
+
+<h3>🧱 Beispiele (B1-Sätze)</h3>
+
+<div class="word-card">
+  <div class="ex"><i>Früher war ich sehr schüchtern, aber im Laufe der Jahre <b>habe ich viel gelernt</b>.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Vor drei Jahren <b>habe ich eine mutige Entscheidung getroffen</b> und meinen Job gewechselt.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Als Kind <b>bin ich jedes Jahr ans Meer gefahren</b>.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Damals <b>habe ich nicht verstanden</b>, wie wichtig diese Erfahrung war.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Seit meiner Kindheit <b>habe ich den Wunsch gehabt</b>, im Ausland zu leben.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>In der Vergangenheit <b>habe ich viele Fehler gemacht</b>, aber ich <b>bin immer weitergegangen</b>.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Im letzten Jahr <b>habe ich neue Freunde gefunden</b> und <b>bin viel gereist</b>.</i></div>
+</div>
+<div class="word-card">
+  <div class="ex"><i>Mit der Zeit <b>habe ich verstanden</b>, dass jede Schwierigkeit eine Lektion ist.</i></div>
+</div>
+
+<h3>🎯 Kurze Übung (MCQ – Perfekt & Zeitausdruck wählen)</h3>
+<p style="font-size:14px; color:#444;">
+Wähle die <b>beste Option</b> (a, b oder c). Überlege: <b>haben/sein</b>? Welche <b>Zeitangabe</b> passt?
+</p>
+
+<div class="mcq-card">
+  <div class="mcq-q">1. ______ habe ich eine unvergessliche Reise nach Berlin gemacht.</div>
+  <div class="mcq-opt">a) In meiner Kindheit</div>
+  <div class="mcq-opt">b) Im nächsten Jahr</div>
+  <div class="mcq-opt">c) Morgen</div>
+  <button class="btn-small" onclick="showAnswer('g3a1')">Lösung anzeigen</button>
+  <div id="g3a1" class="answer hidden">✔ a) In meiner Kindheit</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">2. Vor zwei Jahren ______ ich meinen Job gewechselt.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('g3a2')">Lösung anzeigen</button>
+  <div id="g3a2" class="answer hidden">✔ a) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">3. Als ich jung war, ______ ich oft allein im Park gespielt.</div>
+  <div class="mcq-opt">a) bin</div>
+  <div class="mcq-opt">b) habe</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('g3a3')">Lösung anzeigen</button>
+  <div id="g3a3" class="answer hidden">✔ b) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">4. Letztes Jahr ______ ich nach Deutschland gezogen.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('g3a4')">Lösung anzeigen</button>
+  <div id="g3a4" class="answer hidden">✔ b) bin</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">5. In der Vergangenheit ______ ich viel gezweifelt, aber ich habe weitergemacht.</div>
+  <div class="mcq-opt">a) bin</div>
+  <div class="mcq-opt">b) habe</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('g3a5')">Lösung anzeigen</button>
+  <div id="g3a5" class="answer hidden">✔ b) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">6. Im Laufe der Jahre ______ ich viele wichtige Erfahrungen gesammelt.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('g3a6')">Lösung anzeigen</button>
+  <div id="g3a6" class="answer hidden">✔ a) habe</div>
+</div>
+
+<!-- ========================= -->
+<!-- 4. READING TEXT + MCQ -->
+<!-- ========================= -->
+
+<h2 class="section-title">4. 📖 Leseverstehen – Meine prägende Entscheidung</h2>
+
+<p style="font-size:14px; color:#444;">
+<b>Lesetext (ca. 180–200 Wörter)</b><br>
+Lies den Text. Danach beantworte die Fragen (MCQ).
+</p>
+
+<div class="word-card">
+  <div class="ex">
+    <i>
+    Vor fünf Jahren habe ich eine Entscheidung getroffen, die mein Leben verändert hat. 
+    Damals war ich unzufrieden mit meinem Job und hatte das Gefühl, dass ich mich nicht weiterentwickle. 
+    In meiner Kindheit habe ich immer davon geträumt, im Ausland zu leben, aber ich hatte nie den Mut, etwas zu verändern.<br><br>
+    Eines Tages habe ich eine E-Mail mit einem Angebot für eine Stelle in Berlin bekommen. 
+    Zuerst habe ich gezweifelt und hatte viele Ängste. 
+    Ich hatte ein sicheres Leben, eine kleine Wohnung und ein vertrautes Umfeld. 
+    Aber gleichzeitig hatte ich den Wunsch, neue Erfahrungen zu sammeln. 
+    Nach einigen schlaflosen Nächten habe ich eine mutige Entscheidung getroffen: 
+    Ich habe meinen Job gekündigt und bin nach Berlin gezogen.<br><br>
+    Die ersten Monate waren schwierig. 
+    Ich habe meine Familie und Freunde vermisst und hatte manchmal das Gefühl, einen Fehler gemacht zu haben. 
+    Aber im Laufe der Zeit habe ich neue Leute kennengelernt, die Stadt entdeckt und eine Arbeit gefunden, die mir wirklich Spaß macht. 
+    Heute kann ich sagen: Diese Reise war ein unvergessliches Abenteuer und eine der wichtigsten Erfahrungen in meiner Vergangenheit.
+    </i>
+  </div>
+</div>
+
+<h3>❓ Fragen zum Text (MCQ)</h3>
+
+<div class="mcq-card">
+  <div class="mcq-q">1. Wie hat die Person sich vor der Entscheidung gefühlt?</div>
+  <div class="mcq-opt">a) sehr zufrieden mit ihrem Job</div>
+  <div class="mcq-opt">b) unzufrieden und ohne Entwicklung</div>
+  <div class="mcq-opt">c) gestresst, aber glücklich</div>
+  <button class="btn-small" onclick="showAnswer('r4a1')">Lösung anzeigen</button>
+  <div id="r4a1" class="answer hidden">✔ b) unzufrieden und ohne Entwicklung</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">2. Wovon hat die Person in der Kindheit geträumt?</div>
+  <div class="mcq-opt">a) von einem sicheren Job</div>
+  <div class="mcq-opt">b) von einer eigenen Wohnung</div>
+  <div class="mcq-opt">c) vom Leben im Ausland</div>
+  <button class="btn-small" onclick="showAnswer('r4a2')">Lösung anzeigen</button>
+  <div id="r4a2" class="answer hidden">✔ c) vom Leben im Ausland</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">3. Was hat die Person per E-Mail bekommen?</div>
+  <div class="mcq-opt">a) eine Einladung zu einer Reise</div>
+  <div class="mcq-opt">b) ein Angebot für eine Stelle in Berlin</div>
+  <div class="mcq-opt">c) eine Nachricht von der Familie</div>
+  <button class="btn-small" onclick="showAnswer('r4a3')">Lösung anzeigen</button>
+  <div id="r4a3" class="answer hidden">✔ b) ein Angebot für eine Stelle in Berlin</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">4. Warum war die Entscheidung schwer?</div>
+  <div class="mcq-opt">a) Die Person hatte schon einen Job in Berlin.</div>
+  <div class="mcq-opt">b) Die Person hatte ein sicheres und vertrautes Leben.</div>
+  <div class="mcq-opt">c) Die Person wollte nicht reisen.</div>
+  <button class="btn-small" onclick="showAnswer('r4a4')">Lösung anzeigen</button>
+  <div id="r4a4" class="answer hidden">✔ b) Die Person hatte ein sicheres und vertrautes Leben.</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">5. Wie waren die ersten Monate in Berlin?</div>
+  <div class="mcq-opt">a) sehr leicht und entspannt</div>
+  <div class="mcq-opt">b) schwierig und emotional</div>
+  <div class="mcq-opt">c) langweilig und einsam</div>
+  <button class="btn-small" onclick="showAnswer('r4a5')">Lösung anzeigen</button>
+  <div id="r4a5" class="answer hidden">✔ b) schwierig und emotional</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">6. Was hat der Person geholfen, sich besser zu fühlen?</div>
+  <div class="mcq-opt">a) neue Leute und die Stadt zu entdecken</div>
+  <div class="mcq-opt">b) zurück in die Heimat zu fahren</div>
+  <div class="mcq-opt">c) den Job wieder zu kündigen</div>
+  <button class="btn-small" onclick="showAnswer('r4a6')">Lösung anzeigen</button>
+  <div id="r4a6" class="answer hidden">✔ a) neue Leute und die Stadt zu entdecken</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">7. Wie sieht die Person die Entscheidung heute?</div>
+  <div class="mcq-opt">a) als großen Fehler</div>
+  <div class="mcq-opt">b) als unvergessliches Abenteuer</div>
+  <div class="mcq-opt">c) als kleine Veränderung ohne Bedeutung</div>
+  <button class="btn-small" onclick="showAnswer('r4a7')">Lösung anzeigen</button>
+  <div id="r4a7" class="answer hidden">✔ b) als unvergessliches Abenteuer</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">8. Welches Thema passt <b>am besten</b> zum Text?</div>
+  <div class="mcq-opt">a) Eine Reise in die Kindheit</div>
+  <div class="mcq-opt">b) Eine berufliche Enttäuschung</div>
+  <div class="mcq-opt">c) Eine mutige Entscheidung in der Vergangenheit</div>
+  <button class="btn-small" onclick="showAnswer('r4a8')">Lösung anzeigen</button>
+  <div id="r4a8" class="answer hidden">✔ c) Eine mutige Entscheidung in der Vergangenheit</div>
+</div>
+
+<!-- ========================= -->
+<!-- 5. LISTENING TEXT + MCQ -->
+<!-- ========================= -->
+
+<h2 class="section-title">5. 🎧 Hörverstehen – Gespräch über ein Auslandsjahr</h2>
+<p style="font-size:14px; color:#444;">
+Stell dir vor, du hörst dieses Gespräch. Lies den Text wie ein Hörskript. Dann beantworte die MCQ-Fragen.
+</p>
+
+<div class="word-card">
+  <div class="ex">
+    <i>
+    A: Erinnerst du dich noch an dein Auslandsjahr in Spanien?<br>
+    B: Natürlich, das war eine meiner wichtigsten Erfahrungen. Am Anfang war alles fremd und ich war unsicher.<br>
+    A: Was war am schwierigsten?<br>
+    B: Die Sprache. In den ersten Wochen habe ich fast nichts verstanden und hatte Angst zu sprechen.<br>
+    A: Und was hat dir geholfen?<br>
+    B: Ich habe jeden Tag mit meinen Mitbewohnern gesprochen und viele Fehler gemacht. Aber im Laufe der Zeit bin ich mutiger geworden.<br>
+    A: Bereust du etwas aus dieser Zeit?<br>
+    B: Nein, im Gegenteil. Dieses Jahr im Ausland war ein unvergessliches Abenteuer.
+    </i>
+  </div>
+</div>
+
+<h3>❓ Fragen zum „Hören“ (MCQ)</h3>
+
+<div class="mcq-card">
+  <div class="mcq-q">1. Worum geht es im Gespräch?</div>
+  <div class="mcq-opt">a) um eine Reise in die Zukunft</div>
+  <div class="mcq-opt">b) um ein Auslandsjahr</div>
+  <div class="mcq-opt">c) um einen neuen Job</div>
+  <button class="btn-small" onclick="showAnswer('l5a1')">Lösung anzeigen</button>
+  <div id="l5a1" class="answer hidden">✔ b) um ein Auslandsjahr</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">2. Wie beschreibt B diese Erfahrung?</div>
+  <div class="mcq-opt">a) als langweilig</div>
+  <div class="mcq-opt">b) als eine der wichtigsten Erfahrungen</div>
+  <div class="mcq-opt">c) als totale Katastrophe</div>
+  <button class="btn-small" onclick="showAnswer('l5a2')">Lösung anzeigen</button>
+  <div id="l5a2" class="answer hidden">✔ b) als eine der wichtigsten Erfahrungen</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">3. Wie war B am Anfang?</div>
+  <div class="mcq-opt">a) sehr sicher</div>
+  <div class="mcq-opt">b) unsicher</div>
+  <div class="mcq-opt">c) wütend</div>
+  <button class="btn-small" onclick="showAnswer('l5a3')">Lösung anzeigen</button>
+  <div id="l5a3" class="answer hidden">✔ b) unsicher</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">4. Was war für B am schwierigsten?</div>
+  <div class="mcq-opt">a) das Essen</div>
+  <div class="mcq-opt">b) die Wohnung</div>
+  <div class="mcq-opt">c) die Sprache</div>
+  <button class="btn-small" onclick="showAnswer('l5a4')">Lösung anzeigen</button>
+  <div id="l5a4" class="answer hidden">✔ c) die Sprache</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">5. Was hat B am Anfang fast nicht geschafft?</div>
+  <div class="mcq-opt">a) zu schlafen</div>
+  <div class="mcq-opt">b) zu verstehen</div>
+  <div class="mcq-opt">c) zu essen</div>
+  <button class="btn-small" onclick="showAnswer('l5a5')">Lösung anzeigen</button>
+  <div id="l5a5" class="answer hidden">✔ b) zu verstehen</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">6. Wie hat B die Sprache verbessert?</div>
+  <div class="mcq-opt">a) nur mit Online-Kursen</div>
+  <div class="mcq-opt">b) durch ständiges Sprechen mit Mitbewohnern</div>
+  <div class="mcq-opt">c) durch Schweigen</div>
+  <button class="btn-small" onclick="showAnswer('l5a6')">Lösung anzeigen</button>
+  <div id="l5a6" class="answer hidden">✔ b) durch ständiges Sprechen mit Mitbewohnern</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">7. Wie ist B im Laufe der Zeit geworden?</div>
+  <div class="mcq-opt">a) mutiger</div>
+  <div class="mcq-opt">b) trauriger</div>
+  <div class="mcq-opt">c) fauler</div>
+  <button class="btn-small" onclick="showAnswer('l5a7')">Lösung anzeigen</button>
+  <div id="l5a7" class="answer hidden">✔ a) mutiger</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">8. Bereut B diese Zeit?</div>
+  <div class="mcq-opt">a) Ja, sehr.</div>
+  <div class="mcq-opt">b) Ein bisschen.</div>
+  <div class="mcq-opt">c) Nein, im Gegenteil.</div>
+  <button class="btn-small" onclick="showAnswer('l5a8')">Lösung anzeigen</button>
+  <div id="l5a8" class="answer hidden">✔ c) Nein, im Gegenteil.</div>
+</div>
+
+<!-- ========================= -->
+<!-- 6. WRITING TASK -->
+<!-- ========================= -->
+
+<h2 class="section-title">6. ✍️ Schreibaufgabe – Eine prägende Erfahrung</h2>
+
+<p style="font-size:14px; color:#444;">
+<b>Aufgabe (80–120 Wörter):</b><br>
+Schreibe einen Text über <b>eine persönliche Erfahrung in deiner Vergangenheit</b>, die dich verändert oder geprägt hat.
+</p>
+
+<p style="font-size:14px; color:#444;">
+<b>3–4 Start-Sätze (du kannst sie benutzen oder ändern):</b>
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li>Vor einigen Jahren habe ich eine Entscheidung getroffen, die mein Leben verändert hat.</li>
+  <li>In meiner Kindheit habe ich oft davon geträumt, dass ...</li>
+  <li>Damals war ich unsicher, aber heute sehe ich diese Erfahrung anders.</li>
+  <li>Im Laufe der Zeit habe ich verstanden, dass diese Situation wichtig für mich war.</li>
+</ul>
+
+<p style="font-size:14px; color:#444;">
+<b>Nützliche Redemittel (für B1-Niveau):</b>
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li>In der Vergangenheit habe ich oft ...</li>
+  <li>Eine Erfahrung, die mich geprägt hat, war ...</li>
+  <li>Seit dieser Zeit habe ich mich sehr verändert.</li>
+  <li>Rückblickend würde ich sagen, dass ...</li>
+  <li>Damals habe ich nicht verstanden, dass ...</li>
+  <li>Im ersten Moment war ich ..., aber später ...</li>
+  <li>Es hat mich viel Mut gekostet, aber ...</li>
+  <li>Am Ende habe ich gemerkt, dass ...</li>
+</ul>
+
+<p style="font-size:14px; color:#444;">
+<b>Checkliste für deinen Text:</b>
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li>Hast du <b>Vergangenheitsformen (Perfekt/Präteritum)</b> benutzt?</li>
+  <li>Hast du <b>Zeitangaben</b> verwendet (früher, damals, vor X Jahren, seit meiner Kindheit ...)?</li>
+  <li>Hast du erklärt, <b>warum</b> die Erfahrung wichtig war?</li>
+  <li>Hast du am Ende ein <b>Fazit</b> geschrieben (Was hast du gelernt?)</li>
+</ul>
+
+<!-- ========================= -->
+<!-- 7. SPEAKING PRACTICE -->
+<!-- ========================= -->
+
+<h2 class="section-title">7. 🗣️ Sprechübungen – Schnell über die Vergangenheit sprechen</h2>
+
+<h3>7.1 Gesprächsimpulse (kurz antworten)</h3>
+<p style="font-size:14px; color:#444;">
+Sprich laut. 3–4 Sätze pro Frage reichen.
+</p>
+<ol style="font-size:14px; color:#444;">
+  <li>Erzähle von einer Reise, die für dich unvergesslich war.</li>
+  <li>Beschreibe eine schwierige Entscheidung in deiner Vergangenheit.</li>
+  <li>Wie war deine Kindheit? Nenne etwas Positives und etwas Schwieriges.</li>
+  <li>Gab es eine Erfahrung, die dich mutiger gemacht hat?</li>
+  <li>Erzähl von einem Fehler, aus dem du eine wichtige Lektion gelernt hast.</li>
+  <li>Seit wann lernst du Deutsch und wie hast du dich entwickelt?</li>
+  <li>Welche Gewohnheit aus deiner Vergangenheit hast du heute nicht mehr?</li>
+  <li>Gibt es etwas, das du früher geliebt hast, aber heute nicht mehr?</li>
+  <li>Was würdest du deinem jüngeren Ich rückblickend sagen?</li>
+  <li>Welche Entscheidung in deinem Leben war besonders prägend?</li>
+</ol>
+
+<h3>7.2 Phrasen-Drills (fertige Schablonen)</h3>
+<p style="font-size:14px; color:#444;">
+Wiederhole die Sätze laut und ersetze die letzte Information mit deinen Ideen.
+</p>
+<ul style="font-size:14px; color:#444;">
+  <li>In meiner Vergangenheit habe ich oft &hellip;</li>
+  <li>Eine Erfahrung, die mich geprägt hat, war &hellip;</li>
+  <li>Früher war ich jemand, der &hellip;, aber heute &hellip;</li>
+  <li>Damals habe ich gedacht, dass &hellip;, doch jetzt weiß ich, dass &hellip;</li>
+  <li>Im Laufe der Jahre habe ich gelernt, dass &hellip;</li>
+</ul>
+
+<h3>7.3 Substitutions-Drills</h3>
+<p style="font-size:14px; color:#444;">
+Sprich den Grundsatz und tausche den markierten Teil aus.
+</p>
+
+<ol style="font-size:14px; color:#444;">
+  <li>
+    Grundsatz: <i>Früher war ich sehr schüchtern.</i><br>
+    Ersetze: <b>schüchtern</b> durch: <i>unsicher, ungeduldig, ängstlich</i>.
+  </li>
+  <li>
+    Grundsatz: <i>Vor drei Jahren habe ich meinen Job gewechselt.</i><br>
+    Ersetze: <b>meinen Job gewechselt</b> durch: <i>eine neue Sprache gelernt, eine Reise gemacht, eine mutige Entscheidung getroffen</i>.
+  </li>
+  <li>
+    Grundsatz: <i>In meiner Kindheit habe ich viel Zeit mit meiner Familie verbracht.</i><br>
+    Ersetze: <b>mit meiner Familie</b> durch: <i>mit meinen Freunden, mit meinen Großeltern, allein</i>.
+  </li>
+  <li>
+    Grundsatz: <i>Im Laufe der Jahre bin ich selbstbewusster geworden.</i><br>
+    Ersetze: <b>selbstbewusster</b> durch: <i>ruhiger, offener, mutiger</i>.
+  </li>
+  <li>
+    Grundsatz: <i>Diese Erfahrung war für mich unvergesslich.</i><br>
+    Ersetze: <b>unvergesslich</b> durch: <i>schwierig, emotional, wichtig</i>.
+  </li>
+</ol>
+
+<h3>7.4 Rollenspiele (kurz & fokussiert)</h3>
+<p style="font-size:14px; color:#444;">
+Spiel beide Rollen oder nutze sie mit einem Partner / mit der KI.
+</p>
+
+<ol style="font-size:14px; color:#444;">
+  <li>
+    <b>Jobwechsel:</b><br>
+    Person A: erzählt von einer Entscheidung, den Job zu wechseln.<br>
+    Person B: stellt Fragen: <i>Warum? Wann? Wie war die Zeit am Anfang?</i>
+  </li>
+  <li>
+    <b>Auslandsjahr:</b><br>
+    Person A: berichtet von einem Auslandsjahr.<br>
+    Person B: fragt nach Schwierigkeiten, Erfolgen und Gefühlen.
+  </li>
+  <li>
+    <b>Fehler und Lektion:</b><br>
+    Person A: erzählt von einem Fehler in der Vergangenheit.<br>
+    Person B: fragt: <i>Was hast du daraus gelernt?</i>
+  </li>
+  <li>
+    <b>Kindheit:</b><br>
+    Person A: beschreibt eine prägende Situation aus der Kindheit.<br>
+    Person B: fragt nach: <i>Wer war dabei? Wie hast du dich gefühlt?</i>
+  </li>
+  <li>
+    <b>Mutige Entscheidung:</b><br>
+    Person A: erzählt von einer mutigen Entscheidung (Umzug, Studium, Reise).<br>
+    Person B: fragt nach der Zeit <i>davor</i> und <i>danach</i>.
+  </li>
+</ol>
+
+<!-- ========================= -->
+<!-- 8. MINI REVIEW QUIZ (30 MCQ) -->
+<!-- ========================= -->
+
+<h2 class="section-title">8. 🧩 Mini-Review-Quiz (30 Items, MCQ)</h2>
+<p style="font-size:14px; color:#444;">
+Themen: Wortschatz, Grammatik, Satzbau. <b>Keine Fragen direkt zum Lese- oder Hörtext</b>, aber gleiche Strukturen und Wörter.
+</p>
+
+<!-- VOKABULAR 1–10 -->
+
+<h3>8.1 Wortschatz (1–10)</h3>
+
+<div class="mcq-card">
+  <div class="mcq-q">1. Was bedeutet „die Vergangenheit“?</div>
+  <div class="mcq-opt">a) die Zeit, die noch kommt</div>
+  <div class="mcq-opt">b) die Zeit, die schon vorbei ist</div>
+  <div class="mcq-opt">c) der heutige Tag</div>
+  <button class="btn-small" onclick="showAnswer('q8a1')">Lösung</button>
+  <div id="q8a1" class="answer hidden">✔ b) die Zeit, die schon vorbei ist</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">2. Welche Kombination passt am besten? „Eine ______ Erfahrung.“</div>
+  <div class="mcq-opt">a) unvergessliche</div>
+  <div class="mcq-opt">b) langweilige</div>
+  <div class="mcq-opt">c) pünktliche</div>
+  <button class="btn-small" onclick="showAnswer('q8a2')">Lösung</button>
+  <div id="q8a2" class="answer hidden">✔ a) unvergessliche</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">3. „prägend“ bedeutet am ehesten:</div>
+  <div class="mcq-opt">a) unwichtig</div>
+  <div class="mcq-opt">b) formend / beeinflusst stark</div>
+  <div class="mcq-opt">c) sehr laut</div>
+  <button class="btn-small" onclick="showAnswer('q8a3')">Lösung</button>
+  <div id="q8a3" class="answer hidden">✔ b) formend / beeinflusst stark</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">4. Was passt zu „eine Entscheidung ______“?</div>
+  <div class="mcq-opt">a) hören</div>
+  <div class="mcq-opt">b) treffen</div>
+  <div class="mcq-opt">c) kommen</div>
+  <button class="btn-small" onclick="showAnswer('q8a4')">Lösung</button>
+  <div id="q8a4" class="answer hidden">✔ b) treffen</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">5. „Erfahrungen ______“?</div>
+  <div class="mcq-opt">a) sammeln</div>
+  <div class="mcq-opt">b) braten</div>
+  <div class="mcq-opt">c) schmecken</div>
+  <button class="btn-small" onclick="showAnswer('q8a5')">Lösung</button>
+  <div id="q8a5" class="answer hidden">✔ a) sammeln</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">6. Welches Wort passt zu „mutig“?</div>
+  <div class="mcq-opt">a) feige</div>
+  <div class="mcq-opt">b) tapfer</div>
+  <div class="mcq-opt">c) leise</div>
+  <button class="btn-small" onclick="showAnswer('q8a6')">Lösung</button>
+  <div id="q8a6" class="answer hidden">✔ b) tapfer</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">7. „die Kindheit“ ist die Zeit, wenn man …</div>
+  <div class="mcq-opt">a) alt ist</div>
+  <div class="mcq-opt">b) ein Kind ist</div>
+  <div class="mcq-opt">c) im Ruhestand ist</div>
+  <button class="btn-small" onclick="showAnswer('q8a7')">Lösung</button>
+  <div id="q8a7" class="answer hidden">✔ b) ein Kind ist</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">8. Was passt? „Diese Reise war ein echtes ______.“</div>
+  <div class="mcq-opt">a) Abenteuer</div>
+  <div class="mcq-opt">b) Getränk</div>
+  <div class="mcq-opt">c) Möbel</div>
+  <button class="btn-small" onclick="showAnswer('q8a8')">Lösung</button>
+  <div id="q8a8" class="answer hidden">✔ a) Abenteuer</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">9. „bereuen“ bedeutet:</div>
+  <div class="mcq-opt">a) sich über etwas freuen</div>
+  <div class="mcq-opt">b) etwas vergessen wollen</div>
+  <div class="mcq-opt">c) traurig sein, eine Entscheidung getroffen zu haben</div>
+  <button class="btn-small" onclick="showAnswer('q8a9')">Lösung</button>
+  <div id="q8a9" class="answer hidden">✔ c) traurig sein, eine Entscheidung getroffen zu haben</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">10. Welches Wort passt <b>nicht</b> zu „Gefühl“?</div>
+  <div class="mcq-opt">a) Hoffnung</div>
+  <div class="mcq-opt">b) Erinnerung</div>
+  <div class="mcq-opt">c) Tisch</div>
+  <button class="btn-small" onclick="showAnswer('q8a10')">Lösung</button>
+  <div id="q8a10" class="answer hidden">✔ c) Tisch</div>
+</div>
+
+<!-- GRAMMATIK 11–20 -->
+
+<h3>8.2 Grammatik (11–20)</h3>
+
+<div class="mcq-card">
+  <div class="mcq-q">11. ______ habe ich in einem kleinen Dorf gewohnt.</div>
+  <div class="mcq-opt">a) Morgen</div>
+  <div class="mcq-opt">b) Früher</div>
+  <div class="mcq-opt">c) Später</div>
+  <button class="btn-small" onclick="showAnswer('q8a11')">Lösung</button>
+  <div id="q8a11" class="answer hidden">✔ b) Früher</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">12. Vor zwei Jahren ______ ich ein Praktikum im Ausland gemacht.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a12')">Lösung</button>
+  <div id="q8a12" class="answer hidden">✔ a) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">13. Als Kind ______ ich sehr viel Zeit draußen.</div>
+  <div class="mcq-opt">a) habe verbracht</div>
+  <div class="mcq-opt">b) bin verbracht</div>
+  <div class="mcq-opt">c) war verbracht</div>
+  <button class="btn-small" onclick="showAnswer('q8a13')">Lösung</button>
+  <div id="q8a13" class="answer hidden">✔ a) habe verbracht</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">14. Letztes Jahr ______ ich nach einer schweren Prüfung endlich bestanden.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a14')">Lösung</button>
+  <div id="q8a14" class="answer hidden">✔ a) habe (eine Prüfung bestanden)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">15. ______ ich jünger war, hatte ich ganz andere Träume.</div>
+  <div class="mcq-opt">a) Weil</div>
+  <div class="mcq-opt">b) Als</div>
+  <div class="mcq-opt">c) Wenn</div>
+  <button class="btn-small" onclick="showAnswer('q8a15')">Lösung</button>
+  <div id="q8a15" class="answer hidden">✔ b) Als</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">16. Seit meiner Kindheit ______ ich den Wunsch, viel zu reisen.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a16')">Lösung</button>
+  <div id="q8a16" class="answer hidden">✔ a) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">17. Gestern ______ ich einen alten Freund zufällig in der Stadt getroffen.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a17')">Lösung</button>
+  <div id="q8a17" class="answer hidden">✔ a) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">18. Nach meinem Studium ______ ich in eine andere Stadt gezogen.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a18')">Lösung</button>
+  <div id="q8a18" class="answer hidden">✔ b) bin</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">19. Damals ______ ich nicht verstanden, wie wichtig diese Erfahrung ist.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a19')">Lösung</button>
+  <div id="q8a19" class="answer hidden">✔ a) habe</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">20. Im Laufe der Jahre ______ ich ruhiger und selbstbewusster geworden.</div>
+  <div class="mcq-opt">a) habe</div>
+  <div class="mcq-opt">b) bin</div>
+  <div class="mcq-opt">c) war</div>
+  <button class="btn-small" onclick="showAnswer('q8a20')">Lösung</button>
+  <div id="q8a20" class="answer hidden">✔ b) bin</div>
+</div>
+
+<!-- SATZBAU / MINI-KONTEXT 21–30 -->
+
+<h3>8.3 Satzbau & Mini-Kontext (21–30)</h3>
+
+<div class="mcq-card">
+  <div class="mcq-q">21. Welche Wortstellung ist richtig?</div>
+  <div class="mcq-opt">a) Früher ich war sehr nervös vor Prüfungen.</div>
+  <div class="mcq-opt">b) Früher war ich sehr nervös vor Prüfungen.</div>
+  <div class="mcq-opt">c) Früher war sehr nervös ich vor Prüfungen.</div>
+  <button class="btn-small" onclick="showAnswer('q8a21')">Lösung</button>
+  <div id="q8a21" class="answer hidden">✔ b) Früher war ich sehr nervös vor Prüfungen.</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">22. Wähle den besten Satz für eine persönliche Erfahrung.</div>
+  <div class="mcq-opt">a) Gestern ich Kino gegangen bin.</div>
+  <div class="mcq-opt">b) Ich bin gestern ins Kino gegangen und habe einen tollen Film gesehen.</div>
+  <div class="mcq-opt">c) Gestern ins Kino habe ich sehen Film.</div>
+  <button class="btn-small" onclick="showAnswer('q8a22')">Lösung</button>
+  <div id="q8a22" class="answer hidden">✔ b) Ich bin gestern ins Kino gegangen und habe einen tollen Film gesehen.</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">23. Was passt als Einleitung für eine Erfahrung?</div>
+  <div class="mcq-opt">a) Heute esse ich Suppe.</div>
+  <div class="mcq-opt">b) Es war einmal ein Hund.</div>
+  <div class="mcq-opt">c) Vor ein paar Jahren habe ich etwas erlebt, das mich sehr verändert hat.</div>
+  <button class="btn-small" onclick="showAnswer('q8a23')">Lösung</button>
+  <div id="q8a23" class="answer hidden">✔ c)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">24. Welcher Satz passt als <b>Fazit</b>?</div>
+  <div class="mcq-opt">a) Seitdem habe ich viel über mich gelernt.</div>
+  <div class="mcq-opt">b) Dann bin ich zur Arbeit gefahren.</div>
+  <div class="mcq-opt">c) Es war sehr früh am Morgen.</div>
+  <button class="btn-small" onclick="showAnswer('q8a24')">Lösung</button>
+  <div id="q8a24" class="answer hidden">✔ a) Seitdem habe ich viel über mich gelernt.</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">25. Wähle den logischsten Satz:</div>
+  <div class="mcq-opt">a) Zuerst habe ich viel geweint, aber später habe ich die Situation akzeptiert.</div>
+  <div class="mcq-opt">b) Später habe ich viel geweint, zuerst akzeptiert.</div>
+  <div class="mcq-opt">c) Geweint habe ich Akzeptieren später.</div>
+  <button class="btn-small" onclick="showAnswer('q8a25')">Lösung</button>
+  <div id="q8a25" class="answer hidden">✔ a)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">26. Welcher Satz beschreibt einen <b>Fehler und eine Lektion</b>?</div>
+  <div class="mcq-opt">a) Ich habe mich verlaufen und habe daraus gelernt, besser zu planen.</div>
+  <div class="mcq-opt">b) Ich habe eine Suppe gekocht.</div>
+  <div class="mcq-opt">c) Ich habe ein Buch gekauft.</div>
+  <button class="btn-small" onclick="showAnswer('q8a26')">Lösung</button>
+  <div id="q8a26" class="answer hidden">✔ a)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">27. Welcher Satz passt zum Thema „Kindheit“?</div>
+  <div class="mcq-opt">a) In meiner Kindheit habe ich jeden Sommer bei meinen Großeltern verbracht.</div>
+  <div class="mcq-opt">b) Nächsten Sommer werde ich nach Italien fliegen.</div>
+  <div class="mcq-opt">c) Heute muss ich Überstunden machen.</div>
+  <button class="btn-small" onclick="showAnswer('q8a27')">Lösung</button>
+  <div id="q8a27" class="answer hidden">✔ a)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">28. Welcher Satz zeigt gut eine <b>mutige Entscheidung</b>?</div>
+  <div class="mcq-opt">a) Ich habe ein neues Handy gekauft.</div>
+  <div class="mcq-opt">b) Ich habe meine sichere Stelle gekündigt und ein eigenes Projekt gestartet.</div>
+  <div class="mcq-opt">c) Ich habe gestern lange geschlafen.</div>
+  <button class="btn-small" onclick="showAnswer('q8a28')">Lösung</button>
+  <div id="q8a28" class="answer hidden">✔ b)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">29. Welcher Satz passt zu „Rückblick“?</div>
+  <div class="mcq-opt">a) Rückblickend würde ich sagen, dass diese Zeit sehr wichtig für mich war.</div>
+  <div class="mcq-opt">b) Jetzt gehe ich einkaufen.</div>
+  <div class="mcq-opt">c) Morgen habe ich keine Zeit.</div>
+  <button class="btn-small" onclick="showAnswer('q8a29')">Lösung</button>
+  <div id="q8a29" class="answer hidden">✔ a)</div>
+</div>
+
+<div class="mcq-card">
+  <div class="mcq-q">30. Welcher Satz verbindet Vergangenheit und Gegenwart am besten?</div>
+  <div class="mcq-opt">a) Früher war ich sehr nervös, aber heute bin ich viel entspannter.</div>
+  <div class="mcq-opt">b) Heute bin ich sehr nervös, aber gestern bin ich entspannter.</div>
+  <div class="mcq-opt">c) Nervös bin ich früher heute gewesen.</div>
+  <button class="btn-small" onclick="showAnswer('q8a30')">Lösung</button>
+  <div id="q8a30" class="answer hidden">✔ a)</div>
+</div>
+
+</div>
+  </body>
+</html>
