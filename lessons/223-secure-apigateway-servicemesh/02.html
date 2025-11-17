@@ -195,13 +195,12 @@
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
-          AppSecWidgets.ConfigDiff.create('section-2-2-configdiff', {
-            title: 'Analogy vs. Actionable Hook',
-            beforeLabel: 'Disconnected story',
-            afterLabel: 'Actionable hook',
-            before: `"We are like an airport" with no data lineage, no policy backlog, and no clear owners for telemetry. Teams hear it, nod, and keep their legacy ingress.`,
-            after: `"We are like an airport" anchored by a backlog item to propagate trace IDs, a mesh policy rollout plan, and a dashboard proving edge-to-mesh verification in staging.`
-          });
+          AppSecWidgets.ConfigDiff.create(
+            'section-2-2-configdiff',
+            'Analogy vs. Actionable Hook',
+            `Disconnected story:\n\n"We are like an airport" with no data lineage, no policy backlog, and no clear telemetry owners. Teams nod politely and keep their legacy ingress and fragmented tracing.`,
+            `Actionable hook:\n\n"We are like an airport" anchored by a backlog item to propagate trace IDs, a mesh policy rollout plan, and a dashboard proving edge-to-mesh verification in staging with named owners.`
+          );
         }
 
         if (window.AppSecWidgets && AppSecWidgets.Quiz) {
