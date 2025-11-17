@@ -12,6 +12,14 @@
       </ul>
     </div>
     <p>With those prerequisites met, you can align responsibilities: the gateway deflects untrusted traffic and normalizes identity, while the mesh sidecars enforce service-level policies, distribute keys, and continuously attest posture back to the control plane. This pairing gives you defense-in-depth against credential replay, request spoofing, and east-west reconnaissance.</p>
+    <div class="reference-list">
+      <strong>References:</strong>
+      <ul>
+        <li><a href="https://owasp.org/API-Security/" target="_blank" rel="noopener">OWASP API Security Project</a> — baseline guidance for API gateway guardrails.</li>
+        <li><a href="https://tag-security.cncf.io/whitepapers/service-mesh-security/" target="_blank" rel="noopener">CNCF Service Mesh Security Whitepaper</a> — delineates data-plane versus control-plane obligations.</li>
+        <li><a href="https://learn.microsoft.com/en-us/security/zero-trust/deploy/azure-zero-trust-deployment-guide" target="_blank" rel="noopener">Microsoft Zero Trust Deployment Guide</a> — emphasizes contextual access policies at the edge.</li>
+      </ul>
+    </div>
     <div id="section-1-checklist" class="widget"></div>
     <div id="section-1-quiz" class="widget"></div>
     <script>
@@ -41,6 +49,152 @@
             }
           ]
         });
+      });
+    </script>
+  </div>
+</section>
+
+<section id="section-1-1" class="card">
+  <div class="card-header">1.1 Prerequisite Recap &amp; Readiness Signals</div>
+  <div class="card-body">
+    <p>Security reviews frequently stall because stakeholders cannot prove the basics are in place. The table below recapitalizes the prerequisites from the Foundations section and describes the exact validation artifacts AppSec should request before endorsing a gateway + mesh rollout.</p>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Prerequisite</th>
+            <th>What to Verify</th>
+            <th>Owner / Evidence</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Enterprise PKI &amp; mTLS</td>
+            <td>Short-lived cert issuance automation, revocation API, OCSP stapling support.</td>
+            <td>Platform security + PKI service runbooks, signed ACME integration tests.</td>
+          </tr>
+          <tr>
+            <td>Identity &amp; route inventory</td>
+            <td>Catalog of service accounts, scopes, and gateway routes mapped to teams.</td>
+            <td>Service catalog (Backstage, OpsLevel) export, IAM policy diffs.</td>
+          </tr>
+          <tr>
+            <td>Config pipeline</td>
+            <td>GitOps or CI job that lints, tests, and promotes gateway/mesh policy bundles.</td>
+            <td>Pipeline definitions, unit test logs, change-management tickets.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-warning">
+      <strong>Reviewer tip:</strong> Ask for the last failed deployment logs to ensure rollback paths are rehearsed; a platform that only demonstrates “happy path” automation is not production-ready.
+    </div>
+    <div id="section-1-1-checklist" class="widget"></div>
+    <div id="section-1-1-quiz" class="widget"></div>
+    <div class="reference-list">
+      <strong>References:</strong>
+      <ul>
+        <li><a href="https://www.rfc-editor.org/rfc/rfc9340" target="_blank" rel="noopener">RFC 9340</a> — mandates telemetry and rotation expectations for service mesh certificates.</li>
+        <li><a href="https://backstage.io/docs/features/software-catalog/" target="_blank" rel="noopener">Backstage Software Catalog</a> — example of metadata needed for policy scoping.</li>
+      </ul>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+          AppSecWidgets.Checklist.create('section-1-1-checklist', {
+            title: 'Readiness Signals',
+            items: [
+              'PKI demonstrates automated issuance + revocation with auditable logs.',
+              'Service catalog links identities, routes, and owning teams.',
+              'Config pipeline enforces lint/tests before promotion and posts metrics.',
+              'Rollback SOP reviewed within the last quarter.',
+              'Security + platform jointly approve the readiness scorecard.'
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-1-1-quiz', {
+            title: 'Prerequisite Recap Quiz',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'What evidence best proves the config pipeline is production-ready?',
+                options: [
+                  { value: 'a', label: 'An architecture slide describing GitOps in theory.', correct: false },
+                  { value: 'b', label: 'CI logs showing lint/test gates and a change-approval artifact.', correct: true },
+                  { value: 'c', label: 'Screenshots of the gateway UI homepage.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
+  </div>
+</section>
+
+<section id="section-1-2" class="card">
+  <div class="card-header">1.2 Building a Shared Foundation</div>
+  <div class="card-body">
+    <p>Foundations are credible only when platform, security, and service teams agree on the first mile of the request path. The steps below describe how to validate that each hop from the edge through the mesh is observable, policy-driven, and failure-tolerant.</p>
+    <div id="section-1-2-flow" class="widget"></div>
+    <p>The foundation review ends with objective success criteria:</p>
+    <ul>
+      <li><strong>Trust continuity:</strong> JWT/JWS claims validated by the gateway become SPIFFE/SVID identities inside the mesh without re-authentication gaps.</li>
+      <li><strong>Policy lineage:</strong> Git commit hashes for gateway configs map to Istio AuthorizationPolicy resources so rollbacks can be correlated.</li>
+      <li><strong>Telemetry parity:</strong> Distributed tracing spans stitched from Envoy at the edge and in-mesh sidecars prove nothing escapes logging.</li>
+    </ul>
+    <div class="reference-list">
+      <strong>References:</strong>
+      <ul>
+        <li><a href="https://spiffe.io/docs/latest/spiffe-about/" target="_blank" rel="noopener">SPIFFE/SPIRE docs</a> — establishing workload identity continuity.</li>
+        <li><a href="https://istio.io/latest/docs/reference/config/security/authorization-policy/" target="_blank" rel="noopener">Istio AuthorizationPolicy</a> — mesh authorization primitives.</li>
+      </ul>
+    </div>
+    <div id="section-1-2-quiz" class="widget"></div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+          AppSecWidgets.FlowVisualizer.create('section-1-2-flow', {
+            title: 'Edge-to-mesh foundation steps',
+            steps: [
+              {
+                title: '1. Normalized ingress metadata',
+                description: 'Gateway stamps trace/span IDs, device posture, and token claims before forwarding the request.'
+              },
+              {
+                title: '2. Identity handoff',
+                description: 'Control plane binds gateway claims to SPIFFE IDs and propagates them via mutual TLS certs.'
+              },
+              {
+                title: '3. Policy fan-out',
+                description: 'GitOps pipeline ships synchronized rate-limit, authz, and circuit-breaker configs to Envoy sidecars.'
+              },
+              {
+                title: '4. Telemetry stitching',
+                description: 'Edge + mesh proxies emit correlated logs/traces for SOC triage and SLO enforcement.'
+              }
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-1-2-quiz', {
+            title: 'Foundation Builder Quiz',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'Why is binding gateway-issued claims to SPIFFE IDs critical?',
+                options: [
+                  { value: 'a', label: 'It lets developers skip TLS entirely.', correct: false },
+                  { value: 'b', label: 'It guarantees trust continuity as the request traverses the service mesh.', correct: true },
+                  { value: 'c', label: 'It replaces the need for distributed tracing.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
       });
     </script>
   </div>
