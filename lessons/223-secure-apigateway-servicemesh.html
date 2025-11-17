@@ -34,6 +34,14 @@
 </ul>
 </div>
 <p>With those prerequisites met, you can align responsibilities: the gateway deflects untrusted traffic and normalizes identity, while the mesh sidecars enforce service-level policies, distribute keys, and continuously attest posture back to the control plane. This pairing gives you defense-in-depth against credential replay, request spoofing, and east-west reconnaissance.</p>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://owasp.org/API-Security/" rel="noopener" target="_blank">OWASP API Security Project</a> — baseline guidance for API gateway guardrails.</li>
+<li><a href="https://tag-security.cncf.io/whitepapers/service-mesh-security/" rel="noopener" target="_blank">CNCF Service Mesh Security Whitepaper</a> — delineates data-plane versus control-plane obligations.</li>
+<li><a href="https://learn.microsoft.com/en-us/security/zero-trust/deploy/azure-zero-trust-deployment-guide" rel="noopener" target="_blank">Microsoft Zero Trust Deployment Guide</a> — emphasizes contextual access policies at the edge.</li>
+</ul>
+</div>
 <div class="widget" id="section-1-checklist"></div>
 <div class="widget" id="section-1-quiz"></div>
 <script>
@@ -63,6 +71,148 @@
             }
           ]
         });
+      });
+    </script>
+</div>
+</section><section class="card" id="section-1-1">
+<div class="card-header">1.1 Prerequisite Recap &amp; Readiness Signals</div>
+<div class="card-body">
+<p>Security reviews frequently stall because stakeholders cannot prove the basics are in place. The table below recapitalizes the prerequisites from the Foundations section and describes the exact validation artifacts AppSec should request before endorsing a gateway + mesh rollout.</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Prerequisite</th>
+<th>What to Verify</th>
+<th>Owner / Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enterprise PKI &amp; mTLS</td>
+<td>Short-lived cert issuance automation, revocation API, OCSP stapling support.</td>
+<td>Platform security + PKI service runbooks, signed ACME integration tests.</td>
+</tr>
+<tr>
+<td>Identity &amp; route inventory</td>
+<td>Catalog of service accounts, scopes, and gateway routes mapped to teams.</td>
+<td>Service catalog (Backstage, OpsLevel) export, IAM policy diffs.</td>
+</tr>
+<tr>
+<td>Config pipeline</td>
+<td>GitOps or CI job that lints, tests, and promotes gateway/mesh policy bundles.</td>
+<td>Pipeline definitions, unit test logs, change-management tickets.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout callout-warning">
+<strong>Reviewer tip:</strong> Ask for the last failed deployment logs to ensure rollback paths are rehearsed; a platform that only demonstrates “happy path” automation is not production-ready.
+    </div>
+<div class="widget" id="section-1-1-checklist"></div>
+<div class="widget" id="section-1-1-quiz"></div>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://www.rfc-editor.org/rfc/rfc9340" rel="noopener" target="_blank">RFC 9340</a> — mandates telemetry and rotation expectations for service mesh certificates.</li>
+<li><a href="https://backstage.io/docs/features/software-catalog/" rel="noopener" target="_blank">Backstage Software Catalog</a> — example of metadata needed for policy scoping.</li>
+</ul>
+</div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+          AppSecWidgets.Checklist.create('section-1-1-checklist', {
+            title: 'Readiness Signals',
+            items: [
+              'PKI demonstrates automated issuance + revocation with auditable logs.',
+              'Service catalog links identities, routes, and owning teams.',
+              'Config pipeline enforces lint/tests before promotion and posts metrics.',
+              'Rollback SOP reviewed within the last quarter.',
+              'Security + platform jointly approve the readiness scorecard.'
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-1-1-quiz', {
+            title: 'Prerequisite Recap Quiz',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'What evidence best proves the config pipeline is production-ready?',
+                options: [
+                  { value: 'a', label: 'An architecture slide describing GitOps in theory.', correct: false },
+                  { value: 'b', label: 'CI logs showing lint/test gates and a change-approval artifact.', correct: true },
+                  { value: 'c', label: 'Screenshots of the gateway UI homepage.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
+</div>
+</section><section class="card" id="section-1-2">
+<div class="card-header">1.2 Building a Shared Foundation</div>
+<div class="card-body">
+<p>Foundations are credible only when platform, security, and service teams agree on the first mile of the request path. The steps below describe how to validate that each hop from the edge through the mesh is observable, policy-driven, and failure-tolerant.</p>
+<div class="widget" id="section-1-2-flow"></div>
+<p>The foundation review ends with objective success criteria:</p>
+<ul>
+<li><strong>Trust continuity:</strong> JWT/JWS claims validated by the gateway become SPIFFE/SVID identities inside the mesh without re-authentication gaps.</li>
+<li><strong>Policy lineage:</strong> Git commit hashes for gateway configs map to Istio AuthorizationPolicy resources so rollbacks can be correlated.</li>
+<li><strong>Telemetry parity:</strong> Distributed tracing spans stitched from Envoy at the edge and in-mesh sidecars prove nothing escapes logging.</li>
+</ul>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://spiffe.io/docs/latest/spiffe-about/" rel="noopener" target="_blank">SPIFFE/SPIRE docs</a> — establishing workload identity continuity.</li>
+<li><a href="https://istio.io/latest/docs/reference/config/security/authorization-policy/" rel="noopener" target="_blank">Istio AuthorizationPolicy</a> — mesh authorization primitives.</li>
+</ul>
+</div>
+<div class="widget" id="section-1-2-quiz"></div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+          AppSecWidgets.FlowVisualizer.create('section-1-2-flow', {
+            title: 'Edge-to-mesh foundation steps',
+            steps: [
+              {
+                title: '1. Normalized ingress metadata',
+                description: 'Gateway stamps trace/span IDs, device posture, and token claims before forwarding the request.'
+              },
+              {
+                title: '2. Identity handoff',
+                description: 'Control plane binds gateway claims to SPIFFE IDs and propagates them via mutual TLS certs.'
+              },
+              {
+                title: '3. Policy fan-out',
+                description: 'GitOps pipeline ships synchronized rate-limit, authz, and circuit-breaker configs to Envoy sidecars.'
+              },
+              {
+                title: '4. Telemetry stitching',
+                description: 'Edge + mesh proxies emit correlated logs/traces for SOC triage and SLO enforcement.'
+              }
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-1-2-quiz', {
+            title: 'Foundation Builder Quiz',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'Why is binding gateway-issued claims to SPIFFE IDs critical?',
+                options: [
+                  { value: 'a', label: 'It lets developers skip TLS entirely.', correct: false },
+                  { value: 'b', label: 'It guarantees trust continuity as the request traverses the service mesh.', correct: true },
+                  { value: 'c', label: 'It replaces the need for distributed tracing.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
       });
     </script>
 </div>
@@ -151,6 +301,133 @@
                   },
                   { value: 'c', label: 'Selling tickets and baggage allowances', correct: false },
                   { value: 'd', label: 'Handling lost-and-found for customer items', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
+</div>
+</section><section class="card" id="section-2-1">
+<div class="card-header">2.1 Storyboarding the Hook</div>
+<div class="card-body">
+<p>To make the airport analogy actionable, storyboard the entire traveler experience and capture where the audience should feel tension. The table below maps each beat to a security objective so the hook always circles back to measurable controls.</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Narrative beat</th>
+<th>Security objective</th>
+<th>Evidence teams can show</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Badge swipe at the checkpoint</td>
+<td>Continuous verification (BeyondCorp) of user + device posture.</td>
+<td>Gateway policy JSON referencing device posture claims, conditional scopes.</td>
+</tr>
+<tr>
+<td>Ground crew escorts travelers to the runway</td>
+<td>Secure metadata handoff from edge trace IDs to mesh identities.</td>
+<td>Trace samples in Jaeger showing edge → mesh correlation IDs.</td>
+</tr>
+<tr>
+<td>Air-traffic control reroutes a flight mid-air</td>
+<td>Adaptive service-to-service policy updates (Istio, Linkerd failovers).</td>
+<td>Control-plane audit logs proving policy pushes and convergence times.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout callout-info">
+<strong>Facilitator tip:</strong> Pause after each beat and ask the team whether they can surface the listed evidence in minutes, not hours. If they hesitate, that is the moment to introduce observability gaps and how the gateway + mesh pairing closes them.
+    </div>
+<div class="widget" id="section-2-1-checklist"></div>
+<div class="widget" id="section-2-1-quiz"></div>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://cloud.google.com/architecture/beyondcorp" rel="noopener" target="_blank">BeyondCorp Reference Architecture</a> — framing user/device verification.</li>
+<li><a href="https://www.jaegertracing.io/docs/" rel="noopener" target="_blank">Jaeger documentation</a> — guidance for demonstrating trace continuity.</li>
+</ul>
+</div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.Checklist) {
+          AppSecWidgets.Checklist.create('section-2-1-checklist', {
+            title: 'Hook Storyboard Review',
+            items: [
+              'Each narrative beat maps to a concrete control or telemetry artifact.',
+              'Product owners can explain what breaks if the gateway or mesh step is skipped.',
+              'Flight-manifest analogy includes observability metrics and alert routing.',
+              'Evidence artifacts are stored in version control with timestamps.',
+              'Hook ends with a call-to-action for platform and service teams.'
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-2-1-quiz', {
+            title: 'Storyboard Knowledge Check',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'Why insist on pairing each narrative beat with an evidence artifact?',
+                options: [
+                  { value: 'a', label: 'It keeps the analogy entertaining.', correct: false },
+                  { value: 'b', label: 'It links intuition to controls so teams know what to instrument.', correct: true },
+                  { value: 'c', label: 'It satisfies compliance requirements for storytelling.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
+</div>
+</section><section class="card" id="section-2-2">
+<div class="card-header">2.2 Converting the Analogy into Action</div>
+<div class="card-body">
+<p>The hook works only if it drives a behavior change. Use the comparison below to show stakeholders what “just an analogy” looks like versus a hook that results in concrete backlog items.</p>
+<div class="widget" id="section-2-2-configdiff"></div>
+<p>After highlighting the deltas, coach teams to document:</p>
+<ol>
+<li>What gateway or mesh control will be piloted this sprint.</li>
+<li>Who owns the telemetry to prove it worked.</li>
+<li>How the learning feeds back into threat models and onboarding guides.</li>
+</ol>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://istio.io/latest/docs/tasks/policy-enforcement/" rel="noopener" target="_blank">Istio policy enforcement tasks</a> — concrete activities to pair with the narrative.</li>
+<li><a href="https://sre.google/sre-book/alerting-on-slos/" rel="noopener" target="_blank">Google SRE Book, Alerting on SLOs</a> — demonstrates how to turn stories into measurable actions.</li>
+</ul>
+</div>
+<div class="widget" id="section-2-2-quiz"></div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.ConfigDiff) {
+          AppSecWidgets.ConfigDiff.create(
+            'section-2-2-configdiff',
+            'Analogy vs. Actionable Hook',
+            `Disconnected story:\n\n"We are like an airport" with no data lineage, no policy backlog, and no clear telemetry owners. Teams nod politely and keep their legacy ingress and fragmented tracing.`,
+            `Actionable hook:\n\n"We are like an airport" anchored by a backlog item to propagate trace IDs, a mesh policy rollout plan, and a dashboard proving edge-to-mesh verification in staging with named owners.`
+          );
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-2-2-quiz', {
+            title: 'Action Conversion Quiz',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'What turns an intuitive hook into an execution plan?',
+                options: [
+                  { value: 'a', label: 'Adding more metaphors until the audience laughs.', correct: false },
+                  { value: 'b', label: 'Linking the story to explicit controls, owners, and telemetry commitments.', correct: true },
+                  { value: 'c', label: 'Letting teams interpret the story in any way they want.', correct: false }
                 ]
               }
             ]
