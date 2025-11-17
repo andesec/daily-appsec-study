@@ -104,6 +104,60 @@
 </ul>
 </div>
 <div class="widget" id="section-2-quiz"></div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+          AppSecWidgets.FlowVisualizer.create('section-2-flow', {
+            title: 'From checkpoint to clear runway',
+            steps: [
+              {
+                title: '1. Edge badge scan',
+                description:
+                  'The API gateway validates identity, device posture, and request context (BeyondCorp model) before issuing a signed pass plus trace headers.'
+              },
+              {
+                title: '2. Policy escort into the mesh',
+                description:
+                  'Approved traffic is wrapped in mutual TLS, enriched with routing labels, and handed off to the service mesh entry point.'
+              },
+              {
+                title: '3. Service-to-service clearances',
+                description:
+                  'Istio sidecars check the signed pass, enforce authorization policies, and apply reliability controls (rate limit, retries, circuit breakers).'
+              },
+              {
+                title: '4. Continuous telemetry & recall',
+                description:
+                  'Gateway logs + mesh traces merge into a shared manifest so responders can audit every hop the way airport ops replay flight paths.'
+              }
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-2-quiz', {
+            title: '🧠 Intuitive Hook Check',
+            intro: 'Match the airport analogy to the zero-trust components.',
+            mode: 'step',
+            questions: [
+              {
+                text: 'In the airport analogy, what is the service mesh responsible for?',
+                options: [
+                  { value: 'a', label: 'Screening unvetted travelers before they enter the terminal', correct: false },
+                  {
+                    value: 'b',
+                    label: 'Coordinating every authorized flight path and reacting to anomalies between services',
+                    correct: true
+                  },
+                  { value: 'c', label: 'Selling tickets and baggage allowances', correct: false },
+                  { value: 'd', label: 'Handling lost-and-found for customer items', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
 </div>
 </section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
       Daily AppSec Study · Lesson 223

@@ -104,6 +104,7 @@ Teach the topic from the ground up using the following structure below.
 - Be descriptive and precise about the explanations and examples.
 - Relate explanations to design reviews, threat models, diffs, and IaC changes.
 - Refer to the **appsec_widgets_usage_guide.md** for theme, widget, and class reference when generating HTML.
+- Place every widget's `<script>` initialization block inside the same `<div class="card-body">`, immediately after the widget placeholder markup, so rendering stays scoped to that section and the build script keeps the logic coupled with its DOM node.
 
 ---
 
