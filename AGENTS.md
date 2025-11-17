@@ -57,5 +57,5 @@ These instructions apply to the entire repository unless a more specific `AGENTS
 Before telling the user a lesson is ready:
 1. Verify every contract section exists as a card and has its paired quiz.
 2. Ensure references/links are present per section and widgets render (config objects populated).
-3. Confirm `python join_html_topics.py` runs cleanly and updates the aggregated lesson file. But ultimately delete the aggregated file.
+3. Confirm `python join_html_topics.py` runs cleanly and updates the aggregated lesson file. Take a screenshot and delete the aggregated file.
 4. Summarize what changed and note that you are ready for the next Markdown batch.
