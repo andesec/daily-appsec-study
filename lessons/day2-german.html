@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Deutsch B1 – Entscheidungen, Probleme & Lösungen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --card: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34,197,94,0.12);
+      --accent-strong: #4ade80;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #f97373;
+      --shadow-soft: 0 18px 40px rgba(0,0,0,0.45);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 50%, #000 100%);
+      color: var(--text);
+    }
+
+    .app-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 16px 80px;
+    }
+
+    header.app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(15,23,42,0.95), rgba(15,23,42,0.75));
+      border-bottom: 1px solid rgba(148,163,184,0.25);
+      padding: 10px 16px;
+      margin: -16px -16px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 30%;
+      background:
+        radial-gradient(circle at 20% 20%, #4ade80 0, #22c55e 20%, transparent 50%),
+        radial-gradient(circle at 80% 80%, #22d3ee 0, #0ea5e9 20%, transparent 55%),
+        radial-gradient(circle at 50% 30%, rgba(248,250,252,0.9) 0, transparent 40%);
+      border: 1px solid rgba(148,163,184,0.5);
+      box-shadow: 0 0 40px rgba(56,189,248,0.5);
+    }
+
+    .brand-text-title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-theme {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      color: var(--muted);
+    }
+
+    .chip-level {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: rgba(15,118,110,0.18);
+      color: #a5f3fc;
+      border: 1px solid rgba(34,211,238,0.5);
+      box-shadow: 0 0 20px rgba(34,211,238,0.4);
+      white-space: nowrap;
+    }
+
+    .pill-nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 6px 0 2px;
+      scrollbar-width: none;
+    }
+    .pill-nav::-webkit-scrollbar { display: none; }
+
+    .pill-link {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.35);
+      background: radial-gradient(circle at 0 0, rgba(148,163,184,0.35), rgba(15,23,42,0.2));
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pill-link-strong {
+      border-color: rgba(34,197,94,0.7);
+      color: var(--accent-strong);
+      box-shadow: 0 0 18px rgba(34,197,94,0.35);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .section {
+      background: radial-gradient(circle at top left, rgba(34,197,94,0.16), #020617 55%);
+      border-radius: 24px;
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 14px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0 0, rgba(34,197,94,0.25), transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(59,130,246,0.15), transparent 60%);
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .section-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 16px;
+      border: 1px solid rgba(34,197,94,0.8);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 0, rgba(34,197,94,0.35), rgba(15,23,42,0.95));
+      box-shadow: 0 0 18px rgba(34,197,94,0.5);
+      font-size: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .chip {
+      border-radius: var(--radius-pill);
+      padding: 4px 9px;
+      border: 1px solid rgba(148,163,184,0.5);
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(15,23,42,0.7);
+      white-space: nowrap;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    button.btn {
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.7);
+      padding: 6px 12px;
+      background: radial-gradient(circle at 0 0, rgba(148,163,184,0.35), rgba(15,23,42,1));
+      color: var(--text);
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    button.btn-ghost {
+      background: rgba(15,23,42,0.6);
+      border-style: dashed;
+      border-color: rgba(148,163,184,0.65);
+    }
+
+    button.btn:active {
+      transform: scale(0.98);
+    }
+
+    .section-body {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      background: rgba(15,23,42,0.85);
+      border-radius: var(--radius-md);
+      padding: 6px 8px;
+      border: 1px dashed rgba(148,163,184,0.6);
+      margin-bottom: 8px;
+    }
+
+    .hint strong {
+      color: var(--accent-strong);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0,1.1fr) minmax(0,1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 720px) {
+      .grid-2 {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    .card {
+      background: rgba(15,23,42,0.92);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(148,163,184,0.4);
+      padding: 8px 9px;
+    }
+
+    .card-soft {
+      background: rgba(15,23,42,0.8);
+    }
+
+    .card-header {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-mini {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.6);
+      color: var(--muted);
+    }
+
+    .vocab-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .vocab-table th,
+    .vocab-table td {
+      border-bottom: 1px solid rgba(31,41,55,0.9);
+      padding: 4px 3px;
+      vertical-align: top;
+    }
+
+    .vocab-table th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .vocab-de {
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .vocab-en {
+      color: #fde68a;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .vocab-sentence {
+      color: var(--text);
+      font-size: 11px;
+    }
+
+    .badge-pos {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.6);
+      color: var(--accent-strong);
+      margin-right: 4px;
+    }
+
+    .shape-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: var(--radius-pill);
+      padding: 2px 8px;
+      font-size: 11px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.55);
+      color: var(--muted);
+    }
+
+    .shape-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #4ade80 0, #16a34a 45%, #052e16 100%);
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
+    }
+
+    .collapsed .section-body {
+      display: none;
+    }
+
+    .collapsed .toggle-label::after {
+      content: " (zu)";
+    }
+
+    .toggle-label::after {
+      content: " (auf)";
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo"></div>
+        <div>
+          <div class="brand-text-title">
+            B1 Trainer
+            <span class="badge-theme">Entscheidungen · Probleme · Lösungen</span>
+          </div>
+          <div class="pill-nav">
+            <a href="#vokabeln" class="pill-link pill-link-strong">Vokabeln</a>
+            <a href="#phrasen" class="pill-link">Redemittel</a>
+            <a href="#grammatik" class="pill-link">Grammatik</a>
+            <a href="#lesen" class="pill-link">Lesen</a>
+            <a href="#schreiben" class="pill-link">Schreiben</a>
+            <a href="#sprechen" class="pill-link">Sprechen</a>
+            <a href="#quiz" class="pill-link">Mini-Quiz</a>
+          </div>
+        </div>
+      </div>
+      <div class="chip-level">Level: hoch B1 · Erkl&auml;rung A1–A2</div>
+    </header>
+
+    <main>
+      <!-- SECTION 1 – VOKABELN -->
+      <section class="section" id="vokabeln">
+        <div class="section-inner">
+          <div class="section-header">
+            <div>
+              <div class="section-title">
+                <span class="section-icon">🧩</span>
+                1 · Wortschatz: Entscheidungen, Probleme &amp; L&ouml;sungen
+              </div>
+              <div class="section-subtitle">
+                Nomen, Verben, Adjektive &amp; feste Wendungen – mit Beispiels&auml;tzen.
+              </div>
+              <div class="tag-row">
+                <span class="shape-pill">
+                  <span class="shape-dot"></span> Fokus: Alltag &amp; Arbeit
+                </span>
+                <span class="shape-pill">
+                  <span class="shape-dot"></span> Typische B1-Pr&uuml;fungs-Themen
+                </span>
+              </div>
+            </div>
+            <div class="control-row" style="flex-direction: column; align-items: flex-end;">
+              <button class="btn btn-ghost" onclick="toggleSection('vokabeln')">
+                <span class="toggle-label">Sektion</span>
+              </button>
+              <span class="chip">Tipp: Lerne laut mitzusprechen 🎧</span>
+            </div>
+          </div>
+
+          <div class="section-body">
+            <div class="hint">
+              <strong>So kannst du lernen:</strong>  
+              Lies zuerst das deutsche Wort, dann die englische Bedeutung, dann den Beispielsatz.  
+              Sprich alles laut nach. Das hilft dir beim Sprechen f&uuml;r die B1-Pr&uuml;fung.
+            </div>
+
+            <div class="grid-2">
+              <!-- Nomen -->
+              <div class="card card-soft">
+                <div class="card-header">
+                  <span>🧠 Wichtige Nomen (40)</span>
+                  <span class="pill-mini">Entscheidungen &amp; Konflikte</span>
+                </div>
+                <table class="vocab-table">
+                  <thead>
+                    <tr>
+                      <th>Deutsch</th>
+                      <th>Englisch</th>
+                      <th>Beispielsatz</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="vocab-de">die Entscheidung</td>
+                      <td class="vocab-en">decision</td>
+                      <td class="vocab-sentence">Die Entscheidung war sehr schwer, aber ich musste sie treffen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">das Problem</td>
+                      <td class="vocab-en">problem</td>
+                      <td class="vocab-sentence">Wir haben ein Problem, und wir m&uuml;ssen schnell eine L&ouml;sung finden.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die L&ouml;sung</td>
+                      <td class="vocab-en">solution</td>
+                      <td class="vocab-sentence">Die L&ouml;sung war einfacher, als wir gedacht haben.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Konflikt</td>
+                      <td class="vocab-en">conflict</td>
+                      <td class="vocab-sentence">Der Konflikt zwischen den Kollegen wurde offen besprochen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Streit</td>
+                      <td class="vocab-en">argument, quarrel</td>
+                      <td class="vocab-sentence">Nach einem kurzen Streit haben sie wieder einen Kompromiss gefunden.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Kompromiss</td>
+                      <td class="vocab-en">compromise</td>
+                      <td class="vocab-sentence">Ein fairer Kompromiss ist oft die beste L&ouml;sung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die M&ouml;glichkeit</td>
+                      <td class="vocab-en">possibility</td>
+                      <td class="vocab-sentence">Es gibt die M&ouml;glichkeit, im Homeoffice zu arbeiten.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Alternative</td>
+                      <td class="vocab-en">alternative</td>
+                      <td class="vocab-sentence">Wir brauchen eine Alternative, falls der Plan nicht funktioniert.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">das Risiko</td>
+                      <td class="vocab-en">risk</td>
+                      <td class="vocab-sentence">Dieses Projekt ist ein gro&szlig;es Risiko, aber auch eine Chance.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Verantwortung</td>
+                      <td class="vocab-en">responsibility</td>
+                      <td class="vocab-sentence">Als Teamleiter tr&auml;gt sie viel Verantwortung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">das Ziel</td>
+                      <td class="vocab-en">goal</td>
+                      <td class="vocab-sentence">Unser Ziel ist es, das Problem noch heute zu l&ouml;sen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Plan</td>
+                      <td class="vocab-en">plan</td>
+                      <td class="vocab-sentence">Der Plan klingt gut, aber wir brauchen mehr Details.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Fehler</td>
+                      <td class="vocab-en">mistake</td>
+                      <td class="vocab-sentence">Ich habe einen Fehler gemacht und m&ouml;chte mich entschuldigen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Meinung</td>
+                      <td class="vocab-en">opinion</td>
+                      <td class="vocab-sentence">In diesem Konflikt hat jeder eine andere Meinung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Vorschlag</td>
+                      <td class="vocab-en">suggestion</td>
+                      <td class="vocab-sentence">Dein Vorschlag klingt sinnvoll, lass uns dar&uuml;ber sprechen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Druck</td>
+                      <td class="vocab-en">pressure</td>
+                      <td class="vocab-sentence">Unter Zeitdruck mache ich schneller Fehler.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Stress</td>
+                      <td class="vocab-en">stress</td>
+                      <td class="vocab-sentence">Zu viel Stress f&uuml;hrt oft zu falschen Entscheidungen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Chance</td>
+                      <td class="vocab-en">chance, opportunity</td>
+                      <td class="vocab-sentence">Diese Stelle ist eine gro&szlig;e Chance f&uuml;r deine Karriere.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Herausforderung</td>
+                      <td class="vocab-en">challenge</td>
+                      <td class="vocab-sentence">Eine neue Stadt ist am Anfang immer eine gro&szlig;e Herausforderung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Konsequenz</td>
+                      <td class="vocab-en">consequence</td>
+                      <td class="vocab-sentence">Du musst die Konsequenzen deiner Entscheidung tragen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Vorteil</td>
+                      <td class="vocab-en">advantage</td>
+                      <td class="vocab-sentence">Der gr&ouml;&szlig;te Vorteil ist, dass du flexibel arbeiten kannst.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Nachteil</td>
+                      <td class="vocab-en">disadvantage</td>
+                      <td class="vocab-sentence">Ein Nachteil ist, dass der Weg zur Arbeit sehr lang ist.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Priorit&auml;t</td>
+                      <td class="vocab-en">priority</td>
+                      <td class="vocab-sentence">Familie hat f&uuml;r mich die h&ouml;chste Priorit&auml;t.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Option</td>
+                      <td class="vocab-en">option</td>
+                      <td class="vocab-sentence">Wir haben zwei Optionen und m&uuml;ssen eine w&auml;hlen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Krise</td>
+                      <td class="vocab-en">crisis</td>
+                      <td class="vocab-sentence">In der Krise brauchen wir kreative L&ouml;sungen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Diskussion</td>
+                      <td class="vocab-en">discussion</td>
+                      <td class="vocab-sentence">Die Diskussion &uuml;ber das Budget war sehr intensiv.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Vereinbarung</td>
+                      <td class="vocab-en">agreement</td>
+                      <td class="vocab-sentence">Am Ende hatten alle eine gemeinsame Vereinbarung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">das Missverst&auml;ndnis</td>
+                      <td class="vocab-en">misunderstanding</td>
+                      <td class="vocab-sentence">Zum Gl&uuml;ck konnten wir das Missverst&auml;ndnis schnell kl&auml;ren.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Schuld</td>
+                      <td class="vocab-en">fault, guilt</td>
+                      <td class="vocab-sentence">Es war nicht nur seine Schuld, das Problem war komplex.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Ursache</td>
+                      <td class="vocab-en">cause</td>
+                      <td class="vocab-sentence">Wir m&uuml;ssen zuerst die Ursache des Problems verstehen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Folge</td>
+                      <td class="vocab-en">result, consequence</td>
+                      <td class="vocab-sentence">Eine Folge der Krise war, dass viele Leute ihren Job verloren.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Unterst&uuml;tzung</td>
+                      <td class="vocab-en">support</td>
+                      <td class="vocab-sentence">Danke f&uuml;r deine Unterst&uuml;tzung bei dieser schweren Entscheidung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Ratschlag</td>
+                      <td class="vocab-en">advice</td>
+                      <td class="vocab-sentence">Ihr Ratschlag hat mir sehr geholfen, eine L&ouml;sung zu finden.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Schritt</td>
+                      <td class="vocab-en">step</td>
+                      <td class="vocab-sentence">Der erste Schritt zur L&ouml;sung ist, ruhig zu bleiben.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die R&uuml;ckmeldung</td>
+                      <td class="vocab-en">feedback</td>
+                      <td class="vocab-sentence">Ich habe eine ehrliche R&uuml;ckmeldung zu meinem Vorschlag bekommen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Frist</td>
+                      <td class="vocab-en">deadline</td>
+                      <td class="vocab-sentence">Die Frist ist n&auml;chste Woche, wir m&uuml;ssen uns entscheiden.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">der Termin</td>
+                      <td class="vocab-en">appointment, date</td>
+                      <td class="vocab-sentence">Wir haben einen Termin, um &uuml;ber die Probleme zu sprechen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">das Budget</td>
+                      <td class="vocab-en">budget</td>
+                      <td class="vocab-sentence">Das Budget ist ein gro&szlig;es Problem bei dieser Entscheidung.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Regel</td>
+                      <td class="vocab-en">rule</td>
+                      <td class="vocab-sentence">Es gibt klare Regeln, wie wir Konflikte l&ouml;sen.</td>
+                    </tr>
+                    <tr>
+                      <td class="vocab-de">die Ausnahme</td>
+                      <td class="vocab-en">exception</td>
+                      <td class="vocab-sentence">F&uuml;r dieses Problem m&uuml;ssen wir vielleicht eine Ausnahme machen.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Verben + Adjektive + Phrasen -->
+              <div class="card card-soft">
+                <div class="card-header">
+                  <span>⚙️ Verben (20) &amp; Adjektive (20)</span>
+                  <span class="pill-mini">Aktiv sprechen &amp; beschreiben</span>
+                </div>
+
+                <div class="card" style="margin-bottom:8px;">
+                  <div class="card-header">
+                    <span><span class="badge-pos">Verb</span> Wichtige Verben</span>
+                  </div>
+                  <table class="vocab-table">
+                    <thead>
+                      <tr>
+                        <th>Deutsch</th>
+                        <th>Englisch</th>
+                        <th>Beispielsatz</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="vocab-de">sich entscheiden</td>
+                        <td class="vocab-en">to decide</td>
+                        <td class="vocab-sentence">Ich kann mich nicht entscheiden, welches Angebot besser ist.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">l&ouml;sen</td>
+                        <td class="vocab-en">to solve</td>
+                        <td class="vocab-sentence">Wie k&ouml;nnen wir dieses Problem l&ouml;sen?</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">vermeiden</td>
+                        <td class="vocab-en">to avoid</td>
+                        <td class="vocab-sentence">Wir wollen Konflikte m&ouml;glichst vermeiden.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">vergleichen</td>
+                        <td class="vocab-en">to compare</td>
+                        <td class="vocab-sentence">Bevor ich mich entscheide, vergleiche ich alle Optionen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">abw&auml;gen</td>
+                        <td class="vocab-en">to weigh up</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen die Vor- und Nachteile gut abw&auml;gen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">w&auml;hlen</td>
+                        <td class="vocab-en">to choose</td>
+                        <td class="vocab-sentence">Am Ende w&auml;hlt sie die sicherere L&ouml;sung.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">zweifeln</td>
+                        <td class="vocab-en">to doubt</td>
+                        <td class="vocab-sentence">Er zweifelt an seiner Entscheidung.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">besprechen</td>
+                        <td class="vocab-en">to discuss</td>
+                        <td class="vocab-sentence">Wir sollten das Problem in Ruhe besprechen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">&uuml;berlegen</td>
+                        <td class="vocab-en">to think about</td>
+                        <td class="vocab-sentence">Ich &uuml;berlege noch, ob ich den Job annehme.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">planen</td>
+                        <td class="vocab-en">to plan</td>
+                        <td class="vocab-sentence">Wir planen die n&auml;chsten Schritte, um die Krise zu bew&auml;ltigen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">scheitern</td>
+                        <td class="vocab-en">to fail</td>
+                        <td class="vocab-sentence">Der erste Versuch ist leider gescheitert.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">funktionieren</td>
+                        <td class="vocab-en">to work, function</td>
+                        <td class="vocab-sentence">Der Plan funktioniert nur, wenn alle mitmachen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">kl&auml;ren</td>
+                        <td class="vocab-en">to clarify</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen zuerst das Missverst&auml;ndnis kl&auml;ren.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">vermitteln</td>
+                        <td class="vocab-en">to mediate</td>
+                        <td class="vocab-sentence">Die Chefin versucht, zwischen den Kollegen zu vermitteln.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">zustimmen</td>
+                        <td class="vocab-en">to agree</td>
+                        <td class="vocab-sentence">Am Ende stimmen alle dem Vorschlag zu.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">ablehnen</td>
+                        <td class="vocab-en">to reject</td>
+                        <td class="vocab-sentence">Er lehnt das Angebot ab, weil die Bedingungen schlecht sind.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">vorschlagen</td>
+                        <td class="vocab-en">to suggest</td>
+                        <td class="vocab-sentence">Darf ich einen anderen Termin vorschlagen?</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">riskieren</td>
+                        <td class="vocab-en">to risk</td>
+                        <td class="vocab-sentence">Sie will ihre Gesundheit nicht f&uuml;r den Job riskieren.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">akzeptieren</td>
+                        <td class="vocab-en">to accept</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen akzeptieren, dass nicht alles perfekt l&auml;uft.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">bereuen</td>
+                        <td class="vocab-en">to regret</td>
+                        <td class="vocab-sentence">Sp&auml;ter bereut er seine schnelle Entscheidung.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="card" style="margin-bottom:8px;">
+                  <div class="card-header">
+                    <span><span class="badge-pos">Adj</span> Adjektive</span>
+                  </div>
+                  <table class="vocab-table">
+                    <thead>
+                      <tr>
+                        <th>Deutsch</th>
+                        <th>Englisch</th>
+                        <th>Beispielsatz</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="vocab-de">schwierig</td>
+                        <td class="vocab-en">difficult</td>
+                        <td class="vocab-sentence">Die Situation ist schwierig, aber nicht hoffnungslos.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">einfach</td>
+                        <td class="vocab-en">simple</td>
+                        <td class="vocab-sentence">Manchmal ist die einfachste L&ouml;sung die beste.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">kompliziert</td>
+                        <td class="vocab-en">complicated</td>
+                        <td class="vocab-sentence">Die ganze Geschichte ist sehr kompliziert.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">wichtig</td>
+                        <td class="vocab-en">important</td>
+                        <td class="vocab-sentence">Es ist wichtig, ruhig zu bleiben.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">dringend</td>
+                        <td class="vocab-en">urgent</td>
+                        <td class="vocab-sentence">Wir brauchen dringend eine Entscheidung.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">sinnvoll</td>
+                        <td class="vocab-en">reasonable, meaningful</td>
+                        <td class="vocab-sentence">Dein Vorschlag klingt sehr sinnvoll.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">notwendig</td>
+                        <td class="vocab-en">necessary</td>
+                        <td class="vocab-sentence">Es ist notwendig, das Problem offen anzusprechen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">riskant</td>
+                        <td class="vocab-en">risky</td>
+                        <td class="vocab-sentence">Der Plan ist ziemlich riskant.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">unsicher</td>
+                        <td class="vocab-en">uncertain, insecure</td>
+                        <td class="vocab-sentence">Ich bin noch unsicher, wie ich mich entscheiden soll.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">sicher</td>
+                        <td class="vocab-en">sure, safe</td>
+                        <td class="vocab-sentence">Bist du dir sicher, dass das eine gute Idee ist?</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">hilfreich</td>
+                        <td class="vocab-en">helpful</td>
+                        <td class="vocab-sentence">Dein Ratschlag war sehr hilfreich.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">hoffnungslos</td>
+                        <td class="vocab-en">hopeless</td>
+                        <td class="vocab-sentence">Die Situation wirkt hoffnungslos, aber wir geben nicht auf.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">flexibel</td>
+                        <td class="vocab-en">flexible</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen flexibel reagieren, wenn sich etwas &auml;ndert.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">streng</td>
+                        <td class="vocab-en">strict</td>
+                        <td class="vocab-sentence">Die Regeln sind hier sehr streng.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">fair</td>
+                        <td class="vocab-en">fair</td>
+                        <td class="vocab-sentence">Alle wollen eine faire L&ouml;sung.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">unfair</td>
+                        <td class="vocab-en">unfair</td>
+                        <td class="vocab-sentence">Sie findet die Entscheidung total unfair.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">neutral</td>
+                        <td class="vocab-en">neutral</td>
+                        <td class="vocab-sentence">Der Moderator bleibt neutral im Konflikt.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">zufrieden</td>
+                        <td class="vocab-en">satisfied</td>
+                        <td class="vocab-sentence">Bist du mit der L&ouml;sung zufrieden?</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">unzufrieden</td>
+                        <td class="vocab-en">dissatisfied</td>
+                        <td class="vocab-sentence">Viele Mitarbeiter sind mit der Entscheidung unzufrieden.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">realistisch</td>
+                        <td class="vocab-en">realistic</td>
+                        <td class="vocab-sentence">Wir brauchen einen realistischen Plan.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="card">
+                  <div class="card-header">
+                    <span>🔗 Phrasen &amp; Kollokationen (20)</span>
+                    <span class="pill-mini">Merke dir ganze Bausteine!</span>
+                  </div>
+                  <table class="vocab-table">
+                    <thead>
+                      <tr>
+                        <th>Deutsch</th>
+                        <th>Englisch</th>
+                        <th>Beispielsatz</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="vocab-de">eine Entscheidung treffen</td>
+                        <td class="vocab-en">to make a decision</td>
+                        <td class="vocab-sentence">Ich muss heute eine wichtige Entscheidung treffen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">unter Druck stehen</td>
+                        <td class="vocab-en">to be under pressure</td>
+                        <td class="vocab-sentence">Vor der Pr&uuml;fung stehe ich immer unter Druck.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">ein Problem l&ouml;sen</td>
+                        <td class="vocab-en">to solve a problem</td>
+                        <td class="vocab-sentence">Gemeinsam k&ouml;nnen wir das Problem l&ouml;sen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">in Schwierigkeiten sein</td>
+                        <td class="vocab-en">to be in trouble</td>
+                        <td class="vocab-sentence">Ohne Job w&auml;re ich finanziell in gro&szlig;en Schwierigkeiten.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">einen Kompromiss finden</td>
+                        <td class="vocab-en">to find a compromise</td>
+                        <td class="vocab-sentence">Am Ende haben wir einen guten Kompromiss gefunden.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">Verantwortung &uuml;bernehmen</td>
+                        <td class="vocab-en">to take responsibility</td>
+                        <td class="vocab-sentence">Er &uuml;bernimmt die Verantwortung f&uuml;r seinen Fehler.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine L&ouml;sung suchen</td>
+                        <td class="vocab-en">to look for a solution</td>
+                        <td class="vocab-sentence">Wir suchen noch nach einer besseren L&ouml;sung.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">Vor- und Nachteile abw&auml;gen</td>
+                        <td class="vocab-en">to weigh pros and cons</td>
+                        <td class="vocab-sentence">Bevor du dich entscheidest, solltest du die Vor- und Nachteile abw&auml;gen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine Frage kl&auml;ren</td>
+                        <td class="vocab-en">to clarify a question</td>
+                        <td class="vocab-sentence">Zuerst m&ouml;chte ich eine wichtige Frage kl&auml;ren.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">einen Vorschlag machen</td>
+                        <td class="vocab-en">to make a suggestion</td>
+                        <td class="vocab-sentence">Darf ich einen anderen Termin vorschlagen?</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">die Konsequenzen tragen</td>
+                        <td class="vocab-en">to bear the consequences</td>
+                        <td class="vocab-sentence">Er muss jetzt die Konsequenzen seiner Entscheidung tragen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">einen Fehler machen</td>
+                        <td class="vocab-en">to make a mistake</td>
+                        <td class="vocab-sentence">Jeder kann mal einen Fehler machen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">sich f&uuml;r/gegen etwas entscheiden</td>
+                        <td class="vocab-en">to decide for/against sth.</td>
+                        <td class="vocab-sentence">Sie hat sich f&uuml;r den sicheren Job entschieden.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine Krise bew&auml;ltigen</td>
+                        <td class="vocab-en">to overcome a crisis</td>
+                        <td class="vocab-sentence">Wir haben die Krise gemeinsam bew&auml;ltigt.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">um Hilfe bitten</td>
+                        <td class="vocab-en">to ask for help</td>
+                        <td class="vocab-sentence">Wenn du nicht weiterwei&szlig;t, kannst du immer um Hilfe bitten.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">einen Plan &auml;ndern</td>
+                        <td class="vocab-en">to change a plan</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen unseren Plan &auml;ndern, weil es ein Problem gibt.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">mit Stress umgehen</td>
+                        <td class="vocab-en">to deal with stress</td>
+                        <td class="vocab-sentence">Sie kann sehr gut mit Stress umgehen.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine Meinung &auml;u&szlig;ern</td>
+                        <td class="vocab-en">to express an opinion</td>
+                        <td class="vocab-sentence">Du darfst deine Meinung offen &auml;u&szlig;ern.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine Frist einhalten</td>
+                        <td class="vocab-en">to meet a deadline</td>
+                        <td class="vocab-sentence">Wir m&uuml;ssen die Frist unbedingt einhalten.</td>
+                      </tr>
+                      <tr>
+                        <td class="vocab-de">eine Option w&auml;hlen</td>
+                        <td class="vocab-en">to choose an option</td>
+                        <td class="vocab-sentence">Welche Option w&uuml;rdest du w&auml;hlen?</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div> <!-- grid-2 -->
+          </div> <!-- section-body -->
+        </div> <!-- section-inner -->
+      </section>
+
+      <!-- ⬇⬇⬇ Batch 2 & 3 kommen NACH diesem Kommentar und VOR dem </main>/<body>-Ende ⬇⬇⬇ -->
+    <!-- ========================================================= -->
+<!-- ======================= BATCH 2 ========================== -->
+<!-- ========================================================= -->
+
+<!-- SECTION 2 – REDEMITTEL -->
+<section class="section" id="phrasen">
+  <div class="section-inner">
+    <div class="section-header">
+      <div>
+        <div class="section-title">
+          <span class="section-icon">💬</span>
+          2 · Wichtige Redemittel & Satzmuster (B1)
+        </div>
+        <div class="section-subtitle">
+          25 typische Sätze, die du in Entscheidungen, Problemen & Lösungen brauchst.
+        </div>
+      </div>
+      <button class="btn btn-ghost" onclick="toggleSection('phrasen')">
+        <span class="toggle-label">Sektion</span>
+      </button>
+    </div>
+
+    <div class="section-body">
+      <div class="hint">
+        Diese Sätze helfen dir beim schnellen Sprechen. Sprich jeden Satz laut nach.
+      </div>
+
+      <div class="card">
+        <table class="vocab-table">
+          <thead>
+            <tr>
+              <th>Redemittel</th>
+              <th>Bedeutung</th>
+              <th>Beispiel</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- 25 phrases -->
+            <tr>
+              <td class="vocab-de">Ich stehe vor der Entscheidung…</td>
+              <td class="vocab-en">I have to decide…</td>
+              <td class="vocab-sentence">Ich stehe vor der Entscheidung, ob ich den Job annehme.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Meiner Meinung nach ist…</td>
+              <td class="vocab-en">In my opinion…</td>
+              <td class="vocab-sentence">Meiner Meinung nach ist die Alternative besser.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ehrlich gesagt…</td>
+              <td class="vocab-en">Honestly…</td>
+              <td class="vocab-sentence">Ehrlich gesagt finde ich den Plan zu riskant.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Das Problem ist, dass…</td>
+              <td class="vocab-en">The problem is that…</td>
+              <td class="vocab-sentence">Das Problem ist, dass wir keine Zeit haben.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich schlage vor, dass…</td>
+              <td class="vocab-en">I suggest that…</td>
+              <td class="vocab-sentence">Ich schlage vor, dass wir eine Pause machen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich bin mir nicht sicher, ob…</td>
+              <td class="vocab-en">I'm not sure if…</td>
+              <td class="vocab-sentence">Ich bin mir nicht sicher, ob das sinnvoll ist.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Wir könnten versuchen…</td>
+              <td class="vocab-en">We could try…</td>
+              <td class="vocab-sentence">Wir könnten versuchen, einen Kompromiss zu finden.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich habe Zweifel, dass…</td>
+              <td class="vocab-en">I doubt that…</td>
+              <td class="vocab-sentence">Ich habe Zweifel, dass der Plan funktioniert.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Aus meiner Sicht…</td>
+              <td class="vocab-en">From my point of view…</td>
+              <td class="vocab-sentence">Aus meiner Sicht sollten wir früher beginnen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Das wäre eine gute Lösung.</td>
+              <td class="vocab-en">That would be a good solution.</td>
+              <td class="vocab-sentence">Ein Kompromiss wäre eine gute Lösung.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Es wäre besser, wenn…</td>
+              <td class="vocab-en">It would be better if…</td>
+              <td class="vocab-sentence">Es wäre besser, wenn wir mehr Zeit hätten.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Wir müssen eine Entscheidung treffen.</td>
+              <td class="vocab-en">We must make a decision.</td>
+              <td class="vocab-sentence">Wir müssen eine Entscheidung treffen, bevor die Frist endet.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Können wir das Problem gemeinsam klären?</td>
+              <td class="vocab-en">Can we clarify this together?</td>
+              <td class="vocab-sentence">Können wir das Problem gemeinsam klären?</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Das hängt davon ab…</td>
+              <td class="vocab-en">That depends…</td>
+              <td class="vocab-sentence">Ob ich komme, hängt davon ab, wie spät es wird.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Es gibt keine perfekte Lösung.</td>
+              <td class="vocab-en">There is no perfect solution.</td>
+              <td class="vocab-sentence">Es gibt keine perfekte Lösung, aber eine gute Möglichkeit.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Das ist eine schwierige Entscheidung.</td>
+              <td class="vocab-en">This is a difficult decision.</td>
+              <td class="vocab-sentence">Das ist eine schwierige Entscheidung für mich.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Wir sollten die Vor- und Nachteile vergleichen.</td>
+              <td class="vocab-en">We should compare pros and cons.</td>
+              <td class="vocab-sentence">Bevor wir entscheiden, sollten wir die Vor- und Nachteile vergleichen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Eine Alternative wäre…</td>
+              <td class="vocab-en">An alternative would be…</td>
+              <td class="vocab-sentence">Eine Alternative wäre, später anzufangen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich brauche etwas Zeit zum Überlegen.</td>
+              <td class="vocab-en">I need time to think.</td>
+              <td class="vocab-sentence">Ich brauche etwas Zeit zum Überlegen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich stimme dir zu.</td>
+              <td class="vocab-en">I agree with you.</td>
+              <td class="vocab-sentence">Ich stimme dir zu, das ist sinnvoll.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich bin dagegen.</td>
+              <td class="vocab-en">I'm against it.</td>
+              <td class="vocab-sentence">Ich bin dagegen, das Budget zu erhöhen.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Wir sollten vorsichtig sein.</td>
+              <td class="vocab-en">We should be careful.</td>
+              <td class="vocab-sentence">Bei dieser Entscheidung sollten wir vorsichtig sein.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Das lohnt sich.</td>
+              <td class="vocab-en">It's worth it.</td>
+              <td class="vocab-sentence">Die Mühe lohnt sich für eine gute Lösung.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Ich übernehme die Verantwortung.</td>
+              <td class="vocab-en">I take responsibility.</td>
+              <td class="vocab-sentence">Ich übernehme die Verantwortung für den Fehler.</td>
+            </tr>
+
+            <tr>
+              <td class="vocab-de">Wir finden bestimmt eine Lösung.</td>
+              <td class="vocab-en">We will definitely find a solution.</td>
+              <td class="vocab-sentence">Keine Sorge, wir finden bestimmt eine Lösung.</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- SECTION 3 – GRAMMATIK (EXPANDED) -->
+<section class="section" id="grammatik">
+  <div class="section-inner">
+    <div class="section-header">
+      <div>
+        <div class="section-title">
+          <span class="section-icon">📘</span>
+          3 · Grammatik-Fokus: Entscheidungen klar ausdrücken
+        </div>
+        <div class="section-subtitle">
+          Alle wichtigen Strukturen, die du für Entscheidungen, Probleme & Lösungen brauchst.
+        </div>
+      </div>
+      <button class="btn btn-ghost" onclick="toggleSection('grammatik')">
+        <span class="toggle-label">Sektion</span>
+      </button>
+    </div>
+
+    <div class="section-body">
+
+      <!-- ====================== PART 1 ====================== -->
+      <h3 style="margin-top:0;">1) Konjunktiv II – Vorschläge & höfliche Lösungen</h3>
+      <div class="hint">
+        Nutzt man, wenn man höflich etwas sagt oder eine alternative Lösung vorschlägt.
+      </div>
+
+      <p style="font-size:13px;">
+        <strong>Formen:</strong>  
+        würde + Infinitiv / hätte / wäre / könnte / müsste / sollte
+      </p>
+
+      <ul style="font-size:13px;">
+        <li><strong>Wir könnten</strong> einen neuen Plan machen.</li>
+        <li><strong>Ich würde</strong> eine andere Option wählen.</li>
+        <li><strong>Du solltest</strong> die Vor- und Nachteile vergleichen.</li>
+        <li><strong>Es wäre</strong> besser, früher zu entscheiden.</li>
+        <li><strong>Man könnte</strong> das Problem gemeinsam lösen.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 2 ====================== -->
+      <h3>2) Finalsätze – „um … zu“ / „damit“</h3>
+      <div class="hint">Benutzt man, um ein Ziel oder eine Absicht zu beschreiben.</div>
+
+      <p style="font-size:13px;">
+        <strong>um … zu + Infinitiv</strong> → gleiches Subjekt  
+        <br><strong>damit</strong> → anderes Subjekt
+      </p>
+
+      <ul style="font-size:13px;">
+        <li>Ich spare Geld, <strong>um</strong> eine Reise <strong>zu</strong> machen.</li>
+        <li>Wir treffen uns früher, <strong>um das Problem zu lösen</strong>.</li>
+        <li>Sie erklärt alles langsam, <strong>damit</strong> die Kollegen es verstehen.</li>
+        <li>Er arbeitet länger, <strong>damit</strong> das Projekt fertig wird.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 3 ====================== -->
+      <h3>3) Kausale Strukturen – „weil“, „da“, „wegen“, „aufgrund“</h3>
+      <div class="hint">Benutzt man, um Gründe für Probleme oder Entscheidungen zu nennen.</div>
+
+      <ul style="font-size:13px;">
+        <li>Wir müssen den Plan ändern, <strong>weil</strong> das Budget zu niedrig ist.</li>
+        <li><strong>Wegen</strong> der schwierigen Situation brauchen wir mehr Zeit.</li>
+        <li><strong>Aufgrund</strong> des Problems verschieben wir die Entscheidung.</li>
+        <li><strong>Da</strong> wir keine Lösung finden, diskutieren wir weiter.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 4 ====================== -->
+      <h3>4) Konditionalsätze – „wenn“</h3>
+      <div class="hint">
+        Mit „wenn“ erklärt man Folgen, Bedingungen und mögliche Lösungen.
+      </div>
+
+      <ul style="font-size:13px;">
+        <li><strong>Wenn</strong> wir schnell handeln, können wir das Problem lösen.</li>
+        <li><strong>Wenn</strong> du willst, helfe ich dir bei der Entscheidung.</li>
+        <li><strong>Wenn</strong> das Risiko zu hoch ist, wählen wir eine Alternative.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 5 ====================== -->
+      <h3>5) Temporale Strukturen – „bevor“, „nachdem“</h3>
+      <div class="hint">
+        Sehr wichtig, um den Ablauf bei Entscheidungen und Problemlösungen zu beschreiben.
+      </div>
+
+      <ul style="font-size:13px;">
+        <li><strong>Bevor</strong> wir entscheiden, vergleichen wir die Optionen.</li>
+        <li><strong>Nachdem</strong> wir die Nachteile gesehen hatten, änderten wir den Plan.</li>
+        <li><strong>Bevor</strong> du wählst, solltest du überlegen.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 6 ====================== -->
+      <h3>6) Passiv – Entscheidungen & Lösungen neutral beschreiben</h3>
+      <div class="hint">Perfekt für formelle Lösungsvorschläge.</div>
+
+      <ul style="font-size:13px;">
+        <li>Das Problem <strong>wird besprochen</strong>.</li>
+        <li>Die Entscheidung <strong>wird morgen getroffen</strong>.</li>
+        <li>Ein neuer Plan <strong>wurde gefunden</strong>.</li>
+        <li>Die Regeln <strong>werden eingehalten</strong>.</li>
+      </ul>
+
+      <hr style="border:0;border-bottom:1px solid #1f2937;margin:12px 0;">
+
+      <!-- ====================== PART 7 – MCQs ====================== -->
+      <h3>7) Mini-Übungen – 10 MCQs</h3>
+      <div class="card">
+        <div id="grammatik-mcqs"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- SECTION 4 – LESEN -->
+<section class="section" id="lesen">
+  <div class="section-inner">
+    <div class="section-header">
+      <div>
+        <div class="section-title">
+          <span class="section-icon">📚</span>
+          4 · Leseverstehen – „Eine wichtige Entscheidung im Team“
+        </div>
+        <div class="section-subtitle">150–220 Wörter</div>
+      </div>
+      <button class="btn btn-ghost" onclick="toggleSection('lesen')">
+        <span class="toggle-label">Sektion</span>
+      </button>
+    </div>
+
+    <div class="section-body">
+      <div class="card">
+        <p style="font-size:13px; line-height:1.5;">
+          Das Team im Marketingbüro stand vor einer schwierigen Entscheidung. Das neue Projekt war sehr wichtig, 
+          aber es gab ein großes Problem: Das Budget war zu niedrig. Die Kollegen diskutierten lange darüber, wie 
+          sie eine sinnvolle Lösung finden könnten. Einige wollten den Plan ändern, andere wollten mehr Zeit, 
+          weil die Situation sehr kompliziert war. Die Teamleiterin schlug vor, die Vor- und Nachteile jeder Option 
+          genau zu vergleichen. Sie wollte vermeiden, dass ein Fehler gemacht wird, der später große Konsequenzen hat.
+
+          Nach einer Stunde hatte jeder seine Meinung geäußert. Schließlich entschieden sie sich für eine 
+          Alternative: Sie verzichteten auf einen kleinen Teil des Projekts, damit sie das Budget einhalten konnten.
+          Die Entscheidung war nicht perfekt, aber fair und realistisch. Am Ende waren die meisten zufrieden, 
+          weil sie gemeinsam eine Lösung gefunden hatten. Das Team fühlte sich stärker, und alle hatten das Gefühl, 
+          Verantwortung übernommen zu haben.
+        </p>
+      </div>
+
+      <h4>📝 Fragen zum Text (8 MCQs)</h4>
+      <div class="card">
+        <div id="lesen-mcqs"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- END OF BATCH 2 -->
+
+
