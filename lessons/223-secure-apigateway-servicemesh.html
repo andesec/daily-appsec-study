@@ -436,6 +436,197 @@
       });
     </script>
 </div>
+</section><section class="card" id="section-3">
+<div class="card-header">3. Mental Model — Why → How → What-If</div>
+<div class="card-body">
+<p>
+      NIST SP 800-204A frames the zero-trust service mesh stack as a relay race: the API gateway performs the
+      first policy enforcement point (PEP) at the perimeter, stamps the request with identity metadata, and then
+      the mesh sidecars carry that trust anchor to every downstream hop so authorization and telemetry stay
+      consistent end-to-end.
+      Envoy/Istio security guides echo the same chain of custody—edge Envoy filters terminate TLS, run JWT
+      verification, and emit trace headers that Istio sidecars must honor when evaluating AuthorizationPolicy and
+      PeerAuthentication resources.
+    </p>
+<ol>
+<li><strong>Why:</strong> Keep trust decisions closest to the attacker while minimizing blast radius (gateway) and
+        enforce least privilege per workload (mesh).</li>
+<li><strong>How:</strong> Normalize identity claims, propagate SPIFFE IDs, and let mesh policy evaluate service
+        context and workload posture before forwarding.</li>
+<li><strong>What-If:</strong> Continuously model failure paths so a single skipped filter or mismatched cert cannot
+        silently downgrade protections.</li>
+</ol>
+<div class="widget" id="section-3-flow"></div>
+<div class="callout callout-warning">
+<strong>What-if: Gateway skips JWT validation for certain paths?</strong>
+      NIST SP 800-204A warns that bypassing the perimeter PEP forces the mesh to evaluate unauthenticated
+      traffic, breaking the Why → How flow. Require deny-by-default route configuration and regression tests
+      to ensure every route chains the identity filter before forwarding to mesh ingress.
+    </div>
+<div class="callout callout-warning">
+<strong>What-if: Istio sidecars fail to enforce AuthorizationPolicy updates?</strong>
+      Envoy security hardening docs describe how stale xDS pushes can create shadow trust zones. Wire mesh
+      health checks into the gateway so requests are shed (503) when sidecar status is stale, preserving the
+      What-If containment story.
+    </div>
+<p>
+      The flow visualizer narrates the nominal gateway → mesh → service path, making it clear where
+      enforcement happens, where context is propagated, and when alarms should fire if a hop deviates from the
+      contract.
+    </p>
+<div class="reference-list">
+<strong>References:</strong>
+<ul>
+<li><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204A.pdf" rel="noopener" target="_blank">NIST SP 800-204A</a> — service mesh security guidance for modern applications.</li>
+<li><a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/security/security" rel="noopener" target="_blank">Envoy Security Configuration Guide</a> — prescribes TLS/JWT filter ordering.</li>
+<li><a href="https://istio.io/latest/docs/concepts/security/" rel="noopener" target="_blank">Istio Security Concepts</a> — describes identity propagation and authorization layers.</li>
+</ul>
+</div>
+<div class="widget" id="section-3-quiz"></div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.FlowVisualizer) {
+          AppSecWidgets.FlowVisualizer.create('section-3-flow', {
+            title: 'Gateway → Mesh → Service trust relay',
+            steps: [
+              {
+                title: '1. Edge intake (Gateway)',
+                description: 'Envoy-based gateway terminates TLS, validates JWT/OIDC tokens, and adds SPIFFE-compatible IDs per NIST SP 800-204A guidance.'
+              },
+              {
+                title: '2. Policy packaging',
+                description: 'Gateway attaches trace headers, device posture, and authorization context so the mesh sees the rationale for the decision.'
+              },
+              {
+                title: '3. Mesh guardrail (Sidecars)',
+                description: 'Istio sidecars verify mTLS, evaluate AuthorizationPolicy + PeerAuthentication, and enforce rate limits before reaching workloads.'
+              },
+              {
+                title: '4. Service execution',
+                description: 'Workload processes the request only if both layers signaled success; telemetry spans confirm integrity and latency budgets.'
+              }
+            ]
+          });
+        }
+
+        if (window.AppSecWidgets && AppSecWidgets.Quiz) {
+          AppSecWidgets.Quiz.create('section-3-quiz', {
+            title: 'Mental Model Check',
+            mode: 'classic',
+            questions: [
+              {
+                text: 'Why does the gateway need to attach identity context before the mesh evaluates the request?',
+                options: [
+                  { value: 'a', label: 'So the mesh can skip TLS entirely.', correct: false },
+                  { value: 'b', label: 'To give mesh sidecars authoritative claims to compare against AuthorizationPolicy rules.', correct: true },
+                  { value: 'c', label: 'Because gateways cannot perform any policy decisions.', correct: false }
+                ]
+              }
+            ]
+          });
+        }
+      });
+    </script>
+</div>
+</section><section class="card" id="section-3-1">
+<div class="card-header">3.1 Mapping Signals to Decisions</div>
+<div class="card-body">
+<p>
+      To keep the Why → How → What-If loop observable, capture three signal families at each hop: identity (JWT,
+      SPIFFE), transport security (TLS parameters, certificate expiry), and policy lineage (gateway filter chain
+      hash, Istio revision). This mirrors NIST SP 800-204A's recommendation to link policy decisions with telemetry
+      that proves enforcement.
+    </p>
+<ul>
+<li><strong>Identity signals:</strong> Validate that gateway-issued headers like <code>x-envoy-downstream-service-cluster</code>
+        map directly to Istio <code>source.principal</code>.</li>
+<li><strong>Transport signals:</strong> Ensure Envoy <code>ssl.sni</code> matches the mesh certificate SAN to block
+        man-in-the-middle downgrade attempts.</li>
+<li><strong>Policy lineage:</strong> Propagate gateway commit hashes via headers so mesh logs can show which exact
+        configuration version approved the request.</li>
+</ul>
+<div class="callout callout-warning">
+<strong>What-if: Telemetry gaps?</strong>
+      If the gateway drops tracing headers or the mesh truncates span attributes, you lose the ability to prove
+      how a request was authorized. Instrument health rules that fail closed when trace stitching breaks.
+    </div>
+<p>
+      Reviewers should rehearse this map whenever onboarding a new service to confirm every decision is backed by
+      immutable data.
+    </p>
+</div>
+</section><section class="card" id="section-3-2">
+<div class="card-header">3.2 Policy Review Drill</div>
+<div class="card-body">
+<p>
+      The CodeReviewChecker below inspects an Istio <code>AuthorizationPolicy</code> plus the gateway filter chain that
+      feeds it. The example highlights how a permissive wildcard and missing principal scoping can undermine the
+      mesh, and how to fix it.
+    </p>
+<div class="widget" id="section-3-codereview"></div>
+<div class="callout callout-warning">
+<strong>What-if: Wildcard policies meet unscoped routes?</strong>
+      Attackers can replay bearer tokens on lateral services if the gateway allows <code>path: "/*"</code> while the mesh
+      policy lacks <code>source.principals</code>. Always bind gateway routes to audience-specific JWT claims and mesh
+      policies to SPIFFE IDs.
+    </div>
+<script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppSecWidgets && AppSecWidgets.CodeReviewChecker) {
+          var policySnippet = [
+            'apiVersion: security.istio.io/v1beta1',
+            'kind: AuthorizationPolicy',
+            'metadata:',
+            '  name: payments-allow-all',
+            '  namespace: payments',
+            'spec:',
+            '  selector:',
+            '    matchLabels:',
+            '      app: payments-api',
+            '  rules:',
+            '  - to:',
+            '    - operation:',
+            '        paths: ["/*"]',
+            '  action: ALLOW',
+            '---',
+            'http_filters:',
+            '  - name: envoy.filters.http.jwt_authn',
+            '    typed_config:',
+            '      providers:',
+            '        corp-oidc:',
+            '          issuer: https://auth.example.com/',
+            '          forward: true',
+            '  - name: envoy.filters.http.router'
+          ].join('\n');
+
+          AppSecWidgets.CodeReviewChecker.create('section-3-codereview', {
+            title: 'Gateway + Mesh Policy Review',
+            code: policySnippet,
+            vulnerabilities: [
+              {
+                severity: 'high',
+                title: 'Mesh policy lacks source principal constraints',
+                description: 'Without source.principals or claim-based conditions, any workload in the namespace can call payments-api once traffic enters the mesh.',
+                recommendation: 'Add source.principals referencing SPIFFE IDs (e.g., spiffe://corp/ns/billing/sa/frontend) and require JWT audiences that match the service.'
+              },
+              {
+                severity: 'medium',
+                title: 'Gateway filter chain forwards tokens without audiences',
+                description: 'The jwt_authn filter forwards claims but never checks azp/aud, so downstream services may accept tokens issued for other services.',
+                recommendation: 'Set requirements in the JWT provider (e.g., audiences, claim_to_headers) and enforce them before the router filter runs.'
+              },
+              {
+                severity: 'medium',
+                title: 'Wildcard path exposes every route',
+                description: 'paths: ["/*"] lets attackers probe admin endpoints if they compromise any mesh identity.',
+                recommendation: 'Restrict to explicit resource paths (e.g., /v1/payments, /v1/refunds) and pair with method constraints.'
+              }
+            ]
+          });
+        }
+      });
+    </script>
+</div>
 </section><footer style="text-align:center; margin-top: 2rem; color: var(--text-muted); font-size: 0.85rem;">
       Daily AppSec Study · Lesson 223
     </footer>
