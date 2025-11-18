@@ -102,12 +102,15 @@
     }
 
     .pill-nav {
-      max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  display: flex;
+      display: flex;
+  flex-wrap: wrap;     /* this makes the pills go to the next line */
   gap: 6px;
   padding: 6px 0 2px;
+
+  /* remove horizontal scrolling */
+  overflow-x: visible;
+  overflow-y: visible;
+
   scrollbar-width: none;
     }
     .pill-nav::-webkit-scrollbar { display: none; }
